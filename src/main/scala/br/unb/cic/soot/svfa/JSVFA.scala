@@ -6,8 +6,9 @@ import br.unb.cic.soot.graph.{Node, SinkNode}
 import scalax.collection.GraphPredef._
 import boomerang.callgraph.ObservableDynamicICFG
 import boomerang.preanalysis.BoomerangPretransformer
+import br.unb.cic.soot.boomerang.Solver
 import br.unb.cic.soot.jimple.{AssignStmt, InvokeStmt, Statement}
-import soot.jimple.{IdentityStmt, InvokeExpr, ParameterRef, ReturnStmt}
+import soot.jimple.{IdentityStmt, InstanceFieldRef, InvokeExpr, ParameterRef, ReturnStmt}
 import soot.toolkits.graph.ExceptionalUnitGraph
 import soot.toolkits.scalar.SimpleLocalDefs
 import soot.{Local, Scene, SceneTransformer, SootMethod, Transform, jimple}
@@ -18,6 +19,7 @@ import soot.{Local, Scene, SceneTransformer, SootMethod, Transform, jimple}
   */
 abstract class JSVFA extends SVFA with StmtAnalyzer {
 
+  var solver : Solver = _
   var observableDynamicICFG : ObservableDynamicICFG = _
   var methods = 0
 
@@ -35,6 +37,7 @@ abstract class JSVFA extends SVFA with StmtAnalyzer {
 
       pointsToAnalysis = Scene.v().getPointsToAnalysis
       observableDynamicICFG = new ObservableDynamicICFG(false)
+      solver = new Solver(observableDynamicICFG)
 
       Scene.v().getEntryPoints.forEach(method => {
         traverse(method)
@@ -67,6 +70,10 @@ abstract class JSVFA extends SVFA with StmtAnalyzer {
     else if(targetStmt.getRightOp.isInstanceOf[InvokeExpr]) {
       val exp = targetStmt.getRightOp.asInstanceOf[InvokeExpr]
       invokeRule(assignStmt, exp, method, defs)
+    }
+    else if(targetStmt.getRightOp.isInstanceOf[InstanceFieldRef]) {
+      val exp = targetStmt.getRightOp.asInstanceOf[InstanceFieldRef]
+      loadRule(assignStmt, exp, method, defs)
     }
   }
 
@@ -107,6 +114,10 @@ abstract class JSVFA extends SVFA with StmtAnalyzer {
       }
     })
     traverse(callee)
+  }
+
+  private def loadRule(stmt: AssignStmt, ref: InstanceFieldRef, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
+    solver.findAllocationSites(method, stmt.base)
   }
 
   private def defsToCallSite(caller: SootMethod, callee: SootMethod, calleeDefs: SimpleLocalDefs, callStmt: soot.Unit, retStmt: soot.Unit) = {
