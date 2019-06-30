@@ -58,11 +58,12 @@ class CC16Test extends JSVFATest {
 
 class TestSuite extends FunSuite {
 
-  test("we should init soot without throwing any exception") {
+  test("we should correctly compute the number of nodes and edges") {
     val svfa = new CC16Test()
     svfa.buildSparseValueFlowGraph()
-    assert(1 == svfa.methods)
-    svfa.toDot()
+    assert(svfa.svg.nodes.size == 9)
+    assert(svfa.svg.edges.size == 7)
   }
+
 
 }

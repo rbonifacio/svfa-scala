@@ -15,7 +15,7 @@ import scala.collection.JavaConverters._
 abstract class SVFA {
 
    protected var pointsToAnalysis : PointsToAnalysis = _
-   protected var svg = collection.mutable.Graph.empty[Node,DiEdge]
+   var svg = collection.mutable.Graph.empty[Node,DiEdge]
 
    def sootClassPath(): String
    def applicationClassPath(): List[String]
@@ -52,4 +52,5 @@ abstract class SVFA {
       Scene.v().loadNecessaryClasses()
       Scene.v().setEntryPoints(getEntryPoints().asJava)
    }
+
 }

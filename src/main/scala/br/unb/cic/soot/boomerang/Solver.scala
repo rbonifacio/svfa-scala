@@ -2,11 +2,11 @@ package br.unb.cic.soot.boomerang
 
 import boomerang.{BackwardQuery, Boomerang, ForwardQuery}
 import boomerang.callgraph.ObservableICFG
-import boomerang.jimple.Val
-import boomerang.results.{AbstractBoomerangResults, BackwardBoomerangResults}
+import boomerang.jimple.{Statement, Val}
+import boomerang.results.BackwardBoomerangResults
 import boomerang.seedfactory.SeedFactory
-import soot.SootMethod
-import soot.jimple.Stmt
+import soot.{PointsToAnalysis, PointsToSet}
+import soot.jimple.{AssignStmt, InstanceFieldRef, Stmt}
 import wpds.impl.Weight
 
 import scala.collection.mutable.Set
@@ -19,7 +19,6 @@ class Solver(val cfg: ObservableICFG[soot.Unit, soot.SootMethod]) extends Boomer
     if(unit.isInstanceOf[soot.jimple.AssignStmt]) {
       val stmt = unit.asInstanceOf[soot.jimple.AssignStmt]
       val ret : Set[ForwardQuery] = Set.empty
-
       if(stmt.getLeftOp.isInstanceOf[soot.Local]) {
         val local = stmt.getLeftOp.asInstanceOf[soot.Local]
         cfg.getSuccsOf(unit).forEach(s => {
@@ -32,5 +31,28 @@ class Solver(val cfg: ObservableICFG[soot.Unit, soot.SootMethod]) extends Boomer
       }
     }
     return Set.empty
+  }
+
+  def findDefinitions(fieldRef: InstanceFieldRef, query: ForwardQuery, pointsToAnalysis: PointsToAnalysis) : Set[Statement] = {
+    val returnSet : scala.collection.mutable.Set[Statement] = scala.collection.mutable.Set.empty
+    val set1 = pointsToAnalysis.reachingObjects(fieldRef.getBase.asInstanceOf[soot.Local])
+    val results = solve(query)
+    val table = results.asStatementValWeightTable()
+    table.columnKeySet().forEach(v => {
+      table.columnMap().get(v).keySet()
+        .stream()
+        .filter(stmt => stmt.getUnit.isPresent)
+        .forEach(stmt => {
+            if(stmt.getUnit.get().isInstanceOf[AssignStmt] && stmt.getUnit.get().asInstanceOf[AssignStmt].getLeftOp.isInstanceOf[InstanceFieldRef]) {
+              val instanceFieldRef = stmt.getUnit.get().asInstanceOf[AssignStmt].getLeftOp.asInstanceOf[InstanceFieldRef]
+              val local : soot.Local = instanceFieldRef.getBase.asInstanceOf[soot.Local]
+              val set2 = pointsToAnalysis.reachingObjects(local)
+              if(set1.hasNonEmptyIntersection(set2) && fieldRef.getField.equals(instanceFieldRef.getField)) {
+                returnSet += stmt
+              }
+            }
+      })
+    })
+    return returnSet
   }
 }

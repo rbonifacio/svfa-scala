@@ -48,6 +48,7 @@ abstract class JSVFA extends SVFA with StmtAnalyzer {
 
   def traverse(method: SootMethod) : Unit = {
     val body  = method.retrieveActiveBody()
+    println(body)
     val graph = new ExceptionalUnitGraph(body)
     val defs  = new SimpleLocalDefs(graph)
 
@@ -110,14 +111,22 @@ abstract class JSVFA extends SVFA with StmtAnalyzer {
         pmtCount = pmtCount + 1
       }
       if(isAssignReturnStmt(callStmt.base, s)) {
-          defsToCallSite(caller, callee, calleeDefs, callStmt.base, s)
+        defsToCallSite(caller, callee, calleeDefs, callStmt.base, s)
       }
     })
     traverse(callee)
   }
 
   private def loadRule(stmt: AssignStmt, ref: InstanceFieldRef, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
-    solver.findAllocationSites(method, stmt.base)
+    val queries = solver.findAllocationSites(method, stmt.base)
+    queries.foreach(q => {
+      val stmts = solver.findDefinitions(ref, q, pointsToAnalysis)
+      stmts.foreach(s => {
+        val source = createNode(s.getMethod, s.getUnit.get())
+        val target = createNode(method, stmt.base)
+        svg += source ~> target
+      })
+    })
   }
 
   private def defsToCallSite(caller: SootMethod, callee: SootMethod, calleeDefs: SimpleLocalDefs, callStmt: soot.Unit, retStmt: soot.Unit) = {
