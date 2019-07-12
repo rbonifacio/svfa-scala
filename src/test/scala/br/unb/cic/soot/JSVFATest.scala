@@ -1,6 +1,6 @@
 package br.unb.cic.soot
 
-import br.unb.cic.soot.svfa.JSVFA
+import br.unb.cic.soot.svfa.jimple.JSVFA
 import soot.{Scene, SootMethod}
 
 abstract class JSVFATest extends JSVFA {

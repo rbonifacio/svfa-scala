@@ -1,4 +1,4 @@
-package br.unb.cic.soot.jimple
+package br.unb.cic.soot.svfa.jimple
 
 import soot._
 

@@ -1,27 +1,28 @@
-package br.unb.cic.soot.svfa
+package br.unb.cic.soot.svfa.jimple
 
 import java.util
 
-import br.unb.cic.soot.graph.{Node, SinkNode}
-import scalax.collection.GraphPredef._
 import boomerang.callgraph.ObservableDynamicICFG
 import boomerang.preanalysis.BoomerangPretransformer
 import br.unb.cic.soot.boomerang.Solver
-import br.unb.cic.soot.jimple.{AssignStmt, InvokeStmt, Statement}
-import soot.jimple.{IdentityStmt, InstanceFieldRef, InvokeExpr, ParameterRef, ReturnStmt}
+import br.unb.cic.soot.graph.{Node, SinkNode}
+import br.unb.cic.soot.svfa.{SVFA, SourceSinkDef}
+import scalax.collection.GraphPredef._
+import soot.jimple._
 import soot.toolkits.graph.ExceptionalUnitGraph
 import soot.toolkits.scalar.SimpleLocalDefs
-import soot.{Local, Scene, SceneTransformer, SootMethod, Transform, jimple}
+import soot.{Local, PointsToSet, Scene, SceneTransformer, SootMethod, Transform}
 
 /**
   * A Jimple based implementation of
   * SVFA.
   */
-abstract class JSVFA extends SVFA with StmtAnalyzer {
+abstract class JSVFA extends SVFA with SourceSinkDef {
 
   var solver : Solver = _
   var observableDynamicICFG : ObservableDynamicICFG = _
   var methods = 0
+  var traversedMethods : scala.collection.mutable.Set[SootMethod] = scala.collection.mutable.Set.empty
 
   def createSceneTransform(): (String, Transform) = ("wjtp", new Transform("wjtp.svfa", new Transformer()))
 
@@ -47,6 +48,12 @@ abstract class JSVFA extends SVFA with StmtAnalyzer {
   }
 
   def traverse(method: SootMethod) : Unit = {
+    if(traversedMethods.contains(method)) {
+      return
+    }
+
+    traversedMethods.add(method)
+
     val body  = method.retrieveActiveBody()
     println(body)
     val graph = new ExceptionalUnitGraph(body)

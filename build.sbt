@@ -73,6 +73,7 @@ libraryDependencies += "org.typelevel" %% "cats-core" % "1.6.0"
 // To learn more about multi-project builds, head over to the official sbt
 // documentation at http://www.scala-sbt.org/documentation.html
 
+parallelExecution in Test := false
 
 resolvers += "soot snapshots" at "https://soot-build.cs.uni-paderborn.de/nexus/repository/soot-snapshot/"
 
