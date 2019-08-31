@@ -1,13 +1,13 @@
 package br.unb.cic.soot
 
+import br.unb.cic.soot.graph._
 import org.scalatest.FunSuite
-import br.unb.cic.soot.graph.{Node, NodeType, SimpleNode, SinkNode, SourceNode}
-import soot.jimple.{AssignStmt, InvokeExpr, InvokeStmt}
 import scalax.collection.Graph
 import scalax.collection.GraphEdge.DiEdge
+import soot.jimple.{AssignStmt, InvokeExpr, InvokeStmt}
 
-class CC16Test extends JSVFATest {
-  override def getClassName(): String = "samples.CC16"
+class BlackBoard extends JSVFATest {
+  override def getClassName(): String = "samples.BlackBoard"
   override def getMainMethod(): String = "main"
 
   override def analyze(unit: soot.Unit): NodeType = {
@@ -56,14 +56,14 @@ class CC16Test extends JSVFATest {
   }
 }
 
-class TestSuite extends FunSuite {
+class BlackBoardTestSuite extends FunSuite {
 
   test("we should correctly compute the number of nodes and edges") {
-    val svfa = new CC16Test()
+    val svfa = new BlackBoard()
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.svg.nodes.size == 9)
-    assert(svfa.svg.edges.size == 6)
+    assert(svfa.svg.nodes.size == 7)
+    assert(svfa.svg.edges.size == 5)
+    svfa.toDot()
   }
-
 
 }

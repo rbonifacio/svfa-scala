@@ -2,13 +2,10 @@ package br.unb.cic.soot.svfa.jimple
 
 import java.util
 
-import boomerang.callgraph.ObservableDynamicICFG
-import boomerang.preanalysis.BoomerangPretransformer
-import br.unb.cic.soot.boomerang.Solver
 import br.unb.cic.soot.graph.{Node, SinkNode}
 import br.unb.cic.soot.svfa.{SVFA, SourceSinkDef}
 import scalax.collection.GraphPredef._
-import soot.jimple._
+import soot.jimple.{AssignStmt, _}
 import soot.jimple.spark.pag
 import soot.jimple.spark.pag.{AllocNode, PAG}
 import soot.jimple.spark.sets.{DoublePointsToSet, HybridPointsToSet, P2SetVisitor, PointsToSetInternal}
@@ -24,31 +21,47 @@ import soot.{Local, PointsToSet, Scene, SceneTransformer, SootMethod, Transform}
   */
 abstract class JSVFA extends SVFA with SourceSinkDef {
 
-  var solver : Solver = _
-  var observableDynamicICFG : ObservableDynamicICFG = _
   var methods = 0
-  var traversedMethods : scala.collection.mutable.Set[SootMethod] = scala.collection.mutable.Set.empty
+  val traversedMethods = scala.collection.mutable.Set.empty[SootMethod]
+  val allocationSites = scala.collection.mutable.HashMap.empty[NewExpr, soot.Unit]
 
   def createSceneTransform(): (String, Transform) = ("wjtp", new Transform("wjtp.svfa", new Transformer()))
 
   def configurePackages(): List[String] = List("cg", "wjtp")
 
-  def beforeGraphConstruction() { }
+  def beforeGraphConstruction(): Unit = { }
+
   def afterGraphConstruction() { }
+
+  def initAllocationSites(): Unit = {
+    val listener = Scene.v().getReachableMethods.listener()
+
+    while(listener.hasNext) {
+      val body = listener.next().method().getActiveBody
+
+      body.getUnits.forEach(unit => {
+        if(unit.isInstanceOf[soot.jimple.AssignStmt]) {
+          val right = unit.asInstanceOf[soot.jimple.AssignStmt].getRightOp
+          if(right.isInstanceOf[NewExpr]) {
+            val exp = right.asInstanceOf[NewExpr]
+            allocationSites += (exp -> unit)
+          }
+        }
+      })
+    }
+  }
 
   class Transformer extends SceneTransformer {
     override def internalTransform(phaseName: String, options: util.Map[String, String]): Unit = {
-      BoomerangPretransformer.v().reset()
-      BoomerangPretransformer.v().apply()
-
       pointsToAnalysis = Scene.v().getPointsToAnalysis
-      observableDynamicICFG = new ObservableDynamicICFG(false)
-      solver = new Solver(observableDynamicICFG)
+
+      initAllocationSites()
 
       Scene.v().getEntryPoints.forEach(method => {
         traverse(method)
         methods = methods + 1
       })
+      println(svg)
     }
   }
 
@@ -60,12 +73,15 @@ abstract class JSVFA extends SVFA with SourceSinkDef {
     traversedMethods.add(method)
 
     val body  = method.retrieveActiveBody()
+
     println(body)
+
     val graph = new ExceptionalUnitGraph(body)
     val defs  = new SimpleLocalDefs(graph)
 
     body.getUnits.forEach(unit => {
       val v = Statement.convert(unit)
+      println(unit)
 
       v match {
         case AssignStmt(base) => traverse(AssignStmt(base), method, defs)
@@ -195,17 +211,27 @@ abstract class JSVFA extends SVFA with SourceSinkDef {
         val allocationNode = n.asInstanceOf[AllocNode]
         val body = allocationNode.getMethod.getActiveBody
 
-        body.getUnits.stream().forEach(unit => {
-          if(unit.isInstanceOf[soot.jimple.AssignStmt]) {
-            val exp = unit.asInstanceOf[soot.jimple.AssignStmt].getRightOp
-            if(exp.isInstanceOf[NewExpr] && allocationNode.getNewExpr == exp) {
-              val source = createNode(allocationNode.getMethod, unit)
-              val target = createNode(method, stmt)
-              svg + source ~> target
-            }
+        if(allocationNode.getNewExpr.isInstanceOf[NewExpr]) {
+          if(allocationSites.contains(allocationNode.getNewExpr.asInstanceOf[NewExpr])) {
+            val unit = allocationSites(allocationNode.getNewExpr.asInstanceOf[NewExpr])
+
+            val source = createNode(allocationNode.getMethod, unit)
+            val target = createNode(method, stmt)
+            svg += source ~> target
           }
-          //TODO: should we also consider statments like return new ... or throw new ...?
-        })
+        }
+
+//        body.getUnits.stream().forEach(unit => {
+//          if(unit.isInstanceOf[soot.jimple.AssignStmt]) {
+//            val exp = unit.asInstanceOf[soot.jimple.AssignStmt].getRightOp
+//            if(exp.isInstanceOf[NewExpr] && allocationNode.getNewExpr == exp) {
+//              val source = createNode(allocationNode.getMethod, unit)
+//              val target = createNode(method, stmt)
+//              svg + source ~> target
+//            }
+//          }
+//          //TODO: should we also consider statments like return new ... or throw new ...?
+//        })
       }
     }
   }
