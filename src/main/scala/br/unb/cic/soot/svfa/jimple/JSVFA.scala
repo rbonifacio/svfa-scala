@@ -2,16 +2,20 @@ package br.unb.cic.soot.svfa.jimple
 
 import java.util
 
-import br.unb.cic.soot.graph.{Node, SinkNode}
+import br.unb.cic.soot.graph.{Node, SinkNode, SourceNode}
 import br.unb.cic.soot.svfa.{SVFA, SourceSinkDef}
 import scalax.collection.GraphPredef._
-import soot.jimple.{AssignStmt, _}
+import soot.jimple._
 import soot.jimple.spark.pag
 import soot.jimple.spark.pag.{AllocNode, PAG}
 import soot.jimple.spark.sets.{DoublePointsToSet, HybridPointsToSet, P2SetVisitor, PointsToSetInternal}
 import soot.toolkits.graph.ExceptionalUnitGraph
 import soot.toolkits.scalar.SimpleLocalDefs
 import soot.{Local, PointsToSet, Scene, SceneTransformer, SootMethod, Transform}
+
+import scalax.collection.edge.Implicits._
+
+import scala.collection.mutable
 
 
 
@@ -37,17 +41,20 @@ abstract class JSVFA extends SVFA with SourceSinkDef {
     val listener = Scene.v().getReachableMethods.listener()
 
     while(listener.hasNext) {
-      val body = listener.next().method().getActiveBody
+      val m = listener.next().method()
+      if (m.hasActiveBody) {
+        val body = m.getActiveBody()
 
-      body.getUnits.forEach(unit => {
-        if(unit.isInstanceOf[soot.jimple.AssignStmt]) {
-          val right = unit.asInstanceOf[soot.jimple.AssignStmt].getRightOp
-          if(right.isInstanceOf[NewExpr]) {
-            val exp = right.asInstanceOf[NewExpr]
-            allocationSites += (exp -> unit)
+        body.getUnits.forEach(unit => {
+          if (unit.isInstanceOf[soot.jimple.AssignStmt]) {
+            val right = unit.asInstanceOf[soot.jimple.AssignStmt].getRightOp
+            if (right.isInstanceOf[NewExpr]) {
+              val exp = right.asInstanceOf[NewExpr]
+              allocationSites += (exp -> unit)
+            }
           }
-        }
-      })
+        })
+      }
     }
   }
 
@@ -66,7 +73,7 @@ abstract class JSVFA extends SVFA with SourceSinkDef {
   }
 
   def traverse(method: SootMethod) : Unit = {
-    if(traversedMethods.contains(method)) {
+    if((!method.hasActiveBody) || traversedMethods.contains(method)) {
       return
     }
 
@@ -74,14 +81,11 @@ abstract class JSVFA extends SVFA with SourceSinkDef {
 
     val body  = method.retrieveActiveBody()
 
-    println(body)
-
     val graph = new ExceptionalUnitGraph(body)
     val defs  = new SimpleLocalDefs(graph)
 
     body.getUnits.forEach(unit => {
       val v = Statement.convert(unit)
-      println(unit)
 
       v match {
         case AssignStmt(base) => traverse(AssignStmt(base), method, defs)
@@ -126,6 +130,14 @@ abstract class JSVFA extends SVFA with SourceSinkDef {
 
     if(analyze(callStmt.base) == SinkNode()) {
       defsToCallOfSinkMethod(callStmt, exp, caller, defs)
+    }
+
+    //TODO: Review the impact of this code here.
+    //Perhaps we should create edges between the
+    //call-site and the target method, even though
+    //the method does not have an active body.
+    if(!callee.hasActiveBody) {
+      return;
     }
 
     var pmtCount = 0
@@ -188,8 +200,8 @@ abstract class JSVFA extends SVFA with SourceSinkDef {
     })
   }
 
-  def createNode(method: SootMethod, stmt: soot.Unit): Node =
-    Node(method.getDeclaringClass.toString, method.getSignature, stmt.toString(), stmt.getJavaSourceStartLineNumber, analyze(stmt))
+  def createNode(method: SootMethod, stmt: soot.Unit): Node = Node(method.getDeclaringClass.toString, method.getSignature,
+                       stmt.toString(), stmt.getJavaSourceStartLineNumber, analyze(stmt))
 
   def isParameterInitStmt(expr: InvokeExpr, pmtCount: Int, unit: soot.Unit) : Boolean =
     unit.isInstanceOf[IdentityStmt] && unit.asInstanceOf[IdentityStmt].getRightOp.isInstanceOf[ParameterRef] && expr.getArg(pmtCount).isInstanceOf[Local]
@@ -209,7 +221,10 @@ abstract class JSVFA extends SVFA with SourceSinkDef {
     override def visit(n: pag.Node): Unit = {
       if(n.isInstanceOf[AllocNode]) {
         val allocationNode = n.asInstanceOf[AllocNode]
-        val body = allocationNode.getMethod.getActiveBody
+//        if(!allocationNode.getMethod.hasActiveBody) {
+//          return;
+//        }
+        //val body = allocationNode.getMethod.getActiveBody
 
         if(allocationNode.getNewExpr.isInstanceOf[NewExpr]) {
           if(allocationSites.contains(allocationNode.getNewExpr.asInstanceOf[NewExpr])) {

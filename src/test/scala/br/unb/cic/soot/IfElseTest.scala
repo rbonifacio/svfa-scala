@@ -63,6 +63,8 @@ class IfElseTestSuite extends FunSuite {
     svfa.buildSparseValueFlowGraph()
     assert(svfa.svg.nodes.size == 11)
     assert(svfa.svg.edges.size == 8)
+
+    assert(! svfa.reportConflicts().isEmpty)
     svfa.toDot()
   }
 
