@@ -2,16 +2,22 @@ package br.unb.cic.soot.svfa.jimple
 
 import java.util
 
-import boomerang.callgraph.ObservableDynamicICFG
-import boomerang.preanalysis.BoomerangPretransformer
-import br.unb.cic.soot.boomerang.Solver
-import br.unb.cic.soot.graph.{Node, SinkNode}
+import br.unb.cic.soot.graph.{Node, SinkNode, SourceNode}
 import br.unb.cic.soot.svfa.{SVFA, SourceSinkDef}
 import scalax.collection.GraphPredef._
 import soot.jimple._
+import soot.jimple.spark.pag
+import soot.jimple.spark.pag.{AllocNode, PAG}
+import soot.jimple.spark.sets.{DoublePointsToSet, HybridPointsToSet, P2SetVisitor, PointsToSetInternal}
 import soot.toolkits.graph.ExceptionalUnitGraph
 import soot.toolkits.scalar.SimpleLocalDefs
 import soot.{Local, PointsToSet, Scene, SceneTransformer, SootMethod, Transform}
+
+import scalax.collection.edge.Implicits._
+
+import scala.collection.mutable
+
+
 
 /**
   * A Jimple based implementation of
@@ -19,43 +25,62 @@ import soot.{Local, PointsToSet, Scene, SceneTransformer, SootMethod, Transform}
   */
 abstract class JSVFA extends SVFA with SourceSinkDef {
 
-  var solver : Solver = _
-  var observableDynamicICFG : ObservableDynamicICFG = _
   var methods = 0
-  var traversedMethods : scala.collection.mutable.Set[SootMethod] = scala.collection.mutable.Set.empty
+  val traversedMethods = scala.collection.mutable.Set.empty[SootMethod]
+  val allocationSites = scala.collection.mutable.HashMap.empty[NewExpr, soot.Unit]
 
   def createSceneTransform(): (String, Transform) = ("wjtp", new Transform("wjtp.svfa", new Transformer()))
 
   def configurePackages(): List[String] = List("cg", "wjtp")
 
-  def beforeGraphConstruction() { }
+  def beforeGraphConstruction(): Unit = { }
+
   def afterGraphConstruction() { }
+
+  def initAllocationSites(): Unit = {
+    val listener = Scene.v().getReachableMethods.listener()
+
+    while(listener.hasNext) {
+      val m = listener.next().method()
+      if (m.hasActiveBody) {
+        val body = m.getActiveBody()
+
+        body.getUnits.forEach(unit => {
+          if (unit.isInstanceOf[soot.jimple.AssignStmt]) {
+            val right = unit.asInstanceOf[soot.jimple.AssignStmt].getRightOp
+            if (right.isInstanceOf[NewExpr]) {
+              val exp = right.asInstanceOf[NewExpr]
+              allocationSites += (exp -> unit)
+            }
+          }
+        })
+      }
+    }
+  }
 
   class Transformer extends SceneTransformer {
     override def internalTransform(phaseName: String, options: util.Map[String, String]): Unit = {
-      BoomerangPretransformer.v().reset()
-      BoomerangPretransformer.v().apply()
-
       pointsToAnalysis = Scene.v().getPointsToAnalysis
-      observableDynamicICFG = new ObservableDynamicICFG(false)
-      solver = new Solver(observableDynamicICFG)
+
+      initAllocationSites()
 
       Scene.v().getEntryPoints.forEach(method => {
         traverse(method)
         methods = methods + 1
       })
+      println(svg)
     }
   }
 
   def traverse(method: SootMethod) : Unit = {
-    if(traversedMethods.contains(method)) {
+    if((!method.hasActiveBody) || traversedMethods.contains(method)) {
       return
     }
 
     traversedMethods.add(method)
 
     val body  = method.retrieveActiveBody()
-    println(body)
+
     val graph = new ExceptionalUnitGraph(body)
     val defs  = new SimpleLocalDefs(graph)
 
@@ -107,6 +132,14 @@ abstract class JSVFA extends SVFA with SourceSinkDef {
       defsToCallOfSinkMethod(callStmt, exp, caller, defs)
     }
 
+    //TODO: Review the impact of this code here.
+    //Perhaps we should create edges between the
+    //call-site and the target method, even though
+    //the method does not have an active body.
+    if(!callee.hasActiveBody) {
+      return;
+    }
+
     var pmtCount = 0
     val body = callee.retrieveActiveBody()
     val g = new ExceptionalUnitGraph(body)
@@ -125,16 +158,17 @@ abstract class JSVFA extends SVFA with SourceSinkDef {
   }
 
   private def loadRule(stmt: AssignStmt, ref: InstanceFieldRef, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
-    val queries = solver.findAllocationSites(method, stmt.base)
-    queries.foreach(q => {
-      val stmts = solver.findDefinitions(ref, q, pointsToAnalysis)
-      stmts.foreach(s => {
-        val source = createNode(s.getMethod, s.getUnit.get())
-        val target = createNode(method, stmt.base)
-        svg += source ~> target
-      })
-    })
+    val base = ref.getBase
+
+    if(base.isInstanceOf[Local] && pointsToAnalysis.isInstanceOf[PAG]) {
+      val pta = pointsToAnalysis.asInstanceOf[PAG]
+      val allocations = pta.reachingObjects(base.asInstanceOf[Local], ref.getField).asInstanceOf[DoublePointsToSet].getNewSet
+      allocations.asInstanceOf[HybridPointsToSet].forall(new AllocationVisitor(method, stmt.base))
+    }
   }
+
+
+
 
   private def defsToCallSite(caller: SootMethod, callee: SootMethod, calleeDefs: SimpleLocalDefs, callStmt: soot.Unit, retStmt: soot.Unit) = {
     val local = retStmt.asInstanceOf[ReturnStmt].getOp.asInstanceOf[Local]
@@ -166,8 +200,8 @@ abstract class JSVFA extends SVFA with SourceSinkDef {
     })
   }
 
-  def createNode(method: SootMethod, stmt: soot.Unit): Node =
-    Node(method.getDeclaringClass.toString, method.getSignature, stmt.toString(), stmt.getJavaSourceStartLineNumber, analyze(stmt))
+  def createNode(method: SootMethod, stmt: soot.Unit): Node = Node(method.getDeclaringClass.toString, method.getSignature,
+                       stmt.toString(), stmt.getJavaSourceStartLineNumber, analyze(stmt))
 
   def isParameterInitStmt(expr: InvokeExpr, pmtCount: Int, unit: soot.Unit) : Boolean =
     unit.isInstanceOf[IdentityStmt] && unit.asInstanceOf[IdentityStmt].getRightOp.isInstanceOf[ParameterRef] && expr.getArg(pmtCount).isInstanceOf[Local]
@@ -175,4 +209,45 @@ abstract class JSVFA extends SVFA with SourceSinkDef {
   def isAssignReturnStmt(callSite: soot.Unit, unit: soot.Unit) : Boolean =
    unit.isInstanceOf[ReturnStmt] && unit.asInstanceOf[ReturnStmt].getOp.isInstanceOf[Local] &&
      callSite.isInstanceOf[soot.jimple.AssignStmt]
+
+  /*
+   * a class to visit the allocation nodes of the objects that
+   * a field might point to.
+   *
+   * @param method method of the statement stmt
+   * @param stmt statement with a load operation
+   */
+  class AllocationVisitor(val method: SootMethod, val stmt: soot.Unit) extends P2SetVisitor {
+    override def visit(n: pag.Node): Unit = {
+      if(n.isInstanceOf[AllocNode]) {
+        val allocationNode = n.asInstanceOf[AllocNode]
+//        if(!allocationNode.getMethod.hasActiveBody) {
+//          return;
+//        }
+        //val body = allocationNode.getMethod.getActiveBody
+
+        if(allocationNode.getNewExpr.isInstanceOf[NewExpr]) {
+          if(allocationSites.contains(allocationNode.getNewExpr.asInstanceOf[NewExpr])) {
+            val unit = allocationSites(allocationNode.getNewExpr.asInstanceOf[NewExpr])
+
+            val source = createNode(allocationNode.getMethod, unit)
+            val target = createNode(method, stmt)
+            svg += source ~> target
+          }
+        }
+
+//        body.getUnits.stream().forEach(unit => {
+//          if(unit.isInstanceOf[soot.jimple.AssignStmt]) {
+//            val exp = unit.asInstanceOf[soot.jimple.AssignStmt].getRightOp
+//            if(exp.isInstanceOf[NewExpr] && allocationNode.getNewExpr == exp) {
+//              val source = createNode(allocationNode.getMethod, unit)
+//              val target = createNode(method, stmt)
+//              svg + source ~> target
+//            }
+//          }
+//          //TODO: should we also consider statments like return new ... or throw new ...?
+//        })
+      }
+    }
+  }
 }

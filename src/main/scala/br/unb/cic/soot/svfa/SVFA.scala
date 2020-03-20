@@ -30,7 +30,7 @@ abstract class SVFA {
       beforeGraphConstruction()
 
       val (pack, t) = createSceneTransform()
-      PackManager.v().getPack(pack  ).add(t)
+      PackManager.v().getPack(pack).add(t)
       configurePackages().foreach(p => PackManager.v().getPack(p).apply())
 
       afterGraphConstruction()

@@ -61,8 +61,10 @@ class IfElseTestSuite extends FunSuite {
   test("we should correctly compute the number of nodes and edges") {
     val svfa = new IfElseTest()
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.svg.nodes.size == 13)
-    assert(svfa.svg.edges.size == 10)
+    assert(svfa.svg.nodes.size == 11)
+    assert(svfa.svg.edges.size == 8)
+
+    assert(! svfa.reportConflicts().isEmpty)
     svfa.toDot()
   }
 
