@@ -128,7 +128,7 @@ abstract class JSVFA extends SVFA with SourceSinkDef {
   private def invokeRule(callStmt: Statement, exp: InvokeExpr, caller: SootMethod, defs: SimpleLocalDefs): Unit = {
     val callee = exp.getMethod
 
-    if(analyze(callStmt.base) == SinkNode()) {
+    if(analyze(callStmt.base) == SinkNode) {
       defsToCallOfSinkMethod(callStmt, exp, caller, defs)
     }
 
@@ -195,7 +195,7 @@ abstract class JSVFA extends SVFA with SourceSinkDef {
       defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
         val source = createNode(caller, sourceStmt)
         val target = createNode(caller, targetStmt)
-        svg + source ~> target
+        svg += source ~> target
       })
     })
   }

@@ -22,14 +22,14 @@ class IfElseTest extends JSVFATest {
         return analyzeInvokeStmt(invokeStmt)
       }
     }
-    return SimpleNode()
+    return SimpleNode
   }
 
   def analyzeInvokeStmt(exp: InvokeExpr) : NodeType =
     exp.getMethod.getName match {
-      case "source" => SourceNode()
-      case "sink"   => SinkNode()
-      case _        => SimpleNode()
+      case "source" => SourceNode
+      case "sink"   => SinkNode
+      case _        => SimpleNode
     }
 
   def toDot() : String = {

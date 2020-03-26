@@ -1,12 +1,14 @@
 package br.unb.cic.soot.svfa
 
-import br.unb.cic.soot.graph.Node
+import br.unb.cic.soot.graph.{Node, SinkNode, SourceNode}
 import scalax.collection
-import scalax.collection.GraphEdge.{DiEdge}
+import scalax.collection.Graph
+import scalax.collection.GraphEdge.DiEdge
 import soot._
 import soot.options.Options
 
 import scala.collection.JavaConverters._
+import scalax.collection.edge.Implicits._
 
 /**
   * Base class for all implementations
@@ -52,5 +54,22 @@ abstract class SVFA {
       Scene.v().loadNecessaryClasses()
       Scene.v().setEntryPoints(getEntryPoints().asJava)
    }
+
+   def reportConflicts(): List[String] = {
+      val sourceNodes = svg.filter((n: Node) => n.nodeType == SourceNode)
+      val sinkNodes = svg.filter((n: Node) => n.nodeType == SinkNode)
+
+      for(source <- sourceNodes.nodes) {
+         for(sink <- sinkNodes.nodes) {
+            val n1: collection.mutable.Graph[Node,DiEdge]#NodeT = svg.find(source.toOuter).get
+            val n2: collection.mutable.Graph[Node,DiEdge]#NodeT = svg.find(sink.toOuter).get
+//            val p = n1 pathTo n2
+//            println(p)
+         }
+      }
+      return null
+   }
+
+   def find(g: Graph[Node, DiEdge], node: Node) : g.NodeT = g get node
 
 }

@@ -2,29 +2,53 @@ package br.unb.cic.soot.graph
 
 import scala.collection.mutable
 
-abstract class NodeType
+sealed trait NodeType
 
-case class SourceNode() extends NodeType
-case class SinkNode() extends NodeType
-case class SimpleNode() extends NodeType
+case object SourceNode extends NodeType
+case object SinkNode extends NodeType
+case object SimpleNode extends NodeType
 
 case class Node(className: String, method: String, stmt: String, line: Int, nodeType: NodeType)
 
 
-class Graph() {
+class Graph[NodeT]() {
 
-  val map = new  mutable.HashMap[Node,(Int, mutable.MutableList[Node])]()
+  val map = new  mutable.HashMap[NodeT,mutable.MutableList[NodeT]]()
 
-  def addEdge(source: Node, target: Node): Unit = {
+  def addEdge(source: NodeT, target: NodeT): Unit = {
     if(map.contains(source)) {
-      val (_, adjacent) = map.get(source).get
-      adjacent += target
+      val adjacentList  = map.get(source).get
+      adjacentList += target
     }
     else {
-      val id = map.size + 1
-      map(source) = (id, mutable.MutableList(target))
+      map(source) = mutable.MutableList(target)
+    }
+    if(! map.contains(target)) {
+      map(target) = mutable.MutableList.empty[NodeT]
     }
   }
+
+  def findPath(source: NodeT, target: NodeT): Option[List[NodeT]] = {
+    return findPath(source, target, List(), List(source))
+  }
+
+  def findPath(source: NodeT, target: NodeT, visited: List[NodeT], path: List[NodeT]): Option[List[NodeT]] = {
+    val adjacentList = map.get(source).get
+    if(adjacentList.contains(target)) {
+      return Some(path ++ List(target))
+    }
+
+    val nextElements = adjacentList.filter(n => ! visited.contains(n)).foreach(next => {
+      val newVisited: List[NodeT] = source :: visited
+      val newPath: List[NodeT] = path ++ List(next)
+      val res = findPath(next, target, newVisited, newPath)
+      if(res != None) {
+        return res
+      }
+    })
+    return None
+  }
+
 
   def nodes() = map.keySet
 }
