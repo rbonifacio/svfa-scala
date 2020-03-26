@@ -31,29 +31,6 @@ class CC16Test extends JSVFATest {
       case "sink"   => SinkNode
       case _        => SimpleNode
     }
-
-  def toDot() : String = {
-    val g : Graph[Node, DiEdge] = svg
-
-    val s = new StringBuilder
-
-    s ++= "digraph { \n"
-    g.nodes.foreach[Unit](n => {
-      s ++= " " + n.stmt + "\n"
-    })
-
-    g.edges.foreach[Unit](e => {
-      s ++= " " + e.nodes.map(n => n.stmt).mkString(" => ") + " \n"
-    })
-
-
-    s ++= "}"
-
-    println(s)
-
-
-    return ""
-  }
 }
 
 class TestSuite extends FunSuite {
@@ -62,7 +39,7 @@ class TestSuite extends FunSuite {
     val svfa = new CC16Test()
     svfa.buildSparseValueFlowGraph()
     assert(svfa.svg.nodes.size == 9)
-    assert(svfa.svg.edges.size == 6)
+    assert(svfa.svg.numberOfEdges() == 6)
   }
 
 

@@ -2,20 +2,16 @@ package br.unb.cic.soot.svfa.jimple
 
 import java.util
 
-import br.unb.cic.soot.graph.{Node, SinkNode, SourceNode}
+import br.unb.cic.soot.graph.{Node, SinkNode}
 import br.unb.cic.soot.svfa.{SVFA, SourceSinkDef}
-import scalax.collection.GraphPredef._
 import soot.jimple._
 import soot.jimple.spark.pag
 import soot.jimple.spark.pag.{AllocNode, PAG}
-import soot.jimple.spark.sets.{DoublePointsToSet, HybridPointsToSet, P2SetVisitor, PointsToSetInternal}
+import soot.jimple.spark.sets.{DoublePointsToSet, HybridPointsToSet, P2SetVisitor}
 import soot.toolkits.graph.ExceptionalUnitGraph
 import soot.toolkits.scalar.SimpleLocalDefs
-import soot.{Local, PointsToSet, Scene, SceneTransformer, SootMethod, Transform}
+import soot.{Local, Scene, SceneTransformer, SootMethod, Transform}
 
-import scalax.collection.edge.Implicits._
-
-import scala.collection.mutable
 
 
 
@@ -43,7 +39,7 @@ abstract class JSVFA extends SVFA with SourceSinkDef {
     while(listener.hasNext) {
       val m = listener.next().method()
       if (m.hasActiveBody) {
-        val body = m.getActiveBody()
+        val body = m.getActiveBody
 
         body.getUnits.forEach(unit => {
           if (unit.isInstanceOf[soot.jimple.AssignStmt]) {
@@ -121,7 +117,7 @@ abstract class JSVFA extends SVFA with SourceSinkDef {
     defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
       val source = createNode(method, sourceStmt)
       val target = createNode(method, targetStmt)
-      svg += source ~> target
+      svg.addEdge(source, target)
     })
   }
 
@@ -175,7 +171,7 @@ abstract class JSVFA extends SVFA with SourceSinkDef {
     calleeDefs.getDefsOfAt(local, retStmt).forEach(sourceStmt => {
       val source = createNode(callee, sourceStmt)
       val target = createNode(caller, callStmt)
-      svg += source ~> target
+      svg.addEdge(source, target)
     })
   }
 
@@ -184,7 +180,7 @@ abstract class JSVFA extends SVFA with SourceSinkDef {
     defs.getDefsOfAt(local, stmt.base).forEach(sourceStmt => {
       val source = createNode(caller, sourceStmt)
       val target = createNode(callee, assignStmt)
-      svg += source ~> target
+      svg.addEdge(source, target)
     })
   }
 
@@ -195,7 +191,7 @@ abstract class JSVFA extends SVFA with SourceSinkDef {
       defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
         val source = createNode(caller, sourceStmt)
         val target = createNode(caller, targetStmt)
-        svg += source ~> target
+        svg.addEdge(source, target)
       })
     })
   }
@@ -232,7 +228,7 @@ abstract class JSVFA extends SVFA with SourceSinkDef {
 
             val source = createNode(allocationNode.getMethod, unit)
             val target = createNode(method, stmt)
-            svg += source ~> target
+            svg.addEdge(source, target)
           }
         }
 

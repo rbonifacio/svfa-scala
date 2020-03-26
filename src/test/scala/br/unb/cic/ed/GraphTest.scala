@@ -27,6 +27,7 @@ class GraphTest extends FunSuite with BeforeAndAfter {
   }
   test("After adding three nodes and edges, the graph must have three nodes") {
     assert(10 == g.nodes().size)
+    assert(12 == g.numberOfEdges())
   }
 
   test("It should find valid paths") {

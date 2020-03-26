@@ -51,4 +51,6 @@ class Graph[NodeT]() {
 
 
   def nodes() = map.keySet
+
+  def numberOfEdges() = map.values.map(v => v.size).reduce((a, b) => a+b)
 }

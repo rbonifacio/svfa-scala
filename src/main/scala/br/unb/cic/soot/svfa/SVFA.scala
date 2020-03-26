@@ -1,14 +1,10 @@
 package br.unb.cic.soot.svfa
 
-import br.unb.cic.soot.graph.{Node, SinkNode, SourceNode}
-import scalax.collection
-import scalax.collection.Graph
-import scalax.collection.GraphEdge.DiEdge
+import br.unb.cic.soot.graph.{Graph, Node, SinkNode, SourceNode}
 import soot._
 import soot.options.Options
 
 import scala.collection.JavaConverters._
-import scalax.collection.edge.Implicits._
 
 /**
   * Base class for all implementations
@@ -17,7 +13,7 @@ import scalax.collection.edge.Implicits._
 abstract class SVFA {
 
    protected var pointsToAnalysis : PointsToAnalysis = _
-   var svg = collection.mutable.Graph.empty[Node,DiEdge]
+   var svg: Graph[Node] = new br.unb.cic.soot.graph.Graph()
 
    def sootClassPath(): String
    def applicationClassPath(): List[String]
@@ -56,20 +52,15 @@ abstract class SVFA {
    }
 
    def reportConflicts(): List[String] = {
-      val sourceNodes = svg.filter((n: Node) => n.nodeType == SourceNode)
-      val sinkNodes = svg.filter((n: Node) => n.nodeType == SinkNode)
+      val sourceNodes = svg.nodes.filter((n: Node) => n.nodeType == SourceNode)
+      val sinkNodes = svg.nodes.filter((n: Node) => n.nodeType == SinkNode)
 
-      for(source <- sourceNodes.nodes) {
-         for(sink <- sinkNodes.nodes) {
-            val n1: collection.mutable.Graph[Node,DiEdge]#NodeT = svg.find(source.toOuter).get
-            val n2: collection.mutable.Graph[Node,DiEdge]#NodeT = svg.find(sink.toOuter).get
-//            val p = n1 pathTo n2
-//            println(p)
+      for(source <- sourceNodes) {
+         for(sink <- sinkNodes) {
+           println(svg.findPath(source, sink))
          }
       }
       return null
    }
-
-   def find(g: Graph[Node, DiEdge], node: Node) : g.NodeT = g get node
 
 }

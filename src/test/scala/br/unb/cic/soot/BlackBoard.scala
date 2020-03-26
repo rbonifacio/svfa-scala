@@ -31,29 +31,6 @@ class BlackBoard extends JSVFATest {
       case "sink"   => SinkNode
       case _        => SimpleNode
     }
-
-  def toDot() : String = {
-    val g : Graph[Node, DiEdge] = svg
-
-    val s = new StringBuilder
-
-    s ++= "digraph { \n"
-    g.nodes.foreach[Unit](n => {
-      s ++= " " + n.stmt + "\n"
-    })
-
-    g.edges.foreach[Unit](e => {
-      s ++= " " + e.nodes.map(n => n.stmt).mkString(" => ") + " \n"
-    })
-
-
-    s ++= "}"
-
-    println(s)
-
-
-    return ""
-  }
 }
 
 class BlackBoardTestSuite extends FunSuite {
@@ -62,8 +39,7 @@ class BlackBoardTestSuite extends FunSuite {
     val svfa = new BlackBoard()
     svfa.buildSparseValueFlowGraph()
     assert(svfa.svg.nodes.size == 7)
-    assert(svfa.svg.edges.size == 5)
-    svfa.toDot()
+    assert(svfa.svg.numberOfEdges() == 5)
   }
 
 }
