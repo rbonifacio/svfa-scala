@@ -38,8 +38,9 @@ class BlackBoardTestSuite extends FunSuite {
   test("we should correctly compute the number of nodes and edges") {
     val svfa = new BlackBoard()
     svfa.buildSparseValueFlowGraph()
+    println(svfa.reportConflicts())
     assert(svfa.svg.nodes.size == 7)
-    assert(svfa.svg.numberOfEdges() == 5)
+    assert(svfa.svg.numberOfEdges() == 7)
   }
 
 }

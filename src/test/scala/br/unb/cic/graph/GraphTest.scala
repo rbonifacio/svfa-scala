@@ -1,4 +1,4 @@
-package br.unb.cic.ed
+package br.unb.cic.graph
 
 import org.scalatest.{BeforeAndAfter, FunSuite}
 import br.unb.cic.soot.graph.Graph

@@ -51,16 +51,42 @@ abstract class SVFA {
       Scene.v().setEntryPoints(getEntryPoints().asJava)
    }
 
-   def reportConflicts(): List[String] = {
+   def reportConflicts(): scala.collection.Set[String] = {
       val sourceNodes = svg.nodes.filter((n: Node) => n.nodeType == SourceNode)
       val sinkNodes = svg.nodes.filter((n: Node) => n.nodeType == SinkNode)
 
-      for(source <- sourceNodes) {
-         for(sink <- sinkNodes) {
-           println(svg.findPath(source, sink))
-         }
-      }
-      return null
+      val conflicts = for(source <- sourceNodes; sink <- sinkNodes)
+                      yield svg.findPath(source, sink)
+
+      return conflicts.filter(p => None != p)
+                      .map(p => p.toString)
    }
 
+   def svgToDotModel(): String = {
+      val s = new StringBuilder
+      var nodeColor = ""
+      s ++= "digraph { \n"
+
+      for(n <- svg.nodes()) {
+         nodeColor = n.nodeType match  {
+            case SourceNode => "[blue]"
+            case SinkNode   => "[red]"
+            case _          => ""
+         }
+
+         s ++= " " + "\"" + n.stmt + "\"" + nodeColor + "\n"
+      }
+
+      for(n <- svg.nodes) {
+         val adjacencyList = svg.map.get(n).get
+         val edges = adjacencyList.map(next => "\"" + n.stmt + "\"" + " -> " + "\"" + next.stmt + "\"")
+         for(e <- edges) {
+            s ++= " " + e + "\n"
+         }
+      }
+
+      s ++= "}"
+
+      return s.toString()
+   }
 }

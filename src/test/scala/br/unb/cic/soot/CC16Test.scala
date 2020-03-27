@@ -1,10 +1,8 @@
 package br.unb.cic.soot
 
-import org.scalatest.FunSuite
-import br.unb.cic.soot.graph.{Node, NodeType, SimpleNode, SinkNode, SourceNode}
+import org.scalatest.{BeforeAndAfter, FunSuite}
+import br.unb.cic.soot.graph.{NodeType, SimpleNode, SinkNode, SourceNode}
 import soot.jimple.{AssignStmt, InvokeExpr, InvokeStmt}
-import scalax.collection.Graph
-import scalax.collection.GraphEdge.DiEdge
 
 class CC16Test extends JSVFATest {
   override def getClassName(): String = "samples.CC16"
@@ -33,14 +31,19 @@ class CC16Test extends JSVFATest {
     }
 }
 
-class TestSuite extends FunSuite {
-
-  test("we should correctly compute the number of nodes and edges") {
-    val svfa = new CC16Test()
+class CC16TestSuite extends FunSuite with BeforeAndAfter {
+  val svfa = new CC16Test()
+  before {
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.svg.nodes.size == 9)
-    assert(svfa.svg.numberOfEdges() == 6)
   }
 
+  test("we should correctly compute the number of nodes and edges") {
+    assert(svfa.svg.nodes.size == 10)
+    assert(svfa.svg.numberOfEdges() == 10)
+  }
+
+  test("we should find exactly one conflict in this analysis") {
+    assert(svfa.reportConflicts().size == 1)
+  }
 
 }

@@ -1,4 +1,4 @@
-package br.unb.cic.ed
+package br.unb.cic.graph
 
 import org.scalatest.FunSuite
 import scalax.collection.mutable.Graph

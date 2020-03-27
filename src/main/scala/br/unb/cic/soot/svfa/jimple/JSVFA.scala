@@ -12,9 +12,6 @@ import soot.toolkits.graph.ExceptionalUnitGraph
 import soot.toolkits.scalar.SimpleLocalDefs
 import soot.{Local, Scene, SceneTransformer, SootMethod, Transform}
 
-
-
-
 /**
   * A Jimple based implementation of
   * SVFA.
@@ -64,7 +61,6 @@ abstract class JSVFA extends SVFA with SourceSinkDef {
         traverse(method)
         methods = methods + 1
       })
-      println(svg)
     }
   }
 
@@ -77,6 +73,8 @@ abstract class JSVFA extends SVFA with SourceSinkDef {
 
     val body  = method.retrieveActiveBody()
 
+    println(body)
+
     val graph = new ExceptionalUnitGraph(body)
     val defs  = new SimpleLocalDefs(graph)
 
@@ -86,7 +84,7 @@ abstract class JSVFA extends SVFA with SourceSinkDef {
       v match {
         case AssignStmt(base) => traverse(AssignStmt(base), method, defs)
         case InvokeStmt(base) => traverse(InvokeStmt(base), method, defs)
-        case _ => println(unit)
+        case _ =>
       }
     })
   }
@@ -164,8 +162,6 @@ abstract class JSVFA extends SVFA with SourceSinkDef {
   }
 
 
-
-
   private def defsToCallSite(caller: SootMethod, callee: SootMethod, calleeDefs: SimpleLocalDefs, callStmt: soot.Unit, retStmt: soot.Unit) = {
     val local = retStmt.asInstanceOf[ReturnStmt].getOp.asInstanceOf[Local]
     calleeDefs.getDefsOfAt(local, retStmt).forEach(sourceStmt => {
@@ -229,6 +225,9 @@ abstract class JSVFA extends SVFA with SourceSinkDef {
             val source = createNode(allocationNode.getMethod, unit)
             val target = createNode(method, stmt)
             svg.addEdge(source, target)
+
+            // TODO: we have to discuss the strategy bellow
+            svg.map.get(source).get.foreach(s => svg.addEdge(s, target))
           }
         }
 
