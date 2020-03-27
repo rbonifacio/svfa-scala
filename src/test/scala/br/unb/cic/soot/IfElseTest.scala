@@ -1,7 +1,7 @@
 package br.unb.cic.soot
 
 import br.unb.cic.soot.graph._
-import org.scalatest.FunSuite
+import org.scalatest.{BeforeAndAfter, FunSuite}
 import soot.jimple.{AssignStmt, InvokeExpr, InvokeStmt}
 
 class IfElseTest extends JSVFATest {
@@ -33,13 +33,21 @@ class IfElseTest extends JSVFATest {
 }
 
 
-class IfElseTestSuite extends FunSuite {
-  test("we should correctly compute the number of nodes and edges") {
-    val svfa = new IfElseTest()
-    svfa.buildSparseValueFlowGraph()
-    assert(svfa.svg.nodes.size == 12)
-    assert(svfa.svg.numberOfEdges() == 13)
+class IfElseTestSuite extends FunSuite with BeforeAndAfter {
+  var svfa: IfElseTest = _
 
-    assert(!svfa.reportConflicts().isEmpty)
+  before {
+    svfa = new IfElseTest()
+    svfa.buildSparseValueFlowGraph()
+  }
+
+  test("we should correctly compute the number of nodes and edges") {
+    assert(svfa.svg.nodes.size == 12)
+    assert(svfa.svg.numberOfEdges() == 11)
+  }
+
+  test("we should find exactly one conflict in this analysis") {
+    println(svfa.svgToDotModel())
+    assert(svfa.reportConflicts().size == 1)
   }
 }

@@ -69,8 +69,8 @@ abstract class SVFA {
 
       for(n <- svg.nodes()) {
          nodeColor = n.nodeType match  {
-            case SourceNode => "[blue]"
-            case SinkNode   => "[red]"
+            case SourceNode => "[fillcolor=blue, style=filled]"
+            case SinkNode   => "[fillcolor=red, style=filled]"
             case _          => ""
          }
 

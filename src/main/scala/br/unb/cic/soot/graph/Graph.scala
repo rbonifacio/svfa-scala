@@ -16,6 +16,10 @@ class Graph[NodeT]() {
   val map = new  mutable.HashMap[NodeT,mutable.MutableList[NodeT]]()
 
   def addEdge(source: NodeT, target: NodeT): Unit = {
+    if(source == target) {
+      return
+    }
+
     if(map.contains(source)) {
       val adjacentList  = map.get(source).get
       adjacentList += target
