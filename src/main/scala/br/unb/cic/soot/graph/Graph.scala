@@ -4,9 +4,9 @@ import scala.collection.mutable
 
 sealed trait NodeType
 
-case object SourceNode extends NodeType
-case object SinkNode extends NodeType
-case object SimpleNode extends NodeType
+case object SourceNode extends NodeType { def instance = this }
+case object SinkNode extends NodeType { def instance = this }
+case object SimpleNode extends NodeType { def instance = this }
 
 case class Node(className: String, method: String, stmt: String, line: Int, nodeType: NodeType)
 
