@@ -4,6 +4,7 @@ import java.util
 
 import br.unb.cic.soot.graph.{Node, SinkNode}
 import br.unb.cic.soot.svfa.{SVFA, SourceSinkDef}
+import com.typesafe.scalalogging.LazyLogging
 import soot.jimple._
 import soot.jimple.spark.pag
 import soot.jimple.spark.pag.{AllocNode, PAG}
@@ -16,7 +17,7 @@ import soot.{Local, Scene, SceneTransformer, SootMethod, Transform}
   * A Jimple based implementation of
   * SVFA.
   */
-abstract class JSVFA extends SVFA with SourceSinkDef {
+abstract class JSVFA extends SVFA with SourceSinkDef with LazyLogging {
 
   var methods = 0
   val traversedMethods = scala.collection.mutable.Set.empty[SootMethod]
@@ -73,7 +74,7 @@ abstract class JSVFA extends SVFA with SourceSinkDef {
 
     val body  = method.retrieveActiveBody()
 
-    println(body)
+    logger.whenDebugEnabled(body.toString)
 
     val graph = new ExceptionalUnitGraph(body)
     val defs  = new SimpleLocalDefs(graph)
