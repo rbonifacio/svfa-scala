@@ -20,4 +20,4 @@ This is a scala implementation of a framework that builds a sparse-value flow gr
    * implement a class that extends the `JSVFA class` (see some examples in the scala tests). you must provide implementations to the following methods
       * `getEntryPoints()` to set up the "main" methods. This implementation must return a list of Soot methods
       * `sootClassPath()` to set up the soot classpath. This implementation must return a string
-      * `analyze(unit)` to identify the type of a node (source, sink, simple node) given a statement (soot unit)
+      * `analyze(unit)` to identify the type of a node  (source, sink, simple node) in the graph; given a statement (soot unit)
