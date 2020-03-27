@@ -2,6 +2,10 @@
 
 This is a scala implementation of a framework that builds a sparse-value flow graph using Soot.
 
+## Status
+
+   * experimental
+
 ## Usage
 
    * clone this repository or download an stable release
