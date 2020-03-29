@@ -76,7 +76,7 @@ abstract class JSVFA extends SVFA with SourceSinkDef with LazyLogging {
 
     val body  = method.retrieveActiveBody()
 
-    logger.debug(body.toString)
+    logger.whenDebugEnabled(body.toString)
 
     val graph = new ExceptionalUnitGraph(body)
     val defs  = new SimpleLocalDefs(graph)
