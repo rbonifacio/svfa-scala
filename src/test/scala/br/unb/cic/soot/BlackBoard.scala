@@ -42,8 +42,8 @@ class BlackBoardTestSuite extends FunSuite with BeforeAndAfter {
   }
 
   test("we should correctly compute the number of nodes and edges") {
-    assert(svfa.svg.nodes.size == 7)
-    assert(svfa.svg.numberOfEdges() == 6)
+    assert(svfa.svg.nodes.size == 0)
+    assert(svfa.svg.numberOfEdges() == 0)
   }
 
   test("we should find exactly one conflict in this analysis") {
