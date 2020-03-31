@@ -35,25 +35,21 @@ class IfElseTest extends JSVFATest {
 
 class IfElseTestSuite extends FunSuite with BeforeAndAfter {
 
+  test("we should correctly compute the number of nodes and edges") {
+    val svfa = new IfElseTest()
+    svfa.buildSparseValueFlowGraph()
+    assert(svfa.svg.nodes.size == 6)
+  }
 
-//  test("we should correctly compute the number of nodes and edges") {
-//    val svfa = new IfElseTest()
-//    svfa.buildSparseValueFlowGraph()
-//
-//    assert(svfa.svg.nodes.size == 6)
-//  }
-//
-//  test("we should correctly compute the number of edges") {
-//    val svfa = new IfElseTest()
-//    svfa.buildSparseValueFlowGraph()
-//    println(svfa.svgToDotModel())
-//    assert(svfa.svg.numberOfEdges() == 6)
-//  }
+  test("we should correctly compute the number of edges") {
+    val svfa = new IfElseTest()
+    svfa.buildSparseValueFlowGraph()
+    assert(svfa.svg.numberOfEdges() == 6)
+  }
 
   test("we should find exactly one conflict in this analysis") {
     val svfa = new IfElseTest()
     svfa.buildSparseValueFlowGraph()
-
-    assert(svfa.reportConflicts().size == 1)
+   assert(svfa.reportConflicts().size == 1)
   }
 }

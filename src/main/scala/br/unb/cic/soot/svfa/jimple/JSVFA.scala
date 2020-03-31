@@ -132,6 +132,8 @@ abstract class JSVFA extends SVFA with SourceSinkDef with LazyLogging {
   private def invokeRule(callStmt: Statement, exp: InvokeExpr, caller: SootMethod, defs: SimpleLocalDefs): Unit = {
     val callee = exp.getMethod
 
+    logger.debug(exp.getMethod.toString + callStmt.base.getJavaSourceStartLineNumber.toString())
+
     if(analyze(callStmt.base) == SinkNode) {
       defsToCallOfSinkMethod(callStmt, exp, caller, defs)
     }
@@ -199,6 +201,7 @@ abstract class JSVFA extends SVFA with SourceSinkDef with LazyLogging {
   }
 
   private def defsToCallOfSinkMethod(stmt: Statement, exp: InvokeExpr, caller: SootMethod, defs: SimpleLocalDefs) = {
+    // edges from definitions to args
     exp.getArgs.stream().filter(a => a.isInstanceOf[Local]).forEach(a => {
       val local = a.asInstanceOf[Local]
       val targetStmt = stmt.base
@@ -208,6 +211,18 @@ abstract class JSVFA extends SVFA with SourceSinkDef with LazyLogging {
         updateGraph(source, target)
       })
     })
+    // edges from definition to base object of an invoke expression
+    if(exp.isInstanceOf[InstanceInvokeExpr]) {
+      if(exp.asInstanceOf[InstanceInvokeExpr].getBase.isInstanceOf[Local]) {
+        val local = exp.asInstanceOf[InstanceInvokeExpr].getBase.asInstanceOf[Local]
+        val targetStmt = stmt.base
+        defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
+          val source = createNode(caller, sourceStmt)
+          val target = createNode(caller, targetStmt)
+          updateGraph(source, target)
+        })
+      }
+    }
   }
 
   /*

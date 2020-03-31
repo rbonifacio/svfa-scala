@@ -1,24 +1,27 @@
 package samples;
 
+class FooLoopback {
+    int x = 10;
+    int getValue() { return x; }
+}
 public class LogbackSample {
-
-    private static boolean simpleTest(int x) {
+    private static boolean simpleTest(FooLoopback x) {
         return true;
     }
 
-    private static boolean complexTest(int x) {
+    private static boolean complexTest(FooLoopback x) {
         return false;
     }
 
-    private static int source() {
-        return 10;
+    private static FooLoopback source() {
+        return new FooLoopback();
     }
 
     private static int generateNumber(int x) {
         return x + 1;
     }
     public static void main(String args[]) {
-        int x = source();                    // source line
+        FooLoopback x = source();                    // source line
 
         if(simpleTest(x)) {
             throw new RuntimeException();
@@ -26,8 +29,8 @@ public class LogbackSample {
 
         int y = 0;
 
-        if(complexTest(x)) {                // sink line
-            y = generateNumber(x);          // sink line
+        if(x.getValue() > 10) {                     // sink line
+            y = generateNumber(x.getValue());       // sink line
         }
 
         generateNumber(y);

@@ -13,8 +13,8 @@ class LogbackSampleTest extends JSVFATest {
   // to state which statements are source or sink.
   override def analyze(unit: soot.Unit): NodeType =
     unit.getJavaSourceStartLineNumber match {
-      case 21 => SourceNode
-      case 29 | 30 => SinkNode
+      case 24 => SourceNode
+      case 32 | 33 => SinkNode
       case _ => SimpleNode
     }
 }
@@ -24,6 +24,6 @@ class LogbackSampleTestSuite extends FunSuite with BeforeAndAfter {
   test("we should find two conflicts in this analysis") {
     val svfa = new LogbackSampleTest()
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflicts().size == 2)
+    assert(svfa.reportConflicts().size == 3)
   }
 }
