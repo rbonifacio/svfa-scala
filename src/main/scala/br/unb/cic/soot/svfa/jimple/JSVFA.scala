@@ -19,7 +19,7 @@ import scala.collection.mutable
   * A Jimple based implementation of
   * SVFA.
   */
-abstract class JSVFA extends SVFA with SourceSinkDef with LazyLogging {
+abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef with LazyLogging {
 
   var methods = 0
   val traversedMethods = scala.collection.mutable.Set.empty[SootMethod]
@@ -212,7 +212,7 @@ abstract class JSVFA extends SVFA with SourceSinkDef with LazyLogging {
       })
     })
     // edges from definition to base object of an invoke expression
-    if(exp.isInstanceOf[InstanceInvokeExpr]) {
+    if(isFieldSensitiveAnalysis() && exp.isInstanceOf[InstanceInvokeExpr]) {
       if(exp.asInstanceOf[InstanceInvokeExpr].getBase.isInstanceOf[Local]) {
         val local = exp.asInstanceOf[InstanceInvokeExpr].getBase.asInstanceOf[Local]
         val targetStmt = stmt.base
