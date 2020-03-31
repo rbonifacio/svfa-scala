@@ -3,7 +3,7 @@ scalaVersion := "2.12.8"
 
 name := "svfa-scala"
 organization := "br.unb.cic"
-version := "0.0.2-SNAPSHOT"
+version := "0.0.2"
 
 
 parallelExecution in Test := false
