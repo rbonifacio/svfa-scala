@@ -2,7 +2,7 @@ scalaVersion := "2.12.8"
 
 name := "svfa-scala"
 organization := "br.unb.cic"
-version := "0.0.3-SNAPSHOT"
+version := "0.0.4-SNAPSHOT"
 
 
 parallelExecution in Test := false
@@ -11,11 +11,13 @@ resolvers += "soot snapshots" at "https://soot-build.cs.uni-paderborn.de/nexus/r
 
 resolvers += "soot releases" at "https://soot-build.cs.uni-paderborn.de/nexus/repository/soot-release/"
 
+resolvers += "Local maven repository" at "file://"+Path.userHome.absolutePath+"/.m2/repository"
+
 resolvers += Classpaths.typesafeReleases
 
 libraryDependencies += "org.typelevel" %% "cats-core" % "1.6.0"
 
-libraryDependencies += "ca.mcgill.sable" % "soot" % "3.3.0"
+libraryDependencies += "ca.mcgill.sable" % "soot" % "3.3.1"
 libraryDependencies += "com.google.guava" % "guava" % "27.1-jre"
 libraryDependencies += "org.scala-graph" %% "graph-core" % "1.13.0"
 
