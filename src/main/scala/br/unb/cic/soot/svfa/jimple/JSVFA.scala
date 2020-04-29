@@ -14,6 +14,7 @@ import soot.toolkits.scalar.SimpleLocalDefs
 import soot.{Local, Scene, SceneTransformer, SootMethod, Transform}
 
 import scala.collection.mutable
+import scala.reflect.io.VirtualDirectory
 
 /**
   * A Jimple based implementation of
@@ -76,7 +77,7 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
 
     val body  = method.retrieveActiveBody()
 
-    logger.whenDebugEnabled(body.toString)
+    logger.info(body.toString)
 
     val graph = new ExceptionalUnitGraph(body)
     val defs  = new SimpleLocalDefs(graph)
@@ -160,6 +161,9 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
     val calleeDefs = new SimpleLocalDefs(g)
 
     body.getUnits.forEach(s => {
+      if(isThisInitStmt(exp, s)) {
+        defsToThisObject(callStmt, caller, defs, s, exp, callee)
+      }
       if(isParameterInitStmt(exp, pmtCount, s)) {
         defsToFormalArgs(callStmt, caller, defs, s, exp, callee, pmtCount)
         pmtCount = pmtCount + 1
@@ -189,6 +193,20 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
       val target = createNode(caller, callStmt)
       updateGraph(source, target)
     })
+  }
+
+  private def defsToThisObject(callStatement: Statement, caller: SootMethod, calleeDefs: SimpleLocalDefs, targetStmt: soot.Unit, expr: InvokeExpr, callee: SootMethod) : Unit = {
+    if(expr.isInstanceOf[VirtualInvokeExpr]) {
+      val invokeExpr = expr.asInstanceOf[VirtualInvokeExpr]
+      if(invokeExpr.getBase.isInstanceOf[Local]) {
+        val base = invokeExpr.getBase.asInstanceOf[Local]
+        calleeDefs.getDefsOfAt(base, callStatement.base).forEach(sourceStmt => {
+          val source = createNode(caller, sourceStmt)
+          val target = createNode(callee, targetStmt)
+          updateGraph(source, target)
+        })
+      }
+    }
   }
 
   private def defsToFormalArgs(stmt: Statement, caller: SootMethod, defs: SimpleLocalDefs, assignStmt: soot.Unit, exp: InvokeExpr, callee: SootMethod, pmtCount: Int) = {
@@ -230,6 +248,9 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
    */
   def createNode(method: SootMethod, stmt: soot.Unit): Node = Node(method.getDeclaringClass.toString, method.getSignature,
                        stmt.toString(), stmt.getJavaSourceStartLineNumber, analyze(stmt))
+
+  def isThisInitStmt(expr: InvokeExpr, unit: soot.Unit) : Boolean =
+    unit.isInstanceOf[IdentityStmt] && unit.asInstanceOf[IdentityStmt].getRightOp.isInstanceOf[ThisRef]
 
   def isParameterInitStmt(expr: InvokeExpr, pmtCount: Int, unit: soot.Unit) : Boolean =
     unit.isInstanceOf[IdentityStmt] && unit.asInstanceOf[IdentityStmt].getRightOp.isInstanceOf[ParameterRef] && expr.getArg(pmtCount).isInstanceOf[Local]

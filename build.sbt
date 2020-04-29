@@ -29,4 +29,5 @@ libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.8" % "test"
 
 libraryDependencies += "javax.servlet" % "javax.servlet-api" % "3.0.1" % "provided"
 
+
 publishTo := Some(Resolver.file("file",  new File(Path.userHome.absolutePath+"/.m2/repository")))
