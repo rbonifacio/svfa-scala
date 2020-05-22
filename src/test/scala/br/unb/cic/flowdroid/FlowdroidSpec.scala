@@ -16,7 +16,8 @@ abstract class FlowdroidSpec extends JSVFATest {
     "<javax.servlet.http.HttpServletResponse: void sendRedirect(java.lang.String)>",
     "<java.io.File: void <init>(java.lang.String)>",
     "<java.io.FileWriter: void <init>(java.lang.String)>",
-    "<java.io.FileInputStream: void <init>(java.lang.String)>"
+    "<java.io.FileInputStream: void <init>(java.lang.String)>",
+    "<securibench.micro.aliasing.Aliasing8: void sink(java.lang.String[])>"
   )
 
   val sourceList = List(
