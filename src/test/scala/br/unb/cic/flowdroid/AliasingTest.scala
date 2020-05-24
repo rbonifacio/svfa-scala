@@ -13,19 +13,19 @@ class AliasingTest(var className: String = "", var mainMethod: String = "") exte
   override def analyze(unit: soot.Unit): NodeType = {
     if (unit.isInstanceOf[InvokeStmt]) {
       val invokeStmt = unit.asInstanceOf[InvokeStmt]
-      return analyzeInvokeStmt(invokeStmt.getInvokeExpr)
+      return analyzeInvokeExpr(invokeStmt.getInvokeExpr)
     }
     if (unit.isInstanceOf[soot.jimple.AssignStmt]) {
       val assignStmt = unit.asInstanceOf[AssignStmt]
       if (assignStmt.getRightOp.isInstanceOf[InvokeExpr]) {
-        val invokeStmt = assignStmt.getRightOp.asInstanceOf[InvokeExpr]
-        return analyzeInvokeStmt(invokeStmt)
+        val invokeExpr = assignStmt.getRightOp.asInstanceOf[InvokeExpr]
+        return analyzeInvokeExpr(invokeExpr)
       }
     }
     return SimpleNode
   }
 
-  def analyzeInvokeStmt(exp: InvokeExpr): NodeType = {
+  def analyzeInvokeExpr(exp: InvokeExpr): NodeType = {
     if (sourceList.contains(exp.getMethod.getSignature)) {
       return SourceNode;
     } else if (sinkList.contains(exp.getMethod.getSignature)) {
@@ -74,7 +74,6 @@ class AliasingTestSuite extends FunSuite {
     println(svfa.svgToDotModel())
   }
 
-  // TODO: this test case is failing at this moment
   test("in the class Aliasing4 we should detect 2 conflict") {
     val svfa = new AliasingTest("securibench.micro.aliasing.Aliasing4", "doGet")
     svfa.buildSparseValueFlowGraph()
@@ -96,9 +95,18 @@ class AliasingTestSuite extends FunSuite {
     println(svfa.svgToDotModel())
   }
 
-  // TODO: this test case is failing at this moment
-  test("in the class Aliasing6 we should detect 7 conflict") {
+  test("in the class Aliasing6 we should detect 7 conflicts") {
     val svfa = new AliasingTest("securibench.micro.aliasing.Aliasing6", "doGet")
+    svfa.buildSparseValueFlowGraph()
+
+    svfa.jimpleOfMethod()
+    println(svfa.svgToDotModel())
+
+    assert(svfa.reportConflicts().size == 7)
+  }
+
+  test("in the class Aliasing7 we should detect 7 conflicts") {
+    val svfa = new AliasingTest("securibench.micro.aliasing.Aliasing7", "doGet")
     svfa.buildSparseValueFlowGraph()
 
     assert(svfa.reportConflicts().size == 7)
@@ -107,4 +115,24 @@ class AliasingTestSuite extends FunSuite {
     println(svfa.svgToDotModel())
   }
 
+  test("in the class Aliasing8 we should detect 8 conflicts") {
+    val svfa = new AliasingTest("securibench.micro.aliasing.Aliasing8", "doGet")
+    svfa.buildSparseValueFlowGraph()
+
+    svfa.jimpleOfMethod()
+    println(svfa.svgToDotModel())
+
+    assert(svfa.reportConflicts().size == 8)
+  }
+
+
+  test("in the class Aliasing9 we should detect 1 conflicts") {
+    val svfa = new AliasingTest("securibench.micro.aliasing.Aliasing9", "doGet")
+    svfa.buildSparseValueFlowGraph()
+
+    svfa.jimpleOfMethod()
+    println(svfa.svgToDotModel())
+
+    assert(svfa.reportConflicts().size == 1)
+  }
 }
