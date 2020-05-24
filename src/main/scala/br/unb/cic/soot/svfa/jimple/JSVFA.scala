@@ -6,6 +6,8 @@ import br.unb.cic.soot.graph.{Node, SinkNode, SourceNode}
 import br.unb.cic.soot.svfa.{SVFA, SourceSinkDef}
 import com.typesafe.scalalogging.LazyLogging
 import soot.jimple._
+import soot.jimple.internal.JArrayRef
+import soot.jimple.internal.JAssignStmt.LinkedVariableBox
 import soot.jimple.spark.pag
 import soot.jimple.spark.pag.{AllocNode, PAG}
 import soot.jimple.spark.sets.{DoublePointsToSet, HybridPointsToSet, P2SetVisitor}
@@ -25,6 +27,7 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
   var methods = 0
   val traversedMethods = scala.collection.mutable.Set.empty[SootMethod]
   val allocationSites = scala.collection.mutable.HashMap.empty[NewExpr, soot.Unit]
+  val arrayStores = scala.collection.mutable.HashMap.empty[Local, List[soot.Unit]]
 
   def createSceneTransform(): (String, Transform) = ("wjtp", new Transform("wjtp.svfa", new Transformer()))
 
@@ -96,11 +99,19 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
 
   def traverse(assignStmt: AssignStmt, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
     val targetStmt = assignStmt.stmt
+    var createArrayRef = true
     targetStmt.getRightOp match {
       case exp : Local => copyRule(assignStmt.base, exp, method, defs)
       case exp : InvokeExpr => invokeRule(assignStmt, exp, method, defs)
       case exp : InstanceFieldRef => loadRule(assignStmt.base, exp, method, defs)
-      case _ => // do nothing.
+      case exp : JArrayRef => loadRule(assignStmt.base, exp, method, defs)
+      case _ => createArrayRef = false
+    }
+
+    if(createArrayRef && targetStmt.getLeftOp.isInstanceOf[JArrayRef] ) {
+      val l = targetStmt.getLeftOp.asInstanceOf[JArrayRef].getBase.asInstanceOf[Local]
+      val stores = targetStmt :: arrayStores.getOrElseUpdate(l, List())
+      arrayStores.put(l, stores)
     }
   }
 
@@ -185,8 +196,23 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
     }
   }
 
+  private def loadRule(targetStmt: soot.Unit, ref: JArrayRef, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
+    val base = ref.getBase
+    logger.info(base.getClass.toString)
+    if(base.isInstanceOf[Local]) {
+      val l = base.asInstanceOf[Local]
+      val stores = arrayStores.getOrElseUpdate(l, List())
+      stores.foreach(sourceStmt => {
+        val source = createNode(method, sourceStmt)
+        val target = createNode(method, targetStmt)
+        updateGraph(source, target)
+      })
+    }
+  }
 
-  private def defsToCallSite(caller: SootMethod, callee: SootMethod, calleeDefs: SimpleLocalDefs, callStmt: soot.Unit, retStmt: soot.Unit) = {
+
+
+    private def defsToCallSite(caller: SootMethod, callee: SootMethod, calleeDefs: SimpleLocalDefs, callStmt: soot.Unit, retStmt: soot.Unit) = {
     val local = retStmt.asInstanceOf[ReturnStmt].getOp.asInstanceOf[Local]
     calleeDefs.getDefsOfAt(local, retStmt).forEach(sourceStmt => {
       val source = createNode(callee, sourceStmt)
@@ -244,7 +270,7 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
   }
 
   /*
-   * creates a graph note from a sootMethod / sootUnit
+   * creates a graph node from a sootMethod / sootUnit
    */
   def createNode(method: SootMethod, stmt: soot.Unit): Node = Node(method.getDeclaringClass.toString, method.getSignature,
                        stmt.toString(), stmt.getJavaSourceStartLineNumber, analyze(stmt))

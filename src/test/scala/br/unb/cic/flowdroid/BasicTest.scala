@@ -35,7 +35,6 @@ class BasicTest(var className: String = "", var mainMethod: String = "") extends
 }
 
 class BasicTestSuite extends FunSuite {
-  // TODO: this test case is failing at this moment
   test("in the class Basic0 we should detect 1 conflict of a simple XSS test case") {
     val svfa = new AliasingTest("securibench.micro.basic.Basic0", "doGet")
     svfa.buildSparseValueFlowGraph()
