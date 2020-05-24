@@ -201,6 +201,17 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
     logger.info(base.getClass.toString)
     if(base.isInstanceOf[Local]) {
       val l = base.asInstanceOf[Local]
+      // an edge for each full assignment of the array to
+      // this target statement.
+
+      defs.getDefsOfAt(l, targetStmt).forEach(sourceStmt => {
+        val source = createNode(method, sourceStmt)
+        val target = createNode(method, targetStmt)
+        updateGraph(source, target)
+      })
+
+      // and edge for each assignment to a single position
+      // of the array, to this target assignment.
       val stores = arrayStores.getOrElseUpdate(l, List())
       stores.foreach(sourceStmt => {
         val source = createNode(method, sourceStmt)
