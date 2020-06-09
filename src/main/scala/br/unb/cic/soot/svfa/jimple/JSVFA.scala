@@ -70,7 +70,10 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
   }
 
   def traverse(method: SootMethod) : Unit = {
-    if((!method.hasActiveBody) || traversedMethods.contains(method)) {
+//    if((!method.hasActiveBody) || traversedMethods.contains(method)) {
+//      return
+//    }
+    if(method.isPhantom || traversedMethods.contains(method)) {
       return
     }
 
@@ -154,7 +157,8 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
     //  Perhaps we should create edges between the
     //  call-site and the target method, even though
     //  the method does not have an active body.
-    if(!callee.hasActiveBody) {
+//    if(!callee.hasActiveBody) {
+    if(callee.isPhantom || (!callee.hasActiveBody && callee.getSource == null)) {
       if(analyze(callStmt.base) == SourceNode) {
         logger.info("================================")
         logger.info(" invoke expression of method without active body")
@@ -164,6 +168,8 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
       }
       return
     }
+
+    traverse(callee)
 
     var pmtCount = 0
     val body = callee.retrieveActiveBody()
@@ -182,7 +188,8 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
         defsToCallSite(caller, callee, calleeDefs, callStmt.base, s)
       }
     })
-    traverse(callee)
+
+//    traverse(callee)
   }
 
   private def loadRule(stmt: soot.Unit, ref: InstanceFieldRef, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
@@ -226,6 +233,15 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
       val source = createNode(callee, sourceStmt)
       val target = createNode(caller, callStmt)
       updateGraph(source, target)
+
+      if(local.getType.isInstanceOf[ArrayType]) {
+        val stores = arrayStores.getOrElseUpdate(local, List())
+        stores.foreach(sourceStmt => {
+          val source = createNode(callee, sourceStmt)
+          val target = createNode(caller, callStmt)
+          updateGraph(source, target)
+        })
+      }
     })
   }
 
@@ -346,7 +362,6 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
    * It either updates the graph or not, depending on
    * the types of the nodes.
    */
-  // TODO: update this function to compare array elements
   private def updateGraph(source: Node, target: Node): Unit = {
     if(!runInFullSparsenessMode()) {
       svg.addEdge(source, target)

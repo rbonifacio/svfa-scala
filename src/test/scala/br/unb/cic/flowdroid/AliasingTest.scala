@@ -10,6 +10,8 @@ class AliasingTest(var className: String = "", var mainMethod: String = "") exte
 
   override def getMainMethod(): String = mainMethod
 
+  override def runInFullSparsenessMode() = false
+
   override def analyze(unit: soot.Unit): NodeType = {
     if (unit.isInstanceOf[InvokeStmt]) {
       val invokeStmt = unit.asInstanceOf[InvokeStmt]
@@ -89,10 +91,10 @@ class AliasingTestSuite extends FunSuite {
     val svfa = new AliasingTest("securibench.micro.aliasing.Aliasing5", "doGet")
     svfa.buildSparseValueFlowGraph()
 
-    assert(svfa.reportConflicts().size == 1)
-
-    svfa.jimpleOfMethod()
+//    svfa.jimpleOfMethod()
     println(svfa.svgToDotModel())
+
+    assert(svfa.reportConflicts().size == 1)
   }
 
   test("in the class Aliasing6 we should detect 7 conflicts") {
@@ -133,6 +135,6 @@ class AliasingTestSuite extends FunSuite {
     svfa.jimpleOfMethod()
     println(svfa.svgToDotModel())
 
-    assert(svfa.reportConflicts().size == 1)
+    assert(svfa.reportConflicts().size == 2)
   }
 }

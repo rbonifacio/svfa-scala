@@ -2,6 +2,10 @@ package br.unb.cic.flowdroid
 
 import br.unb.cic.soot.JSVFATest
 import br.unb.cic.soot.graph.{SinkNode, SourceNode}
+import soot.{G, Scene}
+import soot.options.Options
+
+import scala.collection.JavaConverters._
 
 abstract class FlowdroidSpec extends JSVFATest {
   val sinkList = List(
@@ -50,6 +54,40 @@ abstract class FlowdroidSpec extends JSVFATest {
     "<javax.servlet.ServletRequest: javax.servlet.ServletInputStream getInputStream()>",
     "<com.oreilly.servlet.MultipartRequest: java.lang.String getParameter(java.lang.String)>"
   )
+
+  override def configureSoot() {
+    G.reset()
+    Options.v().set_whole_program(true)
+    Options.v().setPhaseOption("cg.spark", "on")
+    Options.v().setPhaseOption("cg", "library:any-subtype")
+    Options.v().set_output_format(Options.output_format_none)
+    Options.v().set_no_bodies_for_excluded(true)
+    Options.v().set_allow_phantom_refs(true)
+    Options.v().set_keep_line_number(true)
+    Options.v().set_prepend_classpath(true)
+    Options.v().set_soot_classpath(sootClassPath())
+    Options.v().set_process_dir(applicationClassPath().asJava)
+    Options.v().set_include(getIncludeList().asJava);
+    Options.v().set_full_resolver(true)
+    Scene.v().loadNecessaryClasses()
+    Scene.v().setEntryPoints(getEntryPoints().asJava)
+  }
+
+  def getIncludeList(): List[String] = {
+    val includeList = List(
+      "java.lang.AbstractStringBuilder",
+      "java.lang.Boolean",
+      "java.lang.Byte",
+      "java.lang.Class",
+      "java.lang.Integer",
+      "java.lang.Long",
+      "java.lang.Long",
+      "java.lang.String",
+      "java.lang.StringCoding",
+      "java.lang.StringIndexOutOfBoundsException"
+    )
+    return includeList
+  }
 
   override def svgToDotModel(): String = {
     val s = new StringBuilder
