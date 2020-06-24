@@ -55,61 +55,11 @@ abstract class FlowdroidSpec extends JSVFATest {
     "<com.oreilly.servlet.MultipartRequest: java.lang.String getParameter(java.lang.String)>"
   )
 
-  override def configureSoot() {
-    G.reset()
-    Options.v().set_whole_program(true)
-    Options.v().setPhaseOption("cg.spark", "on")
-    Options.v().setPhaseOption("cg", "library:any-subtype")
-    Options.v().set_output_format(Options.output_format_none)
-    Options.v().set_no_bodies_for_excluded(true)
-    Options.v().set_allow_phantom_refs(true)
-    Options.v().set_keep_line_number(true)
-    Options.v().set_prepend_classpath(true)
-    Options.v().set_soot_classpath(sootClassPath())
-    Options.v().set_process_dir(applicationClassPath().asJava)
-    Options.v().set_include(getIncludeList().asJava);
-    Options.v().set_full_resolver(true)
-    Scene.v().loadNecessaryClasses()
-    Scene.v().setEntryPoints(getEntryPoints().asJava)
-  }
-
   override def getIncludeList(): List[String] = List(
       "java.lang.*",
-      "javax.servlet.*"
+      "javax.servlet.*",
+      "java.util.*",
+      "java.io.*"
     )
 
-  override def svgToDotModel(): String = {
-    val s = new StringBuilder
-    var nodeColor = ""
-    s ++= "digraph { \n"
-
-    for(n <- svg.nodes()) {
-      nodeColor = n.nodeType match  {
-        case SourceNode => "[fillcolor=blue, style=filled]"
-        case SinkNode   => "[fillcolor=red, style=filled]"
-        case _          => ""
-      }
-
-      s ++= " " + "\"" + n.stmt + "\"" + nodeColor + "\n"
-
-      s ++= "\t{\n"
-
-      val adjacencyList = svg.map.get(n).get
-      //      val edges = adjacencyList.map(next => "\"" + n.stmt + "\"" + " -> " + "\"" + next.stmt + "\"")
-      val edges = adjacencyList.map(next => " -> " + "\"" + next.stmt + "\"")
-      for(e <- edges) {
-        s ++= "\t\t" + " " + e + "\n"
-      }
-
-      s ++= "\t}\n"
-    }
-
-    s ++= "}"
-
-    return s.toString()
-  }
-
-  def jimpleOfMethod(): Unit = {
-    println(this.getEntryPoints().head.retrieveActiveBody().toString())
-  }
 }
