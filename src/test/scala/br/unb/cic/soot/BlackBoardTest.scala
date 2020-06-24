@@ -31,22 +31,3 @@ class BlackBoardTest extends JSVFATest {
     }
 }
 
-class BlackBoardTestSuite extends FunSuite with BeforeAndAfter {
-
-  val svfa = new BlackBoardTest()
-
-  before {
-    svfa.buildSparseValueFlowGraph()
-  }
-
-  test("we should correctly compute the number of nodes and edges") {
-    assert(svfa.svg.nodes.size == 10)
-    assert(svfa.svg.numberOfEdges() == 11)
-  }
-
-  test("we should find exactly one conflict in this analysis") {
-    println(svfa.svgToDotModel())
-    assert(svfa.reportConflicts().size == 0)
-  }
-
-}

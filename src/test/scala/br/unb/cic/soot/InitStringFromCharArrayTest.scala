@@ -30,18 +30,4 @@ class InitStringFromCharArrayTest extends JSVFATest {
       case "sink"   => SinkNode
       case _        => SimpleNode
     }
-
-}
-
-class InitStringFromCharArrayTestSuite extends FunSuite with BeforeAndAfter {
-  val svfa = new InitStringFromCharArrayTest()
-
-  before {
-    svfa.buildSparseValueFlowGraph()
-  }
-
-  test("we should find exactly three conflicts in this analysis") {
-    println(svfa.svgToDotModel())
-    assert(svfa.reportConflicts().size == 1)
-  }
 }

@@ -18,12 +18,3 @@ class LogbackSampleTest extends JSVFATest {
       case _ => SimpleNode
     }
 }
-
-class LogbackSampleTestSuite extends FunSuite with BeforeAndAfter {
-
-  test("we should find two conflicts in this analysis") {
-    val svfa = new LogbackSampleTest()
-    svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflicts().size == 3)
-  }
-}

@@ -31,13 +31,3 @@ class StringBufferTest extends JSVFATest {
       case _ => SimpleNode
     }
 }
-
-
-class StringBufferTestSuite extends FunSuite with BeforeAndAfter {
-  test("we should find exactly one conflict in this analysis") {
-    val svfa = new StringBufferTest()
-    svfa.buildSparseValueFlowGraph()
-    System.out.println(svfa.svgToDotModel())
-    assert(svfa.reportConflicts().size == 1)
-  }
-}

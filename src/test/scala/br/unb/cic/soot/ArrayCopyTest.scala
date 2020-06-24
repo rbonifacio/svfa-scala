@@ -33,15 +33,4 @@ class ArrayCopyTest extends JSVFATest {
 
 }
 
-class ArrayCopySampleTestSuite extends FunSuite with BeforeAndAfter {
-  val svfa = new ArrayCopyTest()
 
-  before {
-    svfa.buildSparseValueFlowGraph()
-  }
-
-  test("we should find exactly three conflicts in this analysis") {
-    println(svfa.svgToDotModel())
-    assert(svfa.reportConflicts().size == 1)
-  }
-}

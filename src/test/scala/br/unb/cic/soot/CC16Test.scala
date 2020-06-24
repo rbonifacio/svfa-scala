@@ -31,19 +31,4 @@ class CC16Test extends JSVFATest {
     }
 }
 
-class CC16TestSuite extends FunSuite with BeforeAndAfter {
-  val svfa = new CC16Test()
-  before {
-    svfa.buildSparseValueFlowGraph()
-  }
 
-  test("we should correctly compute the number of nodes and edges") {
-    assert(svfa.svg.nodes.size == 13)
-    assert(svfa.svg.numberOfEdges() == 14)
-  }
-
-  test("we should find exactly one conflict in this analysis") {
-    assert(svfa.reportConflicts().size == 1)
-  }
-
-}

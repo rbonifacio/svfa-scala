@@ -33,11 +33,3 @@ class StringToStringTest extends JSVFATest {
 }
 
 
-class StringToStringTestSuite extends FunSuite with BeforeAndAfter {
-  ignore("we should find exactly one conflict in this analysis") {
-    val svfa = new StringToStringTest()
-    svfa.buildSparseValueFlowGraph()
-    System.out.println(svfa.svgToDotModel())
-    assert(svfa.reportConflicts().size == 2)
-  }
-}
