@@ -4,9 +4,9 @@ import br.unb.cic.soot.graph.{NodeType, SimpleNode, SinkNode, SourceNode}
 import org.scalatest.{BeforeAndAfter, FunSuite}
 import soot.jimple.{AssignStmt, InvokeExpr, InvokeStmt}
 
-class ArrayTest extends JSVFATest {
+class ArrayCopyTest extends JSVFATest {
 
-  override def getClassName(): String = "samples.ArraySample"
+  override def getClassName(): String = "samples.ArrayCopySample"
   override def getMainMethod(): String = "main"
 
   override def analyze(unit: soot.Unit): NodeType = {
@@ -33,8 +33,8 @@ class ArrayTest extends JSVFATest {
 
 }
 
-class ArraySampleTestSuite extends FunSuite with BeforeAndAfter {
-  val svfa = new ArrayTest()
+class ArrayCopySampleTestSuite extends FunSuite with BeforeAndAfter {
+  val svfa = new ArrayCopyTest()
 
   before {
     svfa.buildSparseValueFlowGraph()
@@ -42,6 +42,6 @@ class ArraySampleTestSuite extends FunSuite with BeforeAndAfter {
 
   test("we should find exactly three conflicts in this analysis") {
     println(svfa.svgToDotModel())
-    assert(svfa.reportConflicts().size == 3)
+    assert(svfa.reportConflicts().size == 1)
   }
 }

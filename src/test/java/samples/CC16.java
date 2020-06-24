@@ -12,13 +12,9 @@ public class CC16 {
 
     public static void main(String args[]) {
         Foo f = new Foo();
-
         Blah b = source();
-
         f.field = b;
-
         Blah r = readField(f);
-
         sink(r);
     }
 

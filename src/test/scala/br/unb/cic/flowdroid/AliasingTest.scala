@@ -10,8 +10,6 @@ class AliasingTest(var className: String = "", var mainMethod: String = "") exte
 
   override def getMainMethod(): String = mainMethod
 
-  override def runInFullSparsenessMode() = false
-
   override def analyze(unit: soot.Unit): NodeType = {
     if (unit.isInstanceOf[InvokeStmt]) {
       val invokeStmt = unit.asInstanceOf[InvokeStmt]
@@ -53,27 +51,13 @@ class AliasingTestSuite extends FunSuite {
   test("in the class Aliasing2 we should not detect any conflict in this false positive test case") {
     val svfa = new AliasingTest("securibench.micro.aliasing.Aliasing2", "doGet")
     svfa.buildSparseValueFlowGraph()
-
-    assert(svfa.svg.nodes.size == 4)
-    assert(svfa.svg.numberOfEdges() == 2)
     assert(svfa.reportConflicts().size == 0)
-
-    svfa.jimpleOfMethod()
-    println(svfa.svgToDotModel())
-
-    // maybe the copy rule of sparse value flow analysis is not working correctly
-  }
+ }
 
   test("in the class Aliasing3 we should not detect any conflict, but in Flowdroid this test case was not conclusive") {
     val svfa = new AliasingTest("securibench.micro.aliasing.Aliasing3", "doGet")
     svfa.buildSparseValueFlowGraph()
-
-    assert(svfa.svg.nodes.size == 5)
-    assert(svfa.svg.numberOfEdges() == 3)
     assert(svfa.reportConflicts().size == 0)
-
-    svfa.jimpleOfMethod()
-    println(svfa.svgToDotModel())
   }
 
   test("in the class Aliasing4 we should detect 2 conflict") {

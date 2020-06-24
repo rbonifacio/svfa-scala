@@ -1,12 +1,11 @@
 package br.unb.cic.soot
 
-import br.unb.cic.soot.graph.{NodeType, SimpleNode, SinkNode, SourceNode}
+import br.unb.cic.soot.graph._
 import org.scalatest.{BeforeAndAfter, FunSuite}
 import soot.jimple.{AssignStmt, InvokeExpr, InvokeStmt}
 
-class ArrayTest extends JSVFATest {
-
-  override def getClassName(): String = "samples.ArraySample"
+class BlackBoardTest extends JSVFATest {
+  override def getClassName(): String = "samples.BlackBoard"
   override def getMainMethod(): String = "main"
 
   override def analyze(unit: soot.Unit): NodeType = {
@@ -30,18 +29,24 @@ class ArrayTest extends JSVFATest {
       case "sink"   => SinkNode
       case _        => SimpleNode
     }
-
 }
 
-class ArraySampleTestSuite extends FunSuite with BeforeAndAfter {
-  val svfa = new ArrayTest()
+class BlackBoardTestSuite extends FunSuite with BeforeAndAfter {
+
+  val svfa = new BlackBoardTest()
 
   before {
     svfa.buildSparseValueFlowGraph()
   }
 
-  test("we should find exactly three conflicts in this analysis") {
-    println(svfa.svgToDotModel())
-    assert(svfa.reportConflicts().size == 3)
+  test("we should correctly compute the number of nodes and edges") {
+    assert(svfa.svg.nodes.size == 10)
+    assert(svfa.svg.numberOfEdges() == 11)
   }
+
+  test("we should find exactly one conflict in this analysis") {
+    println(svfa.svgToDotModel())
+    assert(svfa.reportConflicts().size == 0)
+  }
+
 }

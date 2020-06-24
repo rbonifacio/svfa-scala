@@ -73,21 +73,10 @@ abstract class FlowdroidSpec extends JSVFATest {
     Scene.v().setEntryPoints(getEntryPoints().asJava)
   }
 
-  def getIncludeList(): List[String] = {
-    val includeList = List(
-      "java.lang.AbstractStringBuilder",
-      "java.lang.Boolean",
-      "java.lang.Byte",
-      "java.lang.Class",
-      "java.lang.Integer",
-      "java.lang.Long",
-      "java.lang.Long",
-      "java.lang.String",
-      "java.lang.StringCoding",
-      "java.lang.StringIndexOutOfBoundsException"
+  override def getIncludeList(): List[String] = List(
+      "java.lang.*",
+      "javax.servlet.*"
     )
-    return includeList
-  }
 
   override def svgToDotModel(): String = {
     val s = new StringBuilder

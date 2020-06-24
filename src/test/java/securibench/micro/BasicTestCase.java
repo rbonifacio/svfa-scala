@@ -14,6 +14,8 @@ import javax.servlet.http.HttpServletResponse;
 import securibench.supportClasses.DummyServletConfig;
 
 public abstract class BasicTestCase extends HttpServlet {
+    @Override
+
     protected void doTrace(HttpServletRequest req, HttpServletResponse resp)
         throws ServletException, IOException
     {

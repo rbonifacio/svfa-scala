@@ -12,9 +12,10 @@ import soot.jimple.spark.pag.{AllocNode, PAG}
 import soot.jimple.spark.sets.{DoublePointsToSet, HybridPointsToSet, P2SetVisitor}
 import soot.toolkits.graph.ExceptionalUnitGraph
 import soot.toolkits.scalar.SimpleLocalDefs
-import soot.{ArrayType, Local, Scene, SceneTransformer, SootMethod, Transform}
+import soot.{ArrayType, Local, Scene, SceneTransformer, SootField, SootMethod, Transform}
 
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 
 /**
   * A Jimple based implementation of
@@ -24,7 +25,7 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
 
   var methods = 0
   val traversedMethods = scala.collection.mutable.Set.empty[SootMethod]
-  val allocationSites = scala.collection.mutable.HashMap.empty[NewExpr, soot.Unit]
+  val allocationSites = scala.collection.mutable.HashMap.empty[soot.Value, soot.Unit]
   val arrayStores = scala.collection.mutable.HashMap.empty[Local, List[soot.Unit]]
 
   def createSceneTransform(): (String, Transform) = ("wjtp", new Transform("wjtp.svfa", new Transformer()))
@@ -42,13 +43,11 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
       val m = listener.next().method()
       if (m.hasActiveBody) {
         val body = m.getActiveBody
-
         body.getUnits.forEach(unit => {
           if (unit.isInstanceOf[soot.jimple.AssignStmt]) {
             val right = unit.asInstanceOf[soot.jimple.AssignStmt].getRightOp
-            if (right.isInstanceOf[NewExpr]) {
-              val exp = right.asInstanceOf[NewExpr]
-              allocationSites += (exp -> unit)
+            if (right.isInstanceOf[NewExpr] || right.isInstanceOf[NewArrayExpr] || right.isInstanceOf[StringConstant]) {
+              allocationSites += (right -> unit)
             }
           }
         })
@@ -56,11 +55,9 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
     }
   }
 
-
   class Transformer extends SceneTransformer {
     override def internalTransform(phaseName: String, options: util.Map[String, String]): Unit = {
       pointsToAnalysis = Scene.v().getPointsToAnalysis
-
       initAllocationSites()
       Scene.v().getEntryPoints.forEach(method => {
         traverse(method)
@@ -69,11 +66,8 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
     }
   }
 
-  def traverse(method: SootMethod) : Unit = {
-//    if((!method.hasActiveBody) || traversedMethods.contains(method)) {
-//      return
-//    }
-    if(method.isPhantom || traversedMethods.contains(method)) {
+  def traverse(method: SootMethod, forseNewTraversal: Boolean = false) : Unit = {
+    if((!forseNewTraversal) && (method.isPhantom || traversedMethods.contains(method))) {
       return
     }
 
@@ -81,7 +75,7 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
 
     val body  = method.retrieveActiveBody()
 
-    logger.info(body.toString)
+    logger.debug(body.toString)
 
     val graph = new ExceptionalUnitGraph(body)
     val defs  = new SimpleLocalDefs(graph)
@@ -101,18 +95,44 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
   def traverse(assignStmt: AssignStmt, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
     val targetStmt = assignStmt.stmt
     var createArrayRef = true
+
     targetStmt.getRightOp match {
       case exp : Local => copyRule(assignStmt.base, exp, method, defs)
       case exp : InvokeExpr => invokeRule(assignStmt, exp, method, defs)
       case exp : InstanceFieldRef => loadRule(assignStmt.base, exp, method, defs)
       case exp : JArrayRef => loadRule(assignStmt.base, exp, method, defs)
-      case _ => createArrayRef = false
+      case _ => {
+        createArrayRef = false
+        targetStmt.getRightOp.getUseBoxes.forEach(box => {
+          if(box.getValue.isInstanceOf[Local]) {
+            val local = box.getValue.asInstanceOf[Local]
+            copyRule(assignStmt.base, local, method, defs)
+          }
+        })
+      }
     }
 
     if(createArrayRef && targetStmt.getLeftOp.isInstanceOf[JArrayRef] ) {
       val l = targetStmt.getLeftOp.asInstanceOf[JArrayRef].getBase.asInstanceOf[Local]
       val stores = targetStmt :: arrayStores.getOrElseUpdate(l, List())
       arrayStores.put(l, stores)
+    }
+
+    if(targetStmt.getLeftOp.isInstanceOf[FieldRef] && targetStmt.getRightOp.isInstanceOf[Local]) {
+      val local = targetStmt.getRightOp.asInstanceOf[Local]
+      val fieldRef = targetStmt.getLeftOp.asInstanceOf[InstanceFieldRef]
+      if(fieldRef.getBase.isInstanceOf[Local]) {
+        val base = fieldRef.getBase.asInstanceOf[Local]
+        if(fieldRef.getField.getDeclaringClass.getName == "java.lang.String" && fieldRef.getField.getName == "value") {
+          defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
+            val source = createNode(method, sourceStmt)
+            val allocationNodes = findAllocationSites(base)
+            allocationNodes.foreach(targetNode => {
+                updateGraph(source, targetNode)
+              })
+          })
+        }
+      }
     }
   }
 
@@ -152,24 +172,31 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
       defsToCallOfSinkMethod(callStmt, exp, caller, defs)
     }
 
+    if(analyze(callStmt.base) == SourceNode) {
+      svg.map(createNode(caller, callStmt.base)) = mutable.Set[Node]()
+    }
+
     //TODO:
     //  Review the impact of this code here.
     //  Perhaps we should create edges between the
     //  call-site and the target method, even though
     //  the method does not have an active body.
-//    if(!callee.hasActiveBody) {
     if(callee.isPhantom || (!callee.hasActiveBody && callee.getSource == null)) {
-      if(analyze(callStmt.base) == SourceNode) {
-        logger.info("================================")
-        logger.info(" invoke expression of method without active body")
-        logger.info("================================")
-
-        svg.map(createNode(caller, callStmt.base)) = mutable.Set[Node]()
+      if(callee.getDeclaringClass.getName == "java.lang.System" && callee.getName == "arraycopy") {
+        val srcArg = exp.getArg(0)
+        val destArg = exp.getArg(2)
+        if(srcArg.isInstanceOf[Local] && destArg.isInstanceOf[Local]) {
+          defs.getDefsOfAt(srcArg.asInstanceOf[Local], callStmt.base).forEach(srcArgDefStmt => {
+            val sourceNode = createNode(caller, srcArgDefStmt)
+            val allocationNodes = findAllocationSites(destArg.asInstanceOf[Local])
+            allocationNodes.foreach(targetNode => {
+              updateGraph(sourceNode, targetNode)
+            })
+          })
+        }
       }
       return
     }
-
-    traverse(callee)
 
     var pmtCount = 0
     val body = callee.retrieveActiveBody()
@@ -180,25 +207,40 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
       if(isThisInitStmt(exp, s)) {
         defsToThisObject(callStmt, caller, defs, s, exp, callee)
       }
-      if(isParameterInitStmt(exp, pmtCount, s)) {
+      else if(isParameterInitStmt(exp, pmtCount, s)) {
         defsToFormalArgs(callStmt, caller, defs, s, exp, callee, pmtCount)
         pmtCount = pmtCount + 1
       }
-      if(isAssignReturnStmt(callStmt.base, s)) {
+      else if(isAssignReturnStmt(callStmt.base, s)) {
         defsToCallSite(caller, callee, calleeDefs, callStmt.base, s)
       }
     })
 
-//    traverse(callee)
+    traverse(callee)
   }
 
   private def loadRule(stmt: soot.Unit, ref: InstanceFieldRef, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
     val base = ref.getBase
-
-    if(base.isInstanceOf[Local] && pointsToAnalysis.isInstanceOf[PAG]) {
-      val pta = pointsToAnalysis.asInstanceOf[PAG]
-      val allocations = pta.reachingObjects(base.asInstanceOf[Local], ref.getField).asInstanceOf[DoublePointsToSet].getNewSet
-      allocations.asInstanceOf[HybridPointsToSet].forall(new AllocationVisitor(method, stmt))
+    // value field of a string.
+    val className = ref.getFieldRef.declaringClass().getName
+    if((className == "java.lang.String") && ref.getFieldRef.name == "value") {
+      if(base.isInstanceOf[Local]) {
+        defs.getDefsOfAt(base.asInstanceOf[Local], stmt).forEach(source => {
+          val sourceNode = createNode(method, source)
+          val targetNode = createNode(method, stmt)
+          updateGraph(sourceNode, targetNode)
+        })
+      }
+      return;
+    }
+    // default case
+    if(base.isInstanceOf[Local]) {
+      val allocationNodes = findAllocationSites(base.asInstanceOf[Local], false, ref.getField)
+      allocationNodes.foreach(source => {
+        val target = createNode(method, stmt)
+        updateGraph(source, target)
+        svg.map.get(source).getOrElse(mutable.MutableList[Node]()).foreach(s => updateGraph(s, target))
+      })
     }
   }
 
@@ -246,8 +288,16 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
   }
 
   private def defsToThisObject(callStatement: Statement, caller: SootMethod, calleeDefs: SimpleLocalDefs, targetStmt: soot.Unit, expr: InvokeExpr, callee: SootMethod) : Unit = {
-    if(expr.isInstanceOf[VirtualInvokeExpr]) {
-      val invokeExpr = expr.asInstanceOf[VirtualInvokeExpr]
+    val invokeExpr = expr match {
+      case e: VirtualInvokeExpr => e
+      case e: SpecialInvokeExpr => e
+      case e: InterfaceInvokeExpr => e
+      case _ => null //TODO: not sure if the other cases
+                     // are also relevant here. Otherwise,
+                     // we can just match with InstanceInvokeExpr
+    }
+
+    if(invokeExpr != null) {
       if(invokeExpr.getBase.isInstanceOf[Local]) {
         val base = invokeExpr.getBase.asInstanceOf[Local]
         calleeDefs.getDefsOfAt(base, callStatement.base).forEach(sourceStmt => {
@@ -318,6 +368,25 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
    unit.isInstanceOf[ReturnStmt] && unit.asInstanceOf[ReturnStmt].getOp.isInstanceOf[Local] &&
      callSite.isInstanceOf[soot.jimple.AssignStmt]
 
+  def findAllocationSites(local: Local, oldSet: Boolean = true, field: SootField = null) : ListBuffer[Node] = {
+    if(pointsToAnalysis.isInstanceOf[PAG]) {
+      val pta = pointsToAnalysis.asInstanceOf[PAG]
+
+      val reachingObjects = if(field == null) pta.reachingObjects(local.asInstanceOf[Local])
+                            else pta.reachingObjects(local, field)
+
+      if(!reachingObjects.isEmpty) {
+        val allocations = if(oldSet) reachingObjects.asInstanceOf[DoublePointsToSet].getOldSet
+                          else reachingObjects.asInstanceOf[DoublePointsToSet].getNewSet
+
+        val v = new AllocationVisitor()
+        allocations.asInstanceOf[HybridPointsToSet].forall(v)
+        return v.allocationNodes
+      }
+    }
+    new ListBuffer[Node]()
+  }
+
   /*
    * a class to visit the allocation nodes of the objects that
    * a field might point to.
@@ -325,22 +394,27 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
    * @param method method of the statement stmt
    * @param stmt statement with a load operation
    */
-  class AllocationVisitor(val method: SootMethod, val stmt: soot.Unit) extends P2SetVisitor {
+  class AllocationVisitor() extends P2SetVisitor {
+    var allocationNodes = new ListBuffer[Node]()
     override def visit(n: pag.Node): Unit = {
       if (n.isInstanceOf[AllocNode]) {
         val allocationNode = n.asInstanceOf[AllocNode]
 
+        var unit: soot.Unit = null
+
         if (allocationNode.getNewExpr.isInstanceOf[NewExpr]) {
           if (allocationSites.contains(allocationNode.getNewExpr.asInstanceOf[NewExpr])) {
-            val unit = allocationSites(allocationNode.getNewExpr.asInstanceOf[NewExpr])
-
-            val source = createNode(allocationNode.getMethod, unit)
-            val target = createNode(method, stmt)
-            updateGraph(source, target)
-
-            // TODO: we have to discuss the strategy bellow
-            svg.map.get(source).getOrElse(mutable.MutableList[Node]()).foreach(s => updateGraph(s, target))
+            unit = allocationSites(allocationNode.getNewExpr.asInstanceOf[NewExpr])
           }
+        }
+        else if(allocationNode.getNewExpr.isInstanceOf[NewArrayExpr]) {
+          if (allocationSites.contains(allocationNode.getNewExpr.asInstanceOf[NewArrayExpr])) {
+            unit = allocationSites(allocationNode.getNewExpr.asInstanceOf[NewArrayExpr])
+          }
+        }
+
+        if(unit != null) {
+          allocationNodes += createNode(allocationNode.getMethod, unit)
         }
       }
     }
@@ -355,29 +429,35 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
    *
    * @return true for a full sparse version of the graph.
    *         false otherwise.
+   * @deprecated
    */
-  def runInFullSparsenessMode() = true
+   def runInFullSparsenessMode() = true
 
   /*
    * It either updates the graph or not, depending on
    * the types of the nodes.
    */
-  private def updateGraph(source: Node, target: Node): Unit = {
-    if(!runInFullSparsenessMode()) {
+  private def updateGraph(source: Node, target: Node, forceNewEdge: Boolean = false): Boolean = {
+    var res = false
+    if(!runInFullSparsenessMode() || true) {
       svg.addEdge(source, target)
-      return
+      res = true
     }
 
     // this first case can still introduce irrelevant nodes
     if(svg.map.contains(source)) {//) || svg.map.contains(target)) {
       svg.addEdge(source, target)
+      res = true
     }
     else if(source.nodeType == SourceNode || source.nodeType == SinkNode) {
       svg.addEdge(source, target)
+      res = true
     }
     else if(target.nodeType == SourceNode || target.nodeType == SinkNode) {
       svg.addEdge(source, target)
+      res = true
     }
+    return res
   }
 
 }

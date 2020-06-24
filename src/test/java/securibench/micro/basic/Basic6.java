@@ -26,7 +26,7 @@ public class Basic6 extends BasicTestCase implements MicroTestCase {
         String s6 = s5.substring(s5.length() - 1);
         
         PrintWriter writer = resp.getWriter();
-        
+
         writer.println(s6);    /* BAD */
     }
     

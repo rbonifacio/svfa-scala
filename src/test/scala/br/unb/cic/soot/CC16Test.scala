@@ -38,8 +38,8 @@ class CC16TestSuite extends FunSuite with BeforeAndAfter {
   }
 
   test("we should correctly compute the number of nodes and edges") {
-    assert(svfa.svg.nodes.size == 7)
-    assert(svfa.svg.numberOfEdges() == 6)
+    assert(svfa.svg.nodes.size == 13)
+    assert(svfa.svg.numberOfEdges() == 14)
   }
 
   test("we should find exactly one conflict in this analysis") {

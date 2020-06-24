@@ -4,8 +4,8 @@ import br.unb.cic.soot.graph._
 import org.scalatest.{BeforeAndAfter, FunSuite}
 import soot.jimple.{AssignStmt, InvokeExpr, InvokeStmt}
 
-class IfElseTest extends JSVFATest {
-  override def getClassName(): String = "samples.IfElseScenario"
+class StringToStringTest extends JSVFATest {
+  override def getClassName(): String = "samples.StringToStringSample"
 
   override def getMainMethod(): String = "main"
 
@@ -33,23 +33,11 @@ class IfElseTest extends JSVFATest {
 }
 
 
-class IfElseTestSuite extends FunSuite with BeforeAndAfter {
-
-  test("we should correctly compute the number of nodes and edges") {
-    val svfa = new IfElseTest()
+class StringToStringTestSuite extends FunSuite with BeforeAndAfter {
+  ignore("we should find exactly one conflict in this analysis") {
+    val svfa = new StringToStringTest()
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.svg.nodes.size == 17)
-  }
-
-  test("we should correctly compute the number of edges") {
-    val svfa = new IfElseTest()
-    svfa.buildSparseValueFlowGraph()
-    assert(svfa.svg.numberOfEdges() == 18)
-  }
-
-  test("we should find exactly one conflict in this analysis") {
-    val svfa = new IfElseTest()
-    svfa.buildSparseValueFlowGraph()
-   assert(svfa.reportConflicts().size == 1)
+    System.out.println(svfa.svgToDotModel())
+    assert(svfa.reportConflicts().size == 2)
   }
 }
