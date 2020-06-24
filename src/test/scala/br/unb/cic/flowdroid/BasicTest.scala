@@ -122,13 +122,6 @@ class BasicTestSuite extends FunSuite {
   test("in the class Basic6 we should detect 1 conflict of a complex derived string test") {
     val svfa = new BasicTest("securibench.micro.basic.Basic6", "doGet")
     svfa.buildSparseValueFlowGraph()
-
-    // Uncomment the 2 next lines to see the jimple code of method and the nodes and edges of the svfa graph
-    //    svfa.jimpleOfMethod()
-    //    println(svfa.svgToDotModel())
-
-    //    assert(svfa.svg.nodes.size == 4)
-    //    assert(svfa.svg.numberOfEdges() == 2)
     assert(svfa.reportConflicts().size == 1)
   }
 

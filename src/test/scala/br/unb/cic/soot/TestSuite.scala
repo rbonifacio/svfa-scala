@@ -63,8 +63,13 @@ class TestSuite extends FunSuite with BeforeAndAfter {
   test("we should find exactly one conflict in the StringBuggerTest analysis") {
     val svfa = new StringBufferTest()
     svfa.buildSparseValueFlowGraph()
-    System.out.println(svfa.svgToDotModel())
     assert(svfa.reportConflicts().size == 1)
+  }
+
+  test("we should find exactly one conflict in the StringConcatTest analysis") {
+    val svfa = new StringConcatTest()
+    svfa.buildSparseValueFlowGraph()
+    assert(svfa.reportConflicts().size == 2)
   }
 
 //  test("we should find exactly one conflict in the StringGetCharsTest analysis") {
@@ -77,7 +82,6 @@ class TestSuite extends FunSuite with BeforeAndAfter {
   ignore("we should find exactly one conflict in the StringToStringTest analysis") {
     val svfa = new StringToStringTest()
     svfa.buildSparseValueFlowGraph()
-    System.out.println(svfa.svgToDotModel())
     assert(svfa.reportConflicts().size == 2)
   }
 
