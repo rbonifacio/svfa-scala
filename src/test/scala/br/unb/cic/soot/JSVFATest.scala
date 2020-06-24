@@ -13,7 +13,7 @@ abstract class JSVFATest extends JSVFA with FieldSenstive {
 
   override def getEntryPoints(): List[SootMethod] = {
     val sootClass = Scene.v().getSootClass(getClassName())
-    return List(sootClass.getMethodByName(getMainMethod()))
+    List(sootClass.getMethodByName(getMainMethod()))
   }
 
   override def getIncludeList(): List[String] = List(

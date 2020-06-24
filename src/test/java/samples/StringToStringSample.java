@@ -4,7 +4,7 @@ public class StringToStringSample {
 
     public static void main(String args[]) {
         String s = source();
-        sink(s.toString());
+ //       sink(s);
         sink(s.toLowerCase());
     }
 
