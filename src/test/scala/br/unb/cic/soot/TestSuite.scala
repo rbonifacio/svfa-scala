@@ -69,7 +69,7 @@ class TestSuite extends FunSuite with BeforeAndAfter {
   test("we should find exactly one conflict in the StringConcatTest analysis") {
     val svfa = new StringConcatTest()
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflicts().size == 2)
+    assert(svfa.reportConflicts().size == 6)
   }
 
 //  test("we should find exactly one conflict in the StringGetCharsTest analysis") {
