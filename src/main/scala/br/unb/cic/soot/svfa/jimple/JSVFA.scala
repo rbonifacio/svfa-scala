@@ -75,8 +75,6 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
 
     val body  = method.retrieveActiveBody()
 
-    logger.debug(body.toString)
-
     val graph = new ExceptionalUnitGraph(body)
     val defs  = new SimpleLocalDefs(graph)
 

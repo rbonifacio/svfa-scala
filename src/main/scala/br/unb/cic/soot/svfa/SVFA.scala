@@ -36,13 +36,9 @@ abstract class SVFA {
    def buildSparseValueFlowGraph() {
       configureSoot()
       beforeGraphConstruction()
-
       val (pack, t) = createSceneTransform()
       PackManager.v().getPack(pack).add(t)
-      configurePackages().foreach(p => {
-         System.out.println(PackManager.v().getPack(p).getPhaseName)
-         PackManager.v().getPack(p).apply()
-      })
+      configurePackages().foreach(p =>  PackManager.v().getPack(p).apply())
       afterGraphConstruction()
    }
 
