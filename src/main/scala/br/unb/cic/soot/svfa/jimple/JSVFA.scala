@@ -46,7 +46,7 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
         body.getUnits.forEach(unit => {
           if (unit.isInstanceOf[soot.jimple.AssignStmt]) {
             val right = unit.asInstanceOf[soot.jimple.AssignStmt].getRightOp
-            if (right.isInstanceOf[NewExpr] || right.isInstanceOf[NewArrayExpr] || right.isInstanceOf[StringConstant]) {
+            if (right.isInstanceOf[NewExpr] || right.isInstanceOf[NewArrayExpr]) {// || right.isInstanceOf[StringConstant]) {
               allocationSites += (right -> unit)
             }
           }
