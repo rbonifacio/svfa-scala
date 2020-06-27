@@ -99,4 +99,11 @@ class TestSuite extends FunSuite with BeforeAndAfter {
     assert(svfa.reportConflicts().size == 2)
   }
 
+  test("we should find exactly one conflict in the ContextSensitiveSample  analysis") {
+    val svfa = new ContextSensitiveTest()
+    svfa.buildSparseValueFlowGraph()
+    System.out.println(svfa.svgToDotModel())
+    assert(svfa.reportConflicts().size == 1)
+  }
+
 }
