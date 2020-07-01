@@ -72,14 +72,18 @@ abstract class SVFA {
       }
    }
 
-   def reportConflicts(): scala.collection.Set[String] = {
+   def findConflictingPaths(): scala.collection.Set[List[Node]] = {
       val sourceNodes = svg.nodes.filter((n: Node) => n.nodeType == SourceNode)
       val sinkNodes = svg.nodes.filter((n: Node) => n.nodeType == SinkNode)
 
       val conflicts = for(source <- sourceNodes; sink <- sinkNodes)
                       yield svg.findPath(source, sink)
 
-      conflicts.filter(p => None != p).map(p => p.toString)
+      conflicts.filter(p => p != None).map(p => p.get)
+   }
+
+   def reportConflicts(): scala.collection.Set[String] = {
+      findConflictingPaths().map(p => p.toString)
    }
 
    def pathToJCE():String =
