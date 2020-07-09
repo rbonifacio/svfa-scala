@@ -2,7 +2,7 @@ package br.unb.cic.soot.svfa.jimple
 
 import java.util
 
-import br.unb.cic.soot.graph.{CallSite, CallSiteCloseNode, CallSiteOpenNode, LambdaCallSite, LambdaNode, LambdaStmt, Node, SinkNode, SourceNode, Stmt}
+import br.unb.cic.soot.graph.{CallSite, CallSiteCloseNode, CallSiteOpenNode, LambdaCallSite, LambdaNode, LambdaStmt, SinkNode, SourceNode, Stmt}
 import br.unb.cic.soot.svfa.{SVFA, SourceSinkDef}
 import com.typesafe.scalalogging.LazyLogging
 import soot.jimple._
@@ -167,17 +167,13 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
 
     if(analyze(callStmt.base) == SinkNode) {
       defsToCallOfSinkMethod(callStmt, exp, caller, defs)
-      // TODO: remove this methods if the new implementation not work
+      // TODO: Is really necessary analyse the sink method
        return
     }
 
     if(analyze(callStmt.base) == SourceNode) {
-      // TODO: uncomment this methods if the new implementation not work
-//      svg.map(createNode(caller, callStmt.base)) = mutable.Set[Node]()
-      // TODO: remove this methods if the new implementation not work
       val source = createNode(caller, callStmt.base)
       svg.createNode(source, mutable.Set[LambdaNode]())
-//      return
     }
 
     //TODO:
@@ -243,11 +239,6 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
       allocationNodes.foreach(source => {
         val target = createNode(method, stmt)
         updateGraph(source, target)
-        // TODO: uncomment this methods if the new implementation not work
-//        svg.map.get(source).getOrElse(mutable.MutableList[Node]()).foreach(s => updateGraph(s, target))
-        // TODO: remove this methods if the new implementation not work
-        // This can be one problem
-//        svg.map.get(source).getOrElse(mutable.MutableList[LambdaNode]()).foreach(s => updateGraph(s, target))
         svg.get(source).foreach(s => {
           if (s.nodeType == CallSiteOpenNode || s.nodeType == CallSiteCloseNode) {
             svg.get(s).foreach(e =>
@@ -287,16 +278,11 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
   }
 
   private def defsToCallSite(caller: SootMethod, callee: SootMethod, calleeDefs: SimpleLocalDefs, callStmt: soot.Unit, retStmt: soot.Unit) = {
-    // TODO: remove this methods if the new implementation not work
     val target = createNode(caller, callStmt)
 
     val local = retStmt.asInstanceOf[ReturnStmt].getOp.asInstanceOf[Local]
     calleeDefs.getDefsOfAt(local, retStmt).forEach(sourceStmt => {
       val source = createNode(callee, sourceStmt)
-      // TODO: remove the code below if the new implementation not work
-//      val target = createNode(caller, callStmt)
-//      updateGraph(source, target)
-      // TODO: remove the code below if the new implementation not work
       val csClose = createCSCloseNode(caller, callStmt, sourceStmt, callee)
       updateGraph(source, csClose)
       updateGraph(csClose, target)
@@ -305,10 +291,6 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
         val stores = arrayStores.getOrElseUpdate(local, List())
         stores.foreach(sourceStmt => {
           val source = createNode(callee, sourceStmt)
-          // TODO: remove the code below if the new implementation not work
-//          val target = createNode(caller, callStmt)
-//          updateGraph(source, target)
-          // TODO: remove the code below if the new implementation not work
           val csClose = createCSCloseNode(caller, callStmt, sourceStmt, callee)
           updateGraph(source, csClose)
           updateGraph(csClose, target)
@@ -330,16 +312,11 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
     if(invokeExpr != null) {
       if(invokeExpr.getBase.isInstanceOf[Local]) {
 
-        // TODO: remove this methods if the new implementation not work
         val target = createNode(callee, targetStmt)
 
         val base = invokeExpr.getBase.asInstanceOf[Local]
         calleeDefs.getDefsOfAt(base, callStatement.base).forEach(sourceStmt => {
           val source = createNode(caller, sourceStmt)
-          // TODO: remove the code below if the new implementation not work
-//          val target = createNode(callee, targetStmt)
-//          updateGraph(source, target)
-          // TODO: remove the code below if the new implementation not work
           val csOpen = createCSOpenNode(caller, callStatement.base, sourceStmt, callee)
           updateGraph(source, csOpen)
           updateGraph(csOpen, target)
@@ -349,16 +326,11 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
   }
 
   private def defsToFormalArgs(stmt: Statement, caller: SootMethod, defs: SimpleLocalDefs, assignStmt: soot.Unit, exp: InvokeExpr, callee: SootMethod, pmtCount: Int) = {
-    // TODO: remove the code below if the new implementation not work
     val target = createNode(callee, assignStmt)
 
     val local = exp.getArg(pmtCount).asInstanceOf[Local]
     defs.getDefsOfAt(local, stmt.base).forEach(sourceStmt => {
       val source = createNode(caller, sourceStmt)
-      // TODO: remove the code below if the new implementation not work
-//      val target = createNode(callee, assignStmt)
-//      updateGraph(source, target)
-      // TODO: remove the code below if the new implementation not work
       val csOpen = createCSOpenNode(caller, stmt.base, sourceStmt, callee)
       updateGraph(source, csOpen)
       updateGraph(csOpen, target)
@@ -402,22 +374,12 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
   /*
    * creates a graph node from a sootMethod / sootUnit
    */
-  // TODO: uncomment this methods if the new implementation not work
-//  def createNode(method: SootMethod, stmt: soot.Unit): Node = Node(method.getDeclaringClass.toString, method.getSignature,
-//                       stmt.toString(), stmt.getJavaSourceStartLineNumber, analyze(stmt))
-  // TODO: remove this methods if the new implementation not work
   def createNode(method: SootMethod, stmt: soot.Unit): LambdaStmt = {
     val lambdaStmt = new LambdaStmt()
     lambdaStmt.set(Stmt(method.getDeclaringClass.toString, method.getSignature, stmt.toString, stmt.getJavaSourceStartLineNumber), analyze(stmt))
     return lambdaStmt
   }
 
-
-  // TODO: remove this methods if is not working
-//  def createCSOpenNode(method: SootField, stmt: soot.Unit): Node = Node(method.getDeclaringClass.toString, method.getSignature,
-//    stmt.toString(), -1, CallSiteOpenNode)
-//  def createCSCloseNode(method: SootField, stmt: soot.Unit): Node = Node(method.getDeclaringClass.toString, method.getSignature,
-//    stmt.toString(), -1, CallSiteCloseNode)
   def createCSOpenNode(method: SootMethod, stmt: soot.Unit, sourceStmt: soot.Unit, callee: SootMethod): LambdaCallSite = {
     val csOpenStmt = new LambdaCallSite()
     csOpenStmt.set(CallSite(method.getDeclaringClass.toString, method.getSignature, stmt.toString, sourceStmt.toString,
@@ -441,9 +403,6 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
    unit.isInstanceOf[ReturnStmt] && unit.asInstanceOf[ReturnStmt].getOp.isInstanceOf[Local] &&
      callSite.isInstanceOf[soot.jimple.AssignStmt]
 
-  // TODO: uncomment the code below if the new implementations do not work
-//  def findAllocationSites(local: Local, oldSet: Boolean = true, field: SootField = null) : ListBuffer[Node] = {
-  // TODO: remove the code below if the new implementations do not work
   def findAllocationSites(local: Local, oldSet: Boolean = true, field: SootField = null) : ListBuffer[LambdaNode] = {
     if(pointsToAnalysis.isInstanceOf[PAG]) {
       val pta = pointsToAnalysis.asInstanceOf[PAG]
@@ -460,9 +419,6 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
         return v.allocationNodes
       }
     }
-  // TODO: uncomment the code below if the new implementations do not work
-//    new ListBuffer[Node]()
-  // TODO: remove the code below if the new implementations do not work
     new ListBuffer[LambdaNode]()
   }
 
@@ -474,9 +430,6 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
    * @param stmt statement with a load operation
    */
   class AllocationVisitor() extends P2SetVisitor {
-    // TODO: uncomment the code below if the new implementations do not work
-//    var allocationNodes = new ListBuffer[Node]()
-    // TODO: remove the code below if the new implementations do not work
     var allocationNodes = new ListBuffer[LambdaNode]()
     override def visit(n: pag.Node): Unit = {
       if (n.isInstanceOf[AllocNode]) {
@@ -519,9 +472,6 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
 //   * It either updates the graph or not, depending on
 //   * the types of the nodes.
 //   */
-// TODO: uncomment the code below if the new implementations do not work
-//  private def updateGraph(source: Node, target: Node, forceNewEdge: Boolean = false): Boolean = {
-// TODO: remove the code below if the new implementations do not work
   private def updateGraph(source: LambdaNode, target: LambdaNode, forceNewEdge: Boolean = false): Boolean = {
     var res = false
     if(!runInFullSparsenessMode() || true) {

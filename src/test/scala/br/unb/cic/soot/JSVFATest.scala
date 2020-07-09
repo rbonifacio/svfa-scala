@@ -9,9 +9,6 @@ abstract class JSVFATest extends JSVFA with FieldSenstive {
 
   override def sootClassPath(): String = ""
 
-  // TODO: uncomment this methods if the new implementation not work
-//  override def applicationClassPath(): List[String] = List("target/scala-2.12/test-classes", "/Users/rbonifacio/.m2/repository/javax/servlet/servlet-api/2.5/servlet-api-2.5.jar")
-  // TODO: remove this methods if the new implementation not work
   override def applicationClassPath(): List[String] = List("target/scala-2.12/test-classes", System.getenv("HOME") + "/.m2/repository/javax/servlet/servlet-api/2.5/servlet-api-2.5.jar")
 
   override def getEntryPoints(): List[SootMethod] = {

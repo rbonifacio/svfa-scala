@@ -4,7 +4,7 @@ import org.scalatest.{BeforeAndAfter, FunSuite}
 import br.unb.cic.soot.graph.Graph
 
 class GraphTest extends FunSuite with BeforeAndAfter {
-  // TODO: uncomment the code below if the new implementations do not work
+  // TODO: update the tests for graph structure
 //  var g: Graph[Int] = _
 //
 //  before {

@@ -2,13 +2,7 @@ package br.unb.cic.soot.svfa
 
 import java.io.File
 
-import br.unb.cic.soot.graph.LambdaNode
-
-// TODO: uncomment this line if the new implementation not work
-//import br.unb.cic.soot.graph.{Graph, Node, SinkNode, SourceNode}
-// TODO: remove these lines if the new implementation not work
-// import br.unb.cic.soot.graph.{Node, SinkNode, SourceNode, LambdaGraph}
-import br.unb.cic.soot.graph.{Node, SinkNode, SourceNode, Graph}
+import br.unb.cic.soot.graph.{SinkNode, SourceNode}
 
 import soot._
 import soot.options.Options
@@ -28,10 +22,6 @@ case object SPARK extends CG
 abstract class SVFA {
 
    protected var pointsToAnalysis : PointsToAnalysis = _
-   // TODO: uncomment the code below if the new implementations do not work
-//   var svg: Graph[Node] = new br.unb.cic.soot.graph.Graph()
-   // TODO: remove the code below if the new implementations do not work
-//   var svg: lambdaGraph = new br.unb.cic.soot.graph.lambdaGraph()
    var svg = new br.unb.cic.soot.graph.Graph()
 
    def sootClassPath(): String
@@ -82,29 +72,13 @@ abstract class SVFA {
          }
       }
    }
-   // TODO: uncomment the code below if the new implementations do not work
    def reportConflicts(): scala.collection.Set[String] = {
-// TODO: remove the code below if the new implementations do not work
-//   def reportConflicts(): List[String] = {
-      // TODO: uncomment the code below if the new implementations do not work
-//      val sourceNodes = svg.nodes.filter((n: Node) => n.nodeType == SourceNode)
-//      val sinkNodes = svg.nodes.filter((n: Node) => n.nodeType == SinkNode)
-// TODO: remove the code below if the new implementations do not work
-//      val sourceNodes = svg.getNodes().filter(n => n.nodeType == SourceNode)
-//      val sinkNodes = svg.getNodes().filter(n => n.nodeType == SinkNode)
       val sourceNodes = svg.nodes.filter(n => n.nodeType == SourceNode)
       val sinkNodes = svg.nodes.filter(n => n.nodeType == SinkNode)
 
       val conflicts = for(source <- sourceNodes; sink <- sinkNodes)
                       yield svg.findPath(source, sink)
-      // TODO: uncomment the code below if the new implementations do not work
       conflicts.filter(p => None != p).map(p => p.toString)
-      // TODO: remove the code below if the new implementations do not work
-//      var newConflicts: List[List[LambdaNode]] = List()
-//      conflicts.foreach(validPaths => {
-//         newConflicts = newConflicts ++ validPaths
-//      })
-//      newConflicts.filter(path => path.nonEmpty).map(node => node.toString)
    }
 
    def pathToJCE():String =
@@ -113,65 +87,27 @@ abstract class SVFA {
    def pathToRT():String =
       System.getProperty("java.home") + File.separator + "lib" + File.separator + "rt.jar"
 
-   // TODO: uncomment the code below if the new implementations do not work
-//   def svgToDotModel(): String = {
-//      val s = new StringBuilder
-//      var nodeColor = ""
-//      s ++= "digraph { \n"
-//
-//      for(n <- svg.nodes) {
-//         nodeColor = n.nodeType match  {
-//            case SourceNode => "[fillcolor=blue, style=filled]"
-//            case SinkNode   => "[fillcolor=red, style=filled]"
-//            case _          => ""
-//         }
-//         // TODO: uncomment the code below if the new implementations do not work
-////         s ++= " " + "\"" + n.stmt + "\"" + nodeColor + "\n"
-//         // TODO: remove the code below if the new implementations do not work
-//         s ++= " " + "\"" + n.show() + "\"" + nodeColor + "\n"
-//      }
-//
-//      for(n <- svg.nodes) {
-//         val adjacencyList = svg.map.get(n).get
-//         // TODO: uncomment the code below if the new implementations do not work
-////         val edges = adjacencyList.map(next => "\"" + n.stmt + "\"" + " -> " + "\"" + next.stmt + "\"")
-//         // TODO: remove the code below if the new implementations do not work
-//         val edges = adjacencyList.map(next => "\"" + n.show() + "\"" + " -> " + "\"" + next.show() + "\"")
-//         for(e <- edges) {
-//            s ++= " " + e + "\n"
-//         }
-//      }
-//
-//      s ++= "}"
-//
-//      return s.toString()
-//   }
-
-   // TODO: remove this code
    def svgToDotModel(): String = {
       val s = new StringBuilder
       var nodeColor = ""
       s ++= "digraph { \n"
 
-      for(n <- svg.nodes()) {
+      for(n <- svg.nodes) {
          nodeColor = n.nodeType match  {
             case SourceNode => "[fillcolor=blue, style=filled]"
             case SinkNode   => "[fillcolor=red, style=filled]"
             case _          => ""
          }
 
-         s ++= " " + "\"" + n.show + "\"" + nodeColor + "\n"
+         s ++= " " + "\"" + n.show() + "\"" + nodeColor + "\n"
+      }
 
-         s ++= "\t{\n"
-
+      for(n <- svg.nodes) {
          val adjacencyList = svg.get(n)
-         //      val edges = adjacencyList.map(next => "\"" + n.stmt + "\"" + " -> " + "\"" + next.stmt + "\"")
-         val edges = adjacencyList.map(next => " -> " + "\"" + next.show + "\"")
+         val edges = adjacencyList.map(next => "\"" + n.show() + "\"" + " -> " + "\"" + next.show() + "\"")
          for(e <- edges) {
-            s ++= "\t\t" + " " + e + "\n"
+            s ++= " " + e + "\n"
          }
-
-         s ++= "\t}\n"
       }
 
       s ++= "}"
