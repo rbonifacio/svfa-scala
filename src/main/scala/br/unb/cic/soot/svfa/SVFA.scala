@@ -2,7 +2,7 @@ package br.unb.cic.soot.svfa
 
 import java.io.File
 
-import br.unb.cic.soot.graph.{Graph, Node, SinkNode, SourceNode}
+import br.unb.cic.soot.graph.{LambdaNode, SinkNode, SourceNode}
 import soot._
 import soot.options.Options
 
@@ -21,7 +21,7 @@ case object SPARK extends CG
 abstract class SVFA {
 
    protected var pointsToAnalysis : PointsToAnalysis = _
-   var svg: Graph[Node] = new br.unb.cic.soot.graph.Graph()
+   var svg = new br.unb.cic.soot.graph.Graph()
 
    def sootClassPath(): String
    def applicationClassPath(): List[String]
@@ -72,15 +72,16 @@ abstract class SVFA {
       }
    }
 
-   def findConflictingPaths(): scala.collection.Set[List[Node]] = {
-      val sourceNodes = svg.nodes.filter((n: Node) => n.nodeType == SourceNode)
-      val sinkNodes = svg.nodes.filter((n: Node) => n.nodeType == SinkNode)
+   def findConflictingPaths(): scala.collection.Set[List[LambdaNode]] = {
+      val sourceNodes = svg.nodes.filter(n => n.nodeType == SourceNode)
+      val sinkNodes = svg.nodes.filter(n => n.nodeType == SinkNode)
 
       val conflicts = for(source <- sourceNodes; sink <- sinkNodes)
-                      yield svg.findPath(source, sink)
+         yield svg.findPath(source, sink)
 
       conflicts.filter(p => p != None).map(p => p.get)
    }
+
 
    def reportConflicts(): scala.collection.Set[String] = {
       findConflictingPaths().map(p => p.toString)
@@ -92,25 +93,24 @@ abstract class SVFA {
    def pathToRT():String =
       System.getProperty("java.home") + File.separator + "lib" + File.separator + "rt.jar"
 
-
    def svgToDotModel(): String = {
       val s = new StringBuilder
       var nodeColor = ""
       s ++= "digraph { \n"
 
-      for(n <- svg.nodes()) {
+      for(n <- svg.nodes) {
          nodeColor = n.nodeType match  {
             case SourceNode => "[fillcolor=blue, style=filled]"
             case SinkNode   => "[fillcolor=red, style=filled]"
             case _          => ""
          }
 
-         s ++= " " + "\"" + n.stmt + "\"" + nodeColor + "\n"
+         s ++= " " + "\"" + n.show() + "\"" + nodeColor + "\n"
       }
 
       for(n <- svg.nodes) {
-         val adjacencyList = svg.map.get(n).get
-         val edges = adjacencyList.map(next => "\"" + n.stmt + "\"" + " -> " + "\"" + next.stmt + "\"")
+         val adjacencyList = svg.get(n)
+         val edges = adjacencyList.map(next => "\"" + n.show() + "\"" + " -> " + "\"" + next.show() + "\"")
          for(e <- edges) {
             s ++= " " + e + "\n"
          }
