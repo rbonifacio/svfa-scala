@@ -2,8 +2,7 @@ package br.unb.cic.soot.svfa
 
 import java.io.File
 
-import br.unb.cic.soot.graph.{SinkNode, SourceNode}
-
+import br.unb.cic.soot.graph.{LambdaNode, SinkNode, SourceNode}
 import soot._
 import soot.options.Options
 
@@ -72,13 +71,19 @@ abstract class SVFA {
          }
       }
    }
-   def reportConflicts(): scala.collection.Set[String] = {
+
+   def findConflictingPaths(): scala.collection.Set[List[LambdaNode]] = {
       val sourceNodes = svg.nodes.filter(n => n.nodeType == SourceNode)
       val sinkNodes = svg.nodes.filter(n => n.nodeType == SinkNode)
 
       val conflicts = for(source <- sourceNodes; sink <- sinkNodes)
-                      yield svg.findPath(source, sink)
-      conflicts.filter(p => None != p).map(p => p.toString)
+         yield svg.findPath(source, sink)
+
+      conflicts.filter(p => p != None).map(p => p.get)
+   }
+
+   def reportConflicts(): scala.collection.Set[String] = {
+      findConflictingPaths().map(p => p.toString)
    }
 
    def pathToJCE():String =
