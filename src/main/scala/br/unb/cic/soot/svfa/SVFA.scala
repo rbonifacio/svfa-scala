@@ -82,6 +82,7 @@ abstract class SVFA {
       conflicts.filter(p => p != None).map(p => p.get)
    }
 
+
    def reportConflicts(): scala.collection.Set[String] = {
       findConflictingPaths().map(p => p.toString)
    }

@@ -116,7 +116,7 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
       arrayStores.put(l, stores)
     }
 
-    if(targetStmt.getLeftOp.isInstanceOf[FieldRef] && targetStmt.getRightOp.isInstanceOf[Local]) {
+    if(targetStmt.getLeftOp.isInstanceOf[InstanceFieldRef] && targetStmt.getRightOp.isInstanceOf[Local]) {
       val local = targetStmt.getRightOp.asInstanceOf[Local]
       val fieldRef = targetStmt.getLeftOp.asInstanceOf[InstanceFieldRef]
       if(fieldRef.getBase.isInstanceOf[Local]) {

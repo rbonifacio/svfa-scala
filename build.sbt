@@ -2,8 +2,11 @@ scalaVersion := "2.12.8"
 
 name := "svfa-scala"
 organization := "br.unb.cic"
-version := "0.0.6-SNAPSHOT"
+version := "0.0.7-SNAPSHOT"
 
+githubOwner := "rbonifacio"
+githubRepository := "svfa-scala"
+githubTokenSource := TokenSource.GitConfig("github.token")
 
 parallelExecution in Test := false
 
@@ -28,6 +31,3 @@ libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2"
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.8" % "test"
 
 libraryDependencies += "javax.servlet" % "javax.servlet-api" % "3.0.1" % "provided"
-
-
-publishTo := Some(Resolver.file("file",  new File(Path.userHome.absolutePath+"/.m2/repository")))
