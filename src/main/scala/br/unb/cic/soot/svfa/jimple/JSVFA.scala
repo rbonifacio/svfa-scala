@@ -21,7 +21,7 @@ import scala.collection.mutable.ListBuffer
   * A Jimple based implementation of
   * SVFA.
   */
-abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef with LazyLogging {
+abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with SourceSinkDef with LazyLogging {
 
   var methods = 0
   val traversedMethods = scala.collection.mutable.Set.empty[SootMethod]
@@ -195,6 +195,8 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
       }
       return
     }
+
+    if(intraprocedural()) return
 
     var pmtCount = 0
     val body = callee.retrieveActiveBody()
