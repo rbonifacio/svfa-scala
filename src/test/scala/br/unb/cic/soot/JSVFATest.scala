@@ -1,9 +1,9 @@
 package br.unb.cic.soot
 
-import br.unb.cic.soot.svfa.jimple.{FieldSenstive, JSVFA}
+import br.unb.cic.soot.svfa.jimple.{FieldSenstive, InterproceduralAnalysis, JSVFA}
 import soot.{Scene, SootMethod}
 
-abstract class JSVFATest extends JSVFA with FieldSenstive {
+abstract class JSVFATest extends JSVFA with InterproceduralAnalysis with FieldSenstive {
   def getClassName(): String
   def getMainMethod(): String
 
