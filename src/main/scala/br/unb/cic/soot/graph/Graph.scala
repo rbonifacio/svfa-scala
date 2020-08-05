@@ -1,18 +1,86 @@
 package br.unb.cic.soot.graph
 
-import scala.collection.mutable
+import scalax.collection.edge.LDiEdge
+import scalax.collection.mutable.Graph
 
 sealed trait NodeType
 
 case object SourceNode extends NodeType { def instance: SourceNode.type = this }
 case object SinkNode extends NodeType { def instance: SinkNode.type = this }
 case object SimpleNode extends NodeType { def instance: SimpleNode.type = this }
-case object CallSiteOpenNode extends NodeType { def instance: CallSiteOpenNode.type = this }
-case object CallSiteCloseNode extends NodeType { def instance: CallSiteCloseNode.type = this }
+case object CallSiteNode extends NodeType { def instance: CallSiteNode.type = this }
+
+sealed trait EdgeType
+
+case object CallSiteOpenEdge extends EdgeType { def instance: CallSiteOpenEdge.type = this }
+case object CallSiteCloseEdge extends EdgeType { def instance: CallSiteCloseEdge.type = this }
 
 case class Stmt(className: String, method: String, stmt: String, line: Int)
-case class CallSite(className: String, callerMethod: String, stmt: String, sourceStmt: String, line: Int,
-                    calleeMethod: String)
+
+trait LambdaLabel {
+  type T
+  var value: T
+}
+
+class StringLabel(label: String) extends LambdaLabel {
+  override type T = String
+  override var value: String = label
+}
+
+abstract class CallSiteLabel extends LambdaLabel {
+  def isCallSiteOpen(): Boolean
+  def isCallSiteClose(): Boolean
+  def matchCS(label: CallSiteLabel): Boolean
+  def matchCSMethod(label: CallSiteLabel): Boolean
+}
+
+case class CallSiteData(className: String, callerMethod: String, stmt: String, line: Int, sourceStmt: String,
+                    calleeMethod: String, callSiteType: EdgeType)
+
+class DefaultCallSiteLabel(label: CallSiteData) extends CallSiteLabel {
+  override type T = CallSiteData
+  override var value: CallSiteData = label
+
+  override def isCallSiteOpen(): Boolean = value.callSiteType == CallSiteOpenEdge
+  override def isCallSiteClose(): Boolean = value.callSiteType == CallSiteCloseEdge
+
+  override def matchCS(label: CallSiteLabel): Boolean = {
+    if (label.isInstanceOf[DefaultCallSiteLabel]) {
+      val csLabel = label.asInstanceOf[DefaultCallSiteLabel].value
+      if ((value.callSiteType == CallSiteOpenEdge && csLabel.callSiteType == CallSiteCloseEdge) ||
+        (csLabel.callSiteType == CallSiteOpenEdge && value.callSiteType == CallSiteCloseEdge)) {
+        val matchClassName = value.className == csLabel.className
+        val matchMethod = value.callerMethod == csLabel.callerMethod
+        val matchStmt = value.stmt == csLabel.stmt
+        val matchLine = value.line == csLabel.line
+        return matchClassName && matchMethod && matchStmt && matchLine
+      }
+    }
+    return false
+  }
+
+  override def matchCSMethod(label: CallSiteLabel): Boolean = {
+    if (label.isInstanceOf[DefaultCallSiteLabel]) {
+      val csLabel = label.asInstanceOf[DefaultCallSiteLabel].value
+      // Match close with open OR open with close
+      if ((value.callSiteType == CallSiteOpenEdge && csLabel.callSiteType == CallSiteCloseEdge) ||
+        (csLabel.callSiteType == CallSiteOpenEdge && value.callSiteType == CallSiteCloseEdge)) {
+        val matchCalleeMethod = value.calleeMethod == csLabel.calleeMethod
+        return matchCalleeMethod
+      }
+    }
+    return false
+  }
+
+  override def equals(o: Any): Boolean = {
+    if (label.isInstanceOf[DefaultCallSiteLabel]) {
+      val csLabel = label.asInstanceOf[DefaultCallSiteLabel]
+      return csLabel.value == value
+    }
+    return false
+  }
+}
+
 
 trait LambdaNode {
   type T
@@ -20,254 +88,168 @@ trait LambdaNode {
   // TODO: make nodeType parametric too
   var nodeType: NodeType
 
-  // Define functions
-  def set(_value: T, _type: NodeType): Unit
-  def setValue(_value: T): Unit
-  def setType(_type: NodeType): Unit
-
   // Output to text function
   def show(): String
-
-  // Compare functions
-  def areEqualsTo(_node: LambdaNode): Boolean
-  def haveSameValueTo(_node: LambdaNode): Boolean
-  def haveSameTypeTo(_node: LambdaNode): Boolean
-
-  // This function is necessary because the (cs and cs) are nodes and not edges
-  // Nodes that don't are for callsite do not need implement this method
-  def matchCS(_node: LambdaNode): Boolean
-  def matchCSMethod(_node: LambdaNode): Boolean
 }
 
-class LambdaStmt() extends LambdaNode {
+case class StmtNode(stmt: Stmt, stmtType: NodeType) extends LambdaNode {
   override type T = Stmt
-  override var value: Stmt = _
-  override var nodeType: NodeType = _
-
-  override def set(_value: Stmt, _type: NodeType): Unit = {
-    value = _value
-    nodeType = _type
-  }
-
-  override def setValue(_value: Stmt): Unit = value = _value
-
-  override def setType(_type: NodeType): Unit = nodeType = _type
+  override var value: Stmt = stmt
+  override var nodeType: NodeType = stmtType
 
   override def show(): String = "(" ++ value.method + ": " + value.stmt + " - " + value.line + " <" + nodeType.toString + ">)"
 
   override def toString: String =
     "Node(" + value.method + "," + value.stmt + "," + value.line.toString + "," + nodeType.toString + ")"
 
-  override def areEqualsTo(_node: LambdaNode): Boolean = {
-    if (_node.isInstanceOf[LambdaStmt]) {
-      return haveSameTypeTo(_node)  && haveSameValueTo(_node)
-    }
-    return false
-  }
-
-  override def haveSameValueTo(_node: LambdaNode): Boolean = {
-    if (_node.value.isInstanceOf[Stmt]) {
-      val stmt = _node.value.asInstanceOf[Stmt]
-      if (stmt == value) {
-        return true
-      }
-    }
-    return false
-  }
-
-  override def haveSameTypeTo(_node: LambdaNode): Boolean = {
-    if (_node.nodeType == nodeType) {
-      return true
-    }
-    return false
-  }
-
-  override def matchCS(_node: LambdaNode): Boolean = false
-
-  override def matchCSMethod(_node: LambdaNode): Boolean = false
-}
-
-class LambdaCallSite() extends LambdaNode {
-  override type T = CallSite
-  override var value: CallSite = _
-  override var nodeType: NodeType = _
-
-  override def set(_value: CallSite, _type: NodeType): Unit = {
-    value = _value
-    nodeType = _type
-  }
-
-  override def setValue(_value: CallSite): Unit = value = _value
-
-  override def setType(_type: NodeType): Unit = nodeType = _type
-
-  override def show(): String = "(" ++ value.callerMethod + ": " + " [" + value.sourceStmt + "] " + value.stmt + " - " + value.line + " <" + nodeType.toString + ">)"
-
-  override def toString: String =
-    "Node(" + value.callerMethod + "," + value.stmt + "," + value.line.toString + "," + nodeType.toString + ")"
-
-  override def areEqualsTo(_node: LambdaNode): Boolean = {
-    if (_node.isInstanceOf[LambdaCallSite]) {
-      return haveSameTypeTo(_node) && haveSameValueTo(_node)
-    }
-    return false
-  }
-
-  override def haveSameValueTo(_node: LambdaNode): Boolean = {
-    if (_node.value.isInstanceOf[CallSite]) {
-      val callSite = _node.value.asInstanceOf[CallSite]
-      if (callSite == value) {
-        return true
-      }
-    }
-    return false
-  }
-
-  override def haveSameTypeTo(_node: LambdaNode): Boolean = {
-    if (_node.nodeType == nodeType) {
-      return true
-    }
-    return false
-  }
-
-  override def matchCS(_node: LambdaNode): Boolean = {
-    if (_node.isInstanceOf[LambdaCallSite]) {
-      val callSite = _node.asInstanceOf[LambdaCallSite]
-      // Match close with open OR open with close
-      if ((nodeType == CallSiteCloseNode && callSite.nodeType == CallSiteOpenNode) ||
-          (nodeType == CallSiteOpenNode && callSite.nodeType == CallSiteCloseNode)) {
-        val matchClassName = value.className == callSite.value.className
-        val matchMethod = value.callerMethod == callSite.value.callerMethod
-        val matchStmt = value.stmt == callSite.value.stmt
-        val matchLine = value.line == callSite.value.line
-        return matchClassName && matchMethod && matchStmt && matchLine
-      }
-    }
-    return false
-  }
-
-  override def matchCSMethod(_node: LambdaNode): Boolean = {
-    if (_node.isInstanceOf[LambdaCallSite]) {
-      val callSite = _node.asInstanceOf[LambdaCallSite]
-      // Match close with open OR open with close
-      if ((nodeType == CallSiteCloseNode && callSite.nodeType == CallSiteOpenNode) ||
-        (nodeType == CallSiteOpenNode && callSite.nodeType == CallSiteCloseNode)) {
-        val matchCalleeMethod = value.calleeMethod == callSite.value.calleeMethod
-        return matchCalleeMethod
-      }
+  override def equals(o: Any): Boolean = {
+    if (o.isInstanceOf[StmtNode]) {
+      val stmt = o.asInstanceOf[StmtNode]
+      return stmt.value == value && stmt.nodeType == nodeType
     }
     return false
   }
 }
 
 class Graph() {
-  private val map = new mutable.HashMap[LambdaNode,mutable.Set[LambdaNode]]()
+  val graph = Graph.empty[LambdaNode, LDiEdge]
 
-  def contains(node: LambdaNode): Boolean =
-    map.exists(pair => pair._1.areEqualsTo(node))
+  def gNode(outerNode: LambdaNode): graph.NodeT = graph.get(outerNode)
+  def gEdge(outerEdge: LDiEdge[LambdaNode]): graph.EdgeT = graph.get(outerEdge)
 
-  def get(node: LambdaNode): mutable.Set[LambdaNode] = {
-    val pairs = map.filter(pair => pair._1.areEqualsTo(node))
-    if (pairs.nonEmpty) {
-      return pairs.head._2
+  def contains(node: LambdaNode): Boolean = {
+    val graphNode = graph.find(node)
+    if (graphNode.isDefined) {
+      return true
     }
-    return mutable.Set.empty[LambdaNode]
+    return false
   }
 
-  def createNode(node: LambdaNode, edges: mutable.Set[LambdaNode]): Unit = {
-    if (! contains(node)) {
-      map(node) = edges
-    }
+  def addNode(node: LambdaNode): Unit = {
+    graph.add(node)
   }
 
   def addEdge(source: LambdaNode, target: LambdaNode): Unit = {
-    if(source.areEqualsTo(target)) {
+    val label = new StringLabel("Normal")
+    addEdge(source, target, label)
+  }
+
+  def getAdjacentNodes(node: LambdaNode): Option[Set[LambdaNode]] = {
+    if (contains(node)) {
+      return Some(gNode(node).diSuccessors.map(_node => _node.toOuter))
+    }
+    return None
+  }
+
+  def addEdge(source: LambdaNode, target: LambdaNode, label: LambdaLabel): Unit = {
+    if(source == target) {
       return
     }
 
-
-    if (! contains(source)) {
-      createNode(source, mutable.Set(target))
-    } else {
-      var adjacentList = get(source)
-      adjacentList += target
-    }
-
-    if (! contains(target)) {
-      createNode(target, mutable.Set.empty[LambdaNode])
-    }
+    implicit val factory = scalax.collection.edge.LDiEdge
+    graph.addLEdge(source, target)(label)
   }
 
-  def findPath(source: LambdaNode, target: LambdaNode): Option[List[LambdaNode]] =
-    findPath(source, target, List(), List(source))
+  def findPath(source: LambdaNode, target: LambdaNode): List[List[LambdaNode]] = {
+    val fastPath = gNode(source).pathTo(gNode(target))
+    var findAllConflitPaths = false
 
-  def findPath(source: LambdaNode, target: LambdaNode, visited: List[LambdaNode],
-               path: List[LambdaNode]): Option[List[LambdaNode]] = {
-
-    val adjacentList = get(source)
-    if(adjacentList.exists(node => node.areEqualsTo(target))) {
-      return Some(path ++ List(target))
+    if (! findAllConflitPaths && fastPath.isDefined && isValidPath(fastPath.get)) {
+      return List(fastPath.get.nodes.map(node => node.toOuter).toList)
     }
 
-    adjacentList.filter(n => ! visited.exists(node => n.areEqualsTo(node))).foreach(next => {
-      val newVisited: List[LambdaNode] = source :: visited
-      val newPath: List[LambdaNode] = path ++ List(next)
-      val res = findPath(next, target, newVisited, newPath)
-      if(res.isDefined) {
-        var unopenedCS: List[LambdaNode] = List()
-        var unclosedCS: List[LambdaNode] = List()
-        val csOpen = res.head.filter(node => node.nodeType == CallSiteOpenNode)
-        val csClose = res.head.filter(node => node.nodeType == CallSiteCloseNode)
-        var unvisitedOpenCS = csOpen
-        var unvisitedCloseCS = csClose
+    val pathBuilder = graph.newPathBuilder(gNode(source))
+    val paths = findPaths(source, target, List(), pathBuilder, List())
+    return paths.map(path => path.nodes.map(node => node.toOuter).toList)
+  }
 
-        // verify if exists cs) nodes without a (cs
-        csClose.foreach(_csClose => {
-          if (unvisitedOpenCS.exists(node => node.matchCS(_csClose))) {
-            val matchedCS = unvisitedOpenCS.filter(node => node.matchCS(_csClose))
-            val unmatchedCS = unvisitedOpenCS.filter(node => ! node.matchCS(_csClose))
-            if (matchedCS.size > 1) {
-              unvisitedOpenCS = unmatchedCS ++ matchedCS.init
-            } else {
-              unvisitedOpenCS = unmatchedCS
-            }
+  def findPaths(source: LambdaNode, target: LambdaNode, visited: List[LambdaNode],
+               currentPath: graph.PathBuilder, paths: List[graph.Path]): List[graph.Path] = {
+    // TODO: find some optimal way to travel in graph
+    val adjacencyList = gNode(source).diSuccessors.map(_node => _node.toOuter)
+    if (adjacencyList.contains(target)) {
+      currentPath += gNode(target)
+      if (isValidPath(currentPath.result)) {
+        return List(currentPath.result)
+      }
+    }
+
+    var possiblePaths = paths
+    adjacencyList.foreach(next => {
+      if (! visited.contains(next)) {
+        var nextPath = currentPath
+        nextPath += gNode(next)
+        val possiblePath = findPaths(next, target, visited ++ List(next), nextPath, paths)
+        if (possiblePath.nonEmpty) {
+          var findAllConflitPaths = false
+          if (findAllConflitPaths) {
+            possiblePaths = possiblePaths ++ possiblePath
           } else {
-            unopenedCS = unopenedCS ++ List(_csClose)
+            return possiblePath
           }
-        })
-
-        // verify if exists (cs nodes without a cs)
-        csOpen.foreach(_csOpen => {
-          if (unvisitedCloseCS.exists(node => node.matchCS(_csOpen))) {
-            val matchedCS = unvisitedCloseCS.filter(node => node.matchCS(_csOpen))
-            val unmatchedCS = unvisitedCloseCS.filter(node => ! node.matchCS(_csOpen))
-            if (matchedCS.size > 1) {
-              unvisitedCloseCS = unmatchedCS ++ matchedCS.init
-            } else {
-              unvisitedCloseCS = unmatchedCS
-            }
-          } else {
-            unclosedCS = unclosedCS ++ List(_csOpen)
-          }
-        })
-
-        // verify if the unopened and unclosed callsites are not for the same method
-        var matchedUnopenedUnclosedCSCalleeMethod: List[(LambdaNode, LambdaNode)] = List()
-        unclosedCS.foreach(_csOpen => {
-          unopenedCS.filter(node => node.matchCSMethod(_csOpen)).foreach(_csClose => {
-            matchedUnopenedUnclosedCSCalleeMethod = matchedUnopenedUnclosedCSCalleeMethod ++ List((_csOpen, _csClose))
-          })
-        })
-
-        if (unopenedCS.isEmpty || unclosedCS.isEmpty || matchedUnopenedUnclosedCSCalleeMethod.isEmpty) {
-          return res
         }
-        return None
       }
     })
-    return None
+    return possiblePaths
   }
-  def nodes(): scala.collection.Set[LambdaNode] = map.keySet
 
-  def numberOfEdges(): Int = if(map.isEmpty) 0 else  map.values.map(v => v.size).sum
+  def isValidPath(path: graph.Path): Boolean = {
+    val callSiteEdges = path.edges.map(edge => edge.toOuter).filter(edge => edge.label.isInstanceOf[CallSiteLabel])
+    val edgeLabels = callSiteEdges.map(edge => edge.label.asInstanceOf[CallSiteLabel])
+    val csOpen = edgeLabels.filter(label => label.isCallSiteOpen())
+    val csClose = edgeLabels.filter(label => label.isCallSiteClose())
+    var unopenedCS: List[CallSiteLabel] = List()
+    var unclosedCS: List[CallSiteLabel] = List()
+    var csOpenUnvisited = csOpen
+    var csCloseUnvisited = csClose
+
+    // verify if exists cs) nodes without a (cs
+    csClose.foreach(_csClose => {
+      if (csOpenUnvisited.exists(label => label.matchCS(_csClose))) {
+        val matchedCS = csOpenUnvisited.filter(label => label.matchCS(_csClose))
+        val unmatchedCS = csOpenUnvisited.filter(label => ! label.matchCS(_csClose))
+        if (matchedCS.size > 1) {
+          csOpenUnvisited = unmatchedCS ++ matchedCS.init
+        } else {
+          csOpenUnvisited = unmatchedCS
+        }
+      } else {
+        unopenedCS = unopenedCS ++ List(_csClose)
+      }
+    })
+
+    // verify if exists (cs nodes without a cs)
+    csOpen.foreach(_csOpen => {
+      if (csCloseUnvisited.exists(label => label.matchCS(_csOpen))) {
+        val matchedCS = csCloseUnvisited.filter(label => label.matchCS(_csOpen))
+        val unmatchedCS = csCloseUnvisited.filter(label => ! label.matchCS(_csOpen))
+        if (matchedCS.size > 1) {
+          csCloseUnvisited = unmatchedCS ++ matchedCS.init
+        } else {
+          csCloseUnvisited = unmatchedCS
+        }
+      } else {
+        unclosedCS = unclosedCS ++ List(_csOpen)
+      }
+    })
+
+    // verify if the unopened and unclosed callsites are not for the same method
+    var matchedUnopenedUnclosedCSCalleeMethod: List[(CallSiteLabel, CallSiteLabel)] = List()
+    unclosedCS.foreach(_csOpen => {
+      unopenedCS.filter(label => label.matchCSMethod(_csOpen)).foreach(_csClose => {
+        matchedUnopenedUnclosedCSCalleeMethod = matchedUnopenedUnclosedCSCalleeMethod ++ List((_csOpen, _csClose))
+      })
+    })
+
+    if (unopenedCS.isEmpty || unclosedCS.isEmpty || matchedUnopenedUnclosedCSCalleeMethod.isEmpty) {
+      return true
+    }
+    return false
+  }
+
+  def nodes(): scala.collection.Set[LambdaNode] = graph.nodes.map(node => node.toOuter).toSet
+
+  def numberOfNodes(): Int = graph.nodes.size
+
+  def numberOfEdges(): Int = graph.edges.size
 }
