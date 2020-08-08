@@ -6,27 +6,10 @@ import soot.jimple.{AssignStmt, InvokeExpr, InvokeStmt}
 
 class BasicTest(var className: String = "", var mainMethod: String = "") extends FlowdroidSpec {
   override def getClassName(): String = className
-
   override def getMainMethod(): String = mainMethod
-
   override def runInFullSparsenessMode() = false
 
-  override def analyze(unit: soot.Unit): NodeType = {
-    if (unit.isInstanceOf[InvokeStmt]) {
-      val invokeStmt = unit.asInstanceOf[InvokeStmt]
-      return analyzeInvokeStmt(invokeStmt.getInvokeExpr)
-    }
-    if (unit.isInstanceOf[soot.jimple.AssignStmt]) {
-      val assignStmt = unit.asInstanceOf[AssignStmt]
-      if (assignStmt.getRightOp.isInstanceOf[InvokeExpr]) {
-        val invokeStmt = assignStmt.getRightOp.asInstanceOf[InvokeExpr]
-        return analyzeInvokeStmt(invokeStmt)
-      }
-    }
-    return SimpleNode
-  }
-
-  def analyzeInvokeStmt(exp: InvokeExpr): NodeType = {
+  override def analyzeInvokeStmt(exp: InvokeExpr): NodeType = {
     if (sourceList.contains(exp.getMethod.getSignature)) {
       return SourceNode;
     } else if (sinkList.contains(exp.getMethod.getSignature)) {
