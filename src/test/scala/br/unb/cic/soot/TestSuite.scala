@@ -11,6 +11,12 @@ class TestSuite extends FunSuite with BeforeAndAfter {
     assert(svfa.reportConflicts().size == 3)
   }
 
+  test("we should find exactly one conflict in the ArrayCopyTest analysis") {
+    val svfa = new ArrayCopyTest()
+    svfa.buildSparseValueFlowGraph()
+    assert(svfa.reportConflicts().size == 1)
+  }
+
   test("we should correctly compute the number of nodes and edges in the BlackBoardTest sample") {
     val svfa = new BlackBoardTest()
     svfa.buildSparseValueFlowGraph()
