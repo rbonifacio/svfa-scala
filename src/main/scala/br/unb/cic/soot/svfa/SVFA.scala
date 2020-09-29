@@ -76,14 +76,23 @@ abstract class SVFA {
       val sourceNodes = svg.nodes.filter(n => n.nodeType == SourceNode)
       val sinkNodes = svg.nodes.filter(n => n.nodeType == SinkNode)
 
-      val conflicts = for(source <- sourceNodes; sink <- sinkNodes)
-         yield svg.findPath(source, sink)
+//      val conflicts = for(source <- sourceNodes; sink <- sinkNodes)
+//         yield svg.findPath(source, sink)
 
-      conflicts.filter(p => p != None).map(p => p.get)
+      var conflicts: List[List[LambdaNode]] = List()
+      sourceNodes.foreach(source => {
+         sinkNodes.foreach(sink => {
+            val paths = svg.findPath(source, sink)
+            conflicts = conflicts ++ paths
+         })
+      })
+
+      conflicts.filter(p => p.nonEmpty).toSet
    }
 
 
    def reportConflicts(): scala.collection.Set[String] = {
+      val conflicts = findConflictingPaths()
       findConflictingPaths().map(p => p.toString)
    }
 
@@ -109,12 +118,13 @@ abstract class SVFA {
       }
 
       for(n <- svg.nodes) {
-         val adjacencyList = svg.get(n)
+         val adjacencyList = svg.getAdjacentNodes(n).get
          val edges = adjacencyList.map(next => "\"" + n.show() + "\"" + " -> " + "\"" + next.show() + "\"")
          for(e <- edges) {
             s ++= " " + e + "\n"
          }
       }
+
 
       s ++= "}"
 

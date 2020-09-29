@@ -2,7 +2,7 @@ package br.unb.cic.soot.svfa.jimple
 
 import java.util
 
-import br.unb.cic.soot.graph.{CallSite, CallSiteCloseNode, CallSiteOpenNode, LambdaCallSite, LambdaNode, LambdaStmt, SinkNode, SourceNode, Stmt}
+import br.unb.cic.soot.graph.{CallSiteCloseEdge, CallSiteData, CallSiteOpenEdge, DefaultCallSiteLabel, LambdaNode, SinkNode, SourceNode, Stmt, StmtNode}
 import br.unb.cic.soot.svfa.{SVFA, SourceSinkDef}
 import com.typesafe.scalalogging.LazyLogging
 import soot.jimple._
@@ -173,7 +173,7 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
 
     if(analyze(callStmt.base) == SourceNode) {
       val source = createNode(caller, callStmt.base)
-      svg.createNode(source, mutable.Set[LambdaNode]())
+      svg.addNode(source)
     }
 
     //TODO:
@@ -239,15 +239,7 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
       allocationNodes.foreach(source => {
         val target = createNode(method, stmt)
         updateGraph(source, target)
-        svg.get(source).foreach(s => {
-          if (s.nodeType == CallSiteOpenNode || s.nodeType == CallSiteCloseNode) {
-            svg.get(s).foreach(e =>
-              updateGraph(e, target)
-            )
-          } else {
-            updateGraph(s, target)
-          }
-        })
+        svg.getAdjacentNodes(source).get.foreach(s => updateGraph(s, target))
       })
     }
   }
@@ -283,17 +275,16 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
     val local = retStmt.asInstanceOf[ReturnStmt].getOp.asInstanceOf[Local]
     calleeDefs.getDefsOfAt(local, retStmt).forEach(sourceStmt => {
       val source = createNode(callee, sourceStmt)
-      val csClose = createCSCloseNode(caller, callStmt, sourceStmt, callee)
-      updateGraph(source, csClose)
-      updateGraph(csClose, target)
+      val csCloseLabel = createCSCloseLabel(caller, callStmt, sourceStmt, callee)
+      svg.addEdge(source, target, csCloseLabel)
+
 
       if(local.getType.isInstanceOf[ArrayType]) {
         val stores = arrayStores.getOrElseUpdate(local, List())
         stores.foreach(sourceStmt => {
           val source = createNode(callee, sourceStmt)
-          val csClose = createCSCloseNode(caller, callStmt, sourceStmt, callee)
-          updateGraph(source, csClose)
-          updateGraph(csClose, target)
+          val csCloseLabel = createCSCloseLabel(caller, callStmt, sourceStmt, callee)
+          svg.addEdge(source, target, csCloseLabel)
         })
       }
     })
@@ -317,9 +308,8 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
         val base = invokeExpr.getBase.asInstanceOf[Local]
         calleeDefs.getDefsOfAt(base, callStatement.base).forEach(sourceStmt => {
           val source = createNode(caller, sourceStmt)
-          val csOpen = createCSOpenNode(caller, callStatement.base, sourceStmt, callee)
-          updateGraph(source, csOpen)
-          updateGraph(csOpen, target)
+          val csOpenLabel = createCSOpenLabel(caller, callStatement.base, sourceStmt, callee)
+          svg.addEdge(source, target, csOpenLabel)
         })
       }
     }
@@ -331,9 +321,8 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
     val local = exp.getArg(pmtCount).asInstanceOf[Local]
     defs.getDefsOfAt(local, stmt.base).forEach(sourceStmt => {
       val source = createNode(caller, sourceStmt)
-      val csOpen = createCSOpenNode(caller, stmt.base, sourceStmt, callee)
-      updateGraph(source, csOpen)
-      updateGraph(csOpen, target)
+      val csOpenLabel = createCSOpenLabel(caller, stmt.base, sourceStmt, callee)
+      svg.addEdge(source, target, csOpenLabel)
     })
   }
 
@@ -374,24 +363,16 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
   /*
    * creates a graph node from a sootMethod / sootUnit
    */
-  def createNode(method: SootMethod, stmt: soot.Unit): LambdaStmt = {
-    val lambdaStmt = new LambdaStmt()
-    lambdaStmt.set(Stmt(method.getDeclaringClass.toString, method.getSignature, stmt.toString, stmt.getJavaSourceStartLineNumber), analyze(stmt))
-    return lambdaStmt
-  }
+  def createNode(method: SootMethod, stmt: soot.Unit): StmtNode =
+    new StmtNode(Stmt(method.getDeclaringClass.toString, method.getSignature, stmt.toString, stmt.getJavaSourceStartLineNumber), analyze(stmt))
 
-  def createCSOpenNode(method: SootMethod, stmt: soot.Unit, sourceStmt: soot.Unit, callee: SootMethod): LambdaCallSite = {
-    val csOpenStmt = new LambdaCallSite()
-    csOpenStmt.set(CallSite(method.getDeclaringClass.toString, method.getSignature, stmt.toString, sourceStmt.toString,
-      stmt.getJavaSourceStartLineNumber, callee.toString), CallSiteOpenNode)
-    return csOpenStmt
-  }
-  def createCSCloseNode(method: SootMethod, stmt: soot.Unit, sourceStmt: soot.Unit, callee: SootMethod): LambdaCallSite = {
-    val csCloseStmt = new LambdaCallSite()
-    csCloseStmt.set(CallSite(method.getDeclaringClass.toString, method.getSignature, stmt.toString, sourceStmt.toString,
-      stmt.getJavaSourceStartLineNumber, callee.toString), CallSiteCloseNode)
-    return csCloseStmt
-  }
+  def createCSOpenLabel(method: SootMethod, stmt: soot.Unit, sourceStmt: soot.Unit, callee: SootMethod): DefaultCallSiteLabel =
+    new DefaultCallSiteLabel(CallSiteData(method.getDeclaringClass.toString, method.getSignature,
+      stmt.toString, stmt.getJavaSourceStartLineNumber, sourceStmt.toString, callee.toString, CallSiteOpenEdge))
+
+  def createCSCloseLabel(method: SootMethod, stmt: soot.Unit, sourceStmt: soot.Unit, callee: SootMethod): DefaultCallSiteLabel =
+    new DefaultCallSiteLabel(CallSiteData(method.getDeclaringClass.toString, method.getSignature,
+      stmt.toString, stmt.getJavaSourceStartLineNumber, sourceStmt.toString, callee.toString, CallSiteCloseEdge))
 
   def isThisInitStmt(expr: InvokeExpr, unit: soot.Unit) : Boolean =
     unit.isInstanceOf[IdentityStmt] && unit.asInstanceOf[IdentityStmt].getRightOp.isInstanceOf[ThisRef]
@@ -480,18 +461,18 @@ abstract class JSVFA extends SVFA with FieldSensitiveness with SourceSinkDef wit
     }
 
     // this first case can still introduce irrelevant nodes
-    if(svg.contains(source)) {//) || svg.map.contains(target)) {
-      svg.addEdge(source, target)
-      res = true
-    }
-    else if(source.nodeType == SourceNode || source.nodeType == SinkNode) {
-      svg.addEdge(source, target)
-      res = true
-    }
-    else if(target.nodeType == SourceNode || target.nodeType == SinkNode) {
-      svg.addEdge(source, target)
-      res = true
-    }
+//    if(svg.contains(source)) {//) || svg.map.contains(target)) {
+//      svg.addEdge(source, target)
+//      res = true
+//    }
+//    else if(source.nodeType == SourceNode || source.nodeType == SinkNode) {
+//      svg.addEdge(source, target)
+//      res = true
+//    }
+//    else if(target.nodeType == SourceNode || target.nodeType == SinkNode) {
+//      svg.addEdge(source, target)
+//      res = true
+//    }
     return res
   }
 }
