@@ -9,6 +9,11 @@ This is a scala implementation of a framework that builds a sparse-value flow gr
 ## Usage
 
    * clone this repository or download an stable release
+   * you will need to add a github token to your **~/.gitconfig**.
+     ```
+     [github]
+             token = TOKEN
+     ```
    * build this project using sbt (`sbt compile test`)
    * publish the artifact as a JAR file in your m2 repository (`sbt publish`)
    * create a dependency to the svfa-scala artifact in your maven project. 
