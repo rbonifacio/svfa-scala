@@ -162,4 +162,130 @@ class BasicTestSuite extends FunSuite {
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflicts().size == 1)
   }
+
+  test("in the class Basic21 we should detect 4 conflicts in a SQL injection with less commonly used methods test case") {
+    val svfa = new BasicTest("securibench.micro.basic.Basic21", "doGet")
+    svfa.buildSparseValueFlowGraph()
+    assert(svfa.reportConflicts().size == 4)
+  }
+
+  test("in the class Basic22 we should detect 1 conflict in a basic path traversal test case") {
+    val svfa = new BasicTest("securibench.micro.basic.Basic22", "doGet")
+    svfa.buildSparseValueFlowGraph()
+    assert(svfa.reportConflicts().size == 1)
+  }
+
+  test("in the class Basic23 we should detect 3 conflicts in a path traversal test case") {
+    val svfa = new BasicTest("securibench.micro.basic.Basic23", "doGet")
+    svfa.buildSparseValueFlowGraph()
+    assert(svfa.reportConflicts().size == 3)
+  }
+
+  test("in the class Basic24 we should detect 1 conflict in a unsafe redirect test case") {
+    val svfa = new BasicTest("securibench.micro.basic.Basic24", "doGet")
+    svfa.buildSparseValueFlowGraph()
+    assert(svfa.reportConflicts().size == 1)
+  }
+
+  test("in the class Basic25 we should detect 1 conflict in a test getParameterValues test case") {
+    val svfa = new BasicTest("securibench.micro.basic.Basic25", "doGet")
+    svfa.buildSparseValueFlowGraph()
+    assert(svfa.reportConflicts().size == 1)
+  }
+
+  test("in the class Basic26 we should detect 1 conflict in a getParameterMap test case") {
+    val svfa = new BasicTest("securibench.micro.basic.Basic26", "doGet")
+    svfa.buildSparseValueFlowGraph()
+    assert(svfa.reportConflicts().size == 1)
+  }
+
+  test("in the class Basic27 we should detect 1 conflict in a getParameterMap test case") {
+    val svfa = new BasicTest("securibench.micro.basic.Basic27", "doGet")
+    svfa.buildSparseValueFlowGraph()
+    assert(svfa.reportConflicts().size == 1)
+  }
+
+  test("in the class Basic28 we should detect 2 conflicts in a complicated control flow test case") {
+    val svfa = new BasicTest("securibench.micro.basic.Basic28", "doGet")
+    svfa.buildSparseValueFlowGraph()
+    assert(svfa.reportConflicts().size == 2)
+  }
+
+  test("in the class Basic29 we should detect 2 conflicts in a recursive data structures test case") {
+    val svfa = new BasicTest("securibench.micro.basic.Basic29", "doGet")
+    svfa.buildSparseValueFlowGraph()
+    assert(svfa.reportConflicts().size == 2)
+  }
+
+  test("in the class Basic30 we should detect 1 conflict in a field sensitivity test case") {
+    val svfa = new BasicTest("securibench.micro.basic.Basic30", "doGet")
+    svfa.buildSparseValueFlowGraph()
+    assert(svfa.reportConflicts().size == 1)
+  }
+
+  test("in the class Basic31 we should detect 2 conflicts in a values obtained from cookies test case") {
+    val svfa = new BasicTest("securibench.micro.basic.Basic31", "doGet")
+    svfa.buildSparseValueFlowGraph()
+    assert(svfa.reportConflicts().size == 2)
+  }
+
+  test("in the class Basic32 we should detect 1 conflict in a values obtained from headers test case") {
+    val svfa = new BasicTest("securibench.micro.basic.Basic32", "doGet")
+    svfa.buildSparseValueFlowGraph()
+    assert(svfa.reportConflicts().size == 1)
+  }
+
+  test("in the class Basic33 we should detect 1 conflict in a values obtained from headers test case") {
+    val svfa = new BasicTest("securibench.micro.basic.Basic33", "doGet")
+    svfa.buildSparseValueFlowGraph()
+    assert(svfa.reportConflicts().size == 1)
+  }
+
+  test("in the class Basic34 we should detect 2 conflicts in a values obtained from headers test case") {
+    val svfa = new BasicTest("securibench.micro.basic.Basic34", "doGet")
+    svfa.buildSparseValueFlowGraph()
+    assert(svfa.reportConflicts().size == 2)
+  }
+
+  test("in the class Basic35 we should detect 6 conflicts in a values obtained from HttpServletRequest test case") {
+    val svfa = new BasicTest("securibench.micro.basic.Basic35", "doGet")
+    svfa.buildSparseValueFlowGraph()
+    assert(svfa.reportConflicts().size == 6)
+  }
+
+  test("in the class Basic36 we should detect 1 conflict in a values obtained from HttpServletRequest input stream test case") {
+    val svfa = new BasicTest("securibench.micro.basic.Basic36", "doGet")
+    svfa.buildSparseValueFlowGraph()
+    assert(svfa.reportConflicts().size == 1)
+  }
+
+  test("in the class Basic37 we should detect 1 conflict in a StringTokenizer test case") {
+    val svfa = new BasicTest("securibench.micro.basic.Basic37", "doGet")
+    svfa.buildSparseValueFlowGraph()
+    assert(svfa.reportConflicts().size == 1)
+  }
+
+  test("in the class Basic38 we should detect 1 conflict in a StringTokenizer with a false positive test case") {
+    val svfa = new BasicTest("securibench.micro.basic.Basic38", "doGet")
+    svfa.buildSparseValueFlowGraph()
+    assert(svfa.reportConflicts().size == 1)
+  }
+
+  test("in the class Basic39 we should detect 1 conflict in a StringTokenizer test case") {
+    val svfa = new BasicTest("securibench.micro.basic.Basic39", "doGet")
+    svfa.buildSparseValueFlowGraph()
+    assert(svfa.reportConflicts().size == 1)
+  }
+
+  test("in the class Basic41 we should detect 1 conflict in a use getInitParameter instead test case") {
+    val svfa = new BasicTest("securibench.micro.basic.Basic41", "doGet")
+    svfa.buildSparseValueFlowGraph()
+    assert(svfa.reportConflicts().size == 1)
+  }
+
+  test("in the class Basic42 we should detect 1 conflict in a use getInitParameterNames test case") {
+    val svfa = new BasicTest("securibench.micro.basic.Basic42", "doGet")
+    svfa.buildSparseValueFlowGraph()
+    assert(svfa.reportConflicts().size == 1)
+  }
 }

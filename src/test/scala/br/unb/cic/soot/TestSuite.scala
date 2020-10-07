@@ -11,7 +11,7 @@ class TestSuite extends FunSuite with BeforeAndAfter {
     assert(svfa.reportConflicts().size == 3)
   }
 
-  ignore("we should correctly compute the number of nodes and edges in the BlackBoardTest sample") {
+  test("we should correctly compute the number of nodes and edges in the BlackBoardTest sample") {
     val svfa = new BlackBoardTest()
     svfa.buildSparseValueFlowGraph()
     assert(svfa.svg.nodes.size == 10)
@@ -24,7 +24,7 @@ class TestSuite extends FunSuite with BeforeAndAfter {
     assert(svfa.reportConflicts().size == 0)
   }
 
-  ignore("we should correctly compute the number of nodes and edges of the CC16Test sample") {
+  test("we should correctly compute the number of nodes and edges of the CC16Test sample") {
     val svfa = new CC16Test()
     svfa.buildSparseValueFlowGraph()
     assert(svfa.svg.nodes.size == 13)
@@ -38,13 +38,13 @@ class TestSuite extends FunSuite with BeforeAndAfter {
     assert(svfa.reportConflicts().size == 1)
   }
 
-  ignore("we should correctly compute the number of nodes and edges of the IfElseTest sample") {
+  test("we should correctly compute the number of nodes and edges of the IfElseTest sample") {
     val svfa = new IfElseTest()
     svfa.buildSparseValueFlowGraph()
     assert(svfa.svg.nodes.size == 17)
   }
 
-  ignore("we should correctly compute the number of edges of the IfElseTest sample") {
+  test("we should correctly compute the number of edges of the IfElseTest sample") {
     val svfa = new IfElseTest()
     svfa.buildSparseValueFlowGraph()
     assert(svfa.svg.numberOfEdges() == 18)

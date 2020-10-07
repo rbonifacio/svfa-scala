@@ -2,7 +2,7 @@ package br.unb.cic.soot.svfa.jimple
 
 import java.util
 
-import br.unb.cic.soot.graph.{CallSiteCloseEdge, CallSiteData, CallSiteOpenEdge, DefaultCallSiteLabel, LambdaNode, SinkNode, SourceNode, Stmt, StmtNode}
+import br.unb.cic.soot.graph.{CallSiteCloseEdge, CallSiteData, CallSiteOpenEdge, DefaultCallSiteLabel, LambdaNode, SimpleNode, SinkNode, SourceNode, Stmt, StmtNode}
 import br.unb.cic.soot.svfa.{SVFA, SourceSinkDef}
 import com.typesafe.scalalogging.LazyLogging
 import soot.jimple._
