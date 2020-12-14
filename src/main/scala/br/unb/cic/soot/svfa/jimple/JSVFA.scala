@@ -12,7 +12,7 @@ import soot.jimple.spark.pag.{AllocNode, PAG}
 import soot.jimple.spark.sets.{DoublePointsToSet, HybridPointsToSet, P2SetVisitor}
 import soot.toolkits.graph.ExceptionalUnitGraph
 import soot.toolkits.scalar.SimpleLocalDefs
-import soot.{ArrayType, Local, Scene, SceneTransformer, SootField, SootMethod, Transform}
+import soot.{ArrayType, Local, Scene, SceneTransformer, SootField, SootMethod, Transform, jimple}
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -90,48 +90,67 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
     })
   }
 
-  def traverse(assignStmt: AssignStmt, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
-    val targetStmt = assignStmt.stmt
-    var createArrayRef = true
 
-    targetStmt.getRightOp match {
-      case exp : Local => copyRule(assignStmt.base, exp, method, defs)
-      case exp : InvokeExpr => invokeRule(assignStmt, exp, method, defs)
-      case exp : InstanceFieldRef => loadRule(assignStmt.base, exp, method, defs)
-      case exp : JArrayRef => loadRule(assignStmt.base, exp, method, defs)
-      case _ => {
-        createArrayRef = false
-        targetStmt.getRightOp.getUseBoxes.forEach(box => {
-          if(box.getValue.isInstanceOf[Local]) {
-            val local = box.getValue.asInstanceOf[Local]
-            copyRule(assignStmt.base, local, method, defs)
-          }
+
+  def traverse(assignStmt: AssignStmt, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
+    val left = assignStmt.stmt.getLeftOp
+    val right = assignStmt.stmt.getRightOp
+
+    (left, right) match {
+      case (p: Local, q: InstanceFieldRef) => loadRule(assignStmt.stmt, q, method, defs)
+      case (p: Local, q: ArrayRef) => loadArrayRule(assignStmt.stmt, q, method, defs)
+      case (p: Local, q: InvokeExpr) => invokeRule(assignStmt, q, method, defs)
+      case (p: Local, q: Local) => copyRule(assignStmt.stmt, q, method, defs)
+      case (p: Local, _) => copyRuleInvolvingExpressions(assignStmt.stmt, method, defs)
+      case (p: InstanceFieldRef, q: Local) => storeRule(assignStmt.stmt, method, defs)
+      case (p: JArrayRef, _) => storeArrayRule(assignStmt)
+      case _ =>
+    }
+//    if(createArrayRef && targetStmt.getLeftOp.isInstanceOf[JArrayRef] ) {
+//      val l = targetStmt.getLeftOp.asInstanceOf[JArrayRef].getBase.asInstanceOf[Local]
+//      val stores = targetStmt :: arrayStores.getOrElseUpdate(l, List())
+//      arrayStores.put(l, stores)
+//    }
+
+  }
+
+  def visitAssignment(stmt: AssignStmt, method: SootMethod, defs: SimpleLocalDefs, left: Local, right: Local) : Unit = {
+    copyRule(stmt.base, right, method, defs)
+  }
+
+  private def storeRule(targetStmt: jimple.AssignStmt, method: SootMethod, defs: SimpleLocalDefs) = {
+    val local = targetStmt.getRightOp.asInstanceOf[Local]
+    val fieldRef = targetStmt.getLeftOp.asInstanceOf[InstanceFieldRef]
+    if (fieldRef.getBase.isInstanceOf[Local]) {
+      val base = fieldRef.getBase.asInstanceOf[Local]
+      if (fieldRef.getField.getDeclaringClass.getName == "java.lang.String" && fieldRef.getField.getName == "value") {
+        defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
+          val source = createNode(method, sourceStmt)
+          val allocationNodes = findAllocationSites(base)
+          allocationNodes.foreach(targetNode => {
+            updateGraph(source, targetNode)
+          })
         })
       }
-    }
-
-    if(createArrayRef && targetStmt.getLeftOp.isInstanceOf[JArrayRef] ) {
-      val l = targetStmt.getLeftOp.asInstanceOf[JArrayRef].getBase.asInstanceOf[Local]
-      val stores = targetStmt :: arrayStores.getOrElseUpdate(l, List())
-      arrayStores.put(l, stores)
-    }
-
-    if(targetStmt.getLeftOp.isInstanceOf[InstanceFieldRef] && targetStmt.getRightOp.isInstanceOf[Local]) {
-      val local = targetStmt.getRightOp.asInstanceOf[Local]
-      val fieldRef = targetStmt.getLeftOp.asInstanceOf[InstanceFieldRef]
-      if(fieldRef.getBase.isInstanceOf[Local]) {
-        val base = fieldRef.getBase.asInstanceOf[Local]
-        if(fieldRef.getField.getDeclaringClass.getName == "java.lang.String" && fieldRef.getField.getName == "value") {
-          defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
-            val source = createNode(method, sourceStmt)
-            val allocationNodes = findAllocationSites(base)
-            allocationNodes.foreach(targetNode => {
-                updateGraph(source, targetNode)
-              })
-          })
-        }
+      else {
+//        val allocationNodes = findAllocationSites(base, true, fieldRef.getField)
+//        if(!allocationNodes.isEmpty) {
+          //allocationNodes.foreach(targetNode => {
+            defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
+              val source = createNode(method, sourceStmt)
+              val target = createNode(method, targetStmt)
+              updateGraph(source, target)
+            })
+          //})
+        //}
       }
     }
+  }
+
+  def storeArrayRule(assignStmt: AssignStmt) {
+    val l = assignStmt.stmt.getLeftOp.asInstanceOf[JArrayRef].getBase.asInstanceOf[Local]
+    val stores = assignStmt.stmt :: arrayStores.getOrElseUpdate(l, List())
+    arrayStores.put(l, stores)
   }
 
   def traverse(stmt: InvokeStmt, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
@@ -221,6 +240,15 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
     traverse(callee)
   }
 
+  def copyRuleInvolvingExpressions(stmt: jimple.AssignStmt, method: SootMethod, defs: SimpleLocalDefs) = {
+    stmt.getRightOp.getUseBoxes.forEach(box => {
+      if(box.getValue.isInstanceOf[Local]) {
+        val local = box.getValue.asInstanceOf[Local]
+        copyRule(stmt, local, method, defs)
+      }
+    })
+  }
+
   private def loadRule(stmt: soot.Unit, ref: InstanceFieldRef, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
     val base = ref.getBase
     // value field of a string.
@@ -246,7 +274,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
     }
   }
 
-  private def loadRule(targetStmt: soot.Unit, ref: JArrayRef, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
+  private def loadArrayRule(targetStmt: soot.Unit, ref: ArrayRef, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
     val base = ref.getBase
     logger.info(base.getClass.toString)
     if(base.isInstanceOf[Local]) {
