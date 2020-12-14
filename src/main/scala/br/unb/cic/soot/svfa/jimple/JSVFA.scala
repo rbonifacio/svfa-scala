@@ -106,17 +106,8 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
       case (p: JArrayRef, _) => storeArrayRule(assignStmt)
       case _ =>
     }
-//    if(createArrayRef && targetStmt.getLeftOp.isInstanceOf[JArrayRef] ) {
-//      val l = targetStmt.getLeftOp.asInstanceOf[JArrayRef].getBase.asInstanceOf[Local]
-//      val stores = targetStmt :: arrayStores.getOrElseUpdate(l, List())
-//      arrayStores.put(l, stores)
-//    }
-
   }
 
-  def visitAssignment(stmt: AssignStmt, method: SootMethod, defs: SimpleLocalDefs, left: Local, right: Local) : Unit = {
-    copyRule(stmt.base, right, method, defs)
-  }
 
   private def storeRule(targetStmt: jimple.AssignStmt, method: SootMethod, defs: SimpleLocalDefs) = {
     val local = targetStmt.getRightOp.asInstanceOf[Local]
