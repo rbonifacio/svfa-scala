@@ -113,7 +113,7 @@ class TestSuite extends FunSuite with BeforeAndAfter {
     val svfa = new FieldTest()
     svfa.buildSparseValueFlowGraph()
     System.out.println(svfa.svgToDotModel())
-    assert(svfa.reportConflicts().size >= 1)
+    assert(svfa.reportConflicts().size >= 2)
   }
 
 }
