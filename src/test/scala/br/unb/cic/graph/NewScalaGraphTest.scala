@@ -1,6 +1,6 @@
 package br.unb.cic.graph
 
-import br.unb.cic.soot.graph.{SinkNode, SourceNode, Stmt, StmtNode}
+import br.unb.cic.soot.graph.{SimpleNode, SinkNode, SourceNode, Stmt, StmtNode}
 import org.scalatest.FunSuite
 
 class NewScalaGraphTest extends FunSuite {
@@ -57,6 +57,34 @@ class NewScalaGraphTest extends FunSuite {
 
     assert(g.numberOfNodes() == 2)
     assert(g.numberOfEdges() == 1)
+  }
+
+  test("try find all paths") {
+    val g = new br.unb.cic.soot.graph.Graph()
+
+    val FakeSource = StmtNode(Stmt("FooClass", "FooMethod", "FooStmt", 1), SourceNode)
+    val NormalStmt = StmtNode(Stmt("NormalClass", "NormalMethod", "NormalStmt", 3), SimpleNode)
+    val FakeSink = StmtNode(Stmt("BarClass", "BarMethod", "BarStmt", 2), SinkNode)
+    val FakeSink2 = StmtNode(Stmt("BooClass", "BooMethod", "BooStmt", 2), SinkNode)
+
+    g.addEdge(FakeSource, NormalStmt)
+    assert(g.numberOfNodes() == 2)
+    assert(g.numberOfEdges() == 1)
+
+    g.addEdge(NormalStmt, FakeSink)
+    assert(g.numberOfNodes() == 3)
+    assert(g.numberOfEdges() == 2)
+
+    g.addEdge(NormalStmt, FakeSink2)
+    assert(g.numberOfNodes() == 4)
+    assert(g.numberOfEdges() == 3)
+
+    g.addEdge(FakeSource, FakeSink2)
+    assert(g.numberOfNodes() == 4)
+    assert(g.numberOfEdges() == 4)
+
+    assert(g.findPath(FakeSource, FakeSink).nonEmpty)
+    assert(g.findPath(FakeSource, FakeSink2).nonEmpty)
   }
 
   ignore("base") {
