@@ -4,6 +4,7 @@ import java.util
 
 import br.unb.cic.soot.graph._
 import br.unb.cic.soot.svfa.rules.ArrayCopyRule
+import br.unb.cic.soot.graph.{CallSiteCloseEdge, CallSite, CallSiteOpenEdge, CallSiteLabel, LambdaNode, SimpleNode, SinkNode, SourceNode, Stmt, StmtNode}
 import br.unb.cic.soot.svfa.{SVFA, SourceSinkDef}
 import com.typesafe.scalalogging.LazyLogging
 import soot.jimple._
