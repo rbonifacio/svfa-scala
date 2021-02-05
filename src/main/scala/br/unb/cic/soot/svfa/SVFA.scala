@@ -1,12 +1,12 @@
 package br.unb.cic.soot.svfa
 
 import java.io.File
-
 import br.unb.cic.soot.graph.{LambdaNode, SinkNode, SourceNode}
 import soot._
 import soot.options.Options
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 
 
 sealed trait CG
@@ -73,21 +73,26 @@ abstract class SVFA {
    }
 
    def findConflictingPaths(): scala.collection.Set[List[LambdaNode]] = {
-      val sourceNodes = svg.nodes.filter(n => n.nodeType == SourceNode)
-      val sinkNodes = svg.nodes.filter(n => n.nodeType == SinkNode)
+      if (svg.fullGraph) {
+         val conflicts = svg.findPathsFullGraph()
+         return conflicts.toSet
+      } else {
+         val sourceNodes = svg.nodes.filter(n => n.nodeType == SourceNode)
+         val sinkNodes = svg.nodes.filter(n => n.nodeType == SinkNode)
 
-//      val conflicts = for(source <- sourceNodes; sink <- sinkNodes)
-//         yield svg.findPath(source, sink)
+         //      val conflicts = for(source <- sourceNodes; sink <- sinkNodes)
+         //         yield svg.findPath(source, sink)
 
-      var conflicts: List[List[LambdaNode]] = List()
-      sourceNodes.foreach(source => {
-         sinkNodes.foreach(sink => {
-            val paths = svg.findPath(source, sink)
-            conflicts = conflicts ++ paths
+         var conflicts: List[List[LambdaNode]] = List()
+         sourceNodes.foreach(source => {
+            sinkNodes.foreach(sink => {
+               val paths = svg.findPath(source, sink)
+               conflicts = conflicts ++ paths
+            })
          })
-      })
 
-      conflicts.filter(p => p.nonEmpty).toSet
+         conflicts.filter(p => p.nonEmpty).toSet
+      }
    }
 
 

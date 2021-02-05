@@ -2,7 +2,7 @@ package br.unb.cic.soot.svfa.jimple
 
 import java.util
 
-import br.unb.cic.soot.graph.{CallSiteCloseEdge, CallSiteData, CallSiteOpenEdge, DefaultCallSiteLabel, LambdaNode, SimpleNode, SinkNode, SourceNode, Stmt, StmtNode}
+import br.unb.cic.soot.graph.{CallSiteCloseEdge, CallSite, CallSiteOpenEdge, CallSiteLabel, LambdaNode, SimpleNode, SinkNode, SourceNode, Stmt, StmtNode}
 import br.unb.cic.soot.svfa.{SVFA, SourceSinkDef}
 import com.typesafe.scalalogging.LazyLogging
 import soot.jimple._
@@ -368,13 +368,13 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
   def createNode(method: SootMethod, stmt: soot.Unit): StmtNode =
     new StmtNode(Stmt(method.getDeclaringClass.toString, method.getSignature, stmt.toString, stmt.getJavaSourceStartLineNumber), analyze(stmt))
 
-  def createCSOpenLabel(method: SootMethod, stmt: soot.Unit, sourceStmt: soot.Unit, callee: SootMethod): DefaultCallSiteLabel =
-    new DefaultCallSiteLabel(CallSiteData(method.getDeclaringClass.toString, method.getSignature,
-      stmt.toString, stmt.getJavaSourceStartLineNumber, sourceStmt.toString, callee.toString, CallSiteOpenEdge))
+  def createCSOpenLabel(method: SootMethod, stmt: soot.Unit, sourceStmt: soot.Unit, callee: SootMethod): CallSiteLabel =
+    new CallSiteLabel(CallSite(method.getDeclaringClass.toString, method.getSignature,
+      stmt.toString, stmt.getJavaSourceStartLineNumber, sourceStmt.toString, callee.toString), CallSiteOpenEdge)
 
-  def createCSCloseLabel(method: SootMethod, stmt: soot.Unit, sourceStmt: soot.Unit, callee: SootMethod): DefaultCallSiteLabel =
-    new DefaultCallSiteLabel(CallSiteData(method.getDeclaringClass.toString, method.getSignature,
-      stmt.toString, stmt.getJavaSourceStartLineNumber, sourceStmt.toString, callee.toString, CallSiteCloseEdge))
+  def createCSCloseLabel(method: SootMethod, stmt: soot.Unit, sourceStmt: soot.Unit, callee: SootMethod): CallSiteLabel =
+    new CallSiteLabel(CallSite(method.getDeclaringClass.toString, method.getSignature,
+      stmt.toString, stmt.getJavaSourceStartLineNumber, sourceStmt.toString, callee.toString), CallSiteCloseEdge)
 
   def isThisInitStmt(expr: InvokeExpr, unit: soot.Unit) : Boolean =
     unit.isInstanceOf[IdentityStmt] && unit.asInstanceOf[IdentityStmt].getRightOp.isInstanceOf[ThisRef]
