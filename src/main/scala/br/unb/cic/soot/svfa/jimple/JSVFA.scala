@@ -2,7 +2,8 @@ package br.unb.cic.soot.svfa.jimple
 
 import java.util
 
-import br.unb.cic.soot.graph.{CallSiteCloseEdge, CallSite, CallSiteOpenEdge, CallSiteLabel, LambdaNode, SimpleNode, SinkNode, SourceNode, Stmt, StmtNode}
+import br.unb.cic.soot.graph._
+import br.unb.cic.soot.svfa.rules.ArrayCopyRule
 import br.unb.cic.soot.svfa.{SVFA, SourceSinkDef}
 import com.typesafe.scalalogging.LazyLogging
 import soot.jimple._
@@ -12,7 +13,7 @@ import soot.jimple.spark.pag.{AllocNode, PAG}
 import soot.jimple.spark.sets.{DoublePointsToSet, HybridPointsToSet, P2SetVisitor}
 import soot.toolkits.graph.ExceptionalUnitGraph
 import soot.toolkits.scalar.SimpleLocalDefs
-import soot.{ArrayType, Local, Scene, SceneTransformer, SootField, SootMethod, Transform}
+import soot.{ArrayType, Local, Scene, SceneTransformer, SootField, SootMethod, Transform, jimple}
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -27,6 +28,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
   val traversedMethods = scala.collection.mutable.Set.empty[SootMethod]
   val allocationSites = scala.collection.mutable.HashMap.empty[soot.Value, soot.Unit]
   val arrayStores = scala.collection.mutable.HashMap.empty[Local, List[soot.Unit]]
+  val phantomMethodRules = List(new ArrayCopyRule)
 
   def createSceneTransform(): (String, Transform) = ("wjtp", new Transform("wjtp.svfa", new Transformer()))
 
@@ -66,8 +68,8 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
     }
   }
 
-  def traverse(method: SootMethod, forseNewTraversal: Boolean = false) : Unit = {
-    if((!forseNewTraversal) && (method.isPhantom || traversedMethods.contains(method))) {
+  def traverse(method: SootMethod, forceNewTraversal: Boolean = false) : Unit = {
+    if((!forceNewTraversal) && (method.isPhantom || traversedMethods.contains(method))) {
       return
     }
 
@@ -84,55 +86,29 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
       v match {
         case AssignStmt(base) => traverse(AssignStmt(base), method, defs)
         case InvokeStmt(base) => traverse(InvokeStmt(base), method, defs)
-        case _ if(analyze(unit) == SinkNode) => traverseSinkStatement(v, method, defs)
+        case _ if analyze(unit) == SinkNode => traverseSinkStatement(v, method, defs)
         case _ =>
       }
     })
   }
 
+
   def traverse(assignStmt: AssignStmt, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
-    val targetStmt = assignStmt.stmt
-    var createArrayRef = true
+    val left = assignStmt.stmt.getLeftOp
+    val right = assignStmt.stmt.getRightOp
 
-    targetStmt.getRightOp match {
-      case exp : Local => copyRule(assignStmt.base, exp, method, defs)
-      case exp : InvokeExpr => invokeRule(assignStmt, exp, method, defs)
-      case exp : InstanceFieldRef => loadRule(assignStmt.base, exp, method, defs)
-      case exp : JArrayRef => loadRule(assignStmt.base, exp, method, defs)
-      case _ => {
-        createArrayRef = false
-        targetStmt.getRightOp.getUseBoxes.forEach(box => {
-          if(box.getValue.isInstanceOf[Local]) {
-            val local = box.getValue.asInstanceOf[Local]
-            copyRule(assignStmt.base, local, method, defs)
-          }
-        })
-      }
-    }
-
-    if(createArrayRef && targetStmt.getLeftOp.isInstanceOf[JArrayRef] ) {
-      val l = targetStmt.getLeftOp.asInstanceOf[JArrayRef].getBase.asInstanceOf[Local]
-      val stores = targetStmt :: arrayStores.getOrElseUpdate(l, List())
-      arrayStores.put(l, stores)
-    }
-
-    if(targetStmt.getLeftOp.isInstanceOf[InstanceFieldRef] && targetStmt.getRightOp.isInstanceOf[Local]) {
-      val local = targetStmt.getRightOp.asInstanceOf[Local]
-      val fieldRef = targetStmt.getLeftOp.asInstanceOf[InstanceFieldRef]
-      if(fieldRef.getBase.isInstanceOf[Local]) {
-        val base = fieldRef.getBase.asInstanceOf[Local]
-        if(fieldRef.getField.getDeclaringClass.getName == "java.lang.String" && fieldRef.getField.getName == "value") {
-          defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
-            val source = createNode(method, sourceStmt)
-            val allocationNodes = findAllocationSites(base)
-            allocationNodes.foreach(targetNode => {
-                updateGraph(source, targetNode)
-              })
-          })
-        }
-      }
+    (left, right) match {
+      case (p: Local, q: InstanceFieldRef) => loadRule(assignStmt.stmt, q, method, defs)
+      case (p: Local, q: ArrayRef) => loadArrayRule(assignStmt.stmt, q, method, defs)
+      case (p: Local, q: InvokeExpr) => invokeRule(assignStmt, q, method, defs)
+      case (p: Local, q: Local) => copyRule(assignStmt.stmt, q, method, defs)
+      case (p: Local, _) => copyRuleInvolvingExpressions(assignStmt.stmt, method, defs)
+      case (p: InstanceFieldRef, _: Local) => storeRule(assignStmt.stmt, p, method, defs)
+      case (p: JArrayRef, _) => storeArrayRule(assignStmt)
+      case _ =>
     }
   }
+
 
   def traverse(stmt: InvokeStmt, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
     val exp = stmt.stmt.getInvokeExpr
@@ -152,23 +128,13 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
     })
   }
 
-  private def copyRule(targetStmt: soot.Unit, local: Local, method: SootMethod, defs: SimpleLocalDefs) = {
-    defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
-      val source = createNode(method, sourceStmt)
-      val target = createNode(method, targetStmt)
-      updateGraph(source, target)
-    })
-  }
 
   private def invokeRule(callStmt: Statement, exp: InvokeExpr, caller: SootMethod, defs: SimpleLocalDefs): Unit = {
     val callee = exp.getMethod
 
-    logger.debug(exp.getMethod.toString + callStmt.base.getJavaSourceStartLineNumber.toString())
-
     if(analyze(callStmt.base) == SinkNode) {
       defsToCallOfSinkMethod(callStmt, exp, caller, defs)
-      // TODO: Is really necessary analyse the sink method
-       return
+      return
     }
 
     if(analyze(callStmt.base) == SourceNode) {
@@ -182,17 +148,10 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
     //  call-site and the target method, even though
     //  the method does not have an active body.
     if(callee.isPhantom || (!callee.hasActiveBody && callee.getSource == null)) {
-      if(callee.getDeclaringClass.getName == "java.lang.System" && callee.getName == "arraycopy") {
-        val srcArg = exp.getArg(0)
-        val destArg = exp.getArg(2)
-        if(srcArg.isInstanceOf[Local] && destArg.isInstanceOf[Local]) {
-          defs.getDefsOfAt(srcArg.asInstanceOf[Local], callStmt.base).forEach(srcArgDefStmt => {
-            val sourceNode = createNode(caller, srcArgDefStmt)
-            val allocationNodes = findAllocationSites(destArg.asInstanceOf[Local])
-            allocationNodes.foreach(targetNode => {
-              updateGraph(sourceNode, targetNode)
-            })
-          })
+      for(r <- phantomMethodRules) {
+        if(r.check(callee)) {
+          applyPhantomMethodCallRule(callStmt, exp, caller, defs)
+          return
         }
       }
       return
@@ -221,6 +180,58 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
     traverse(callee)
   }
 
+  private def applyPhantomMethodCallRule(callStmt: Statement, exp: InvokeExpr, caller: SootMethod, defs: SimpleLocalDefs) = {
+    val srcArg = exp.getArg(0)
+    val destArg = exp.getArg(2)
+    if (srcArg.isInstanceOf[Local] && destArg.isInstanceOf[Local]) {
+      defs.getDefsOfAt(srcArg.asInstanceOf[Local], callStmt.base).forEach(srcArgDefStmt => {
+        val sourceNode = createNode(caller, srcArgDefStmt)
+        val allocationNodes = findAllocationSites(destArg.asInstanceOf[Local])
+        allocationNodes.foreach(targetNode => {
+          updateGraph(sourceNode, targetNode)
+        })
+      })
+    }
+  }
+
+  /*
+     * This rule deals with the following situation:
+     *
+     * (*) p = q
+     *
+     * In this case, we create an edge from defs(q)
+     * to the statement p = q.
+     */
+  private def copyRule(targetStmt: soot.Unit, local: Local, method: SootMethod, defs: SimpleLocalDefs) = {
+    defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
+      val source = createNode(method, sourceStmt)
+      val target = createNode(method, targetStmt)
+      updateGraph(source, target)
+    })
+  }
+
+  /*
+   * This rule deals with the following situation:
+   *
+   * (*) p = q + r
+   *
+   * In this case, we create and edge from defs(q) and
+   * from defs(r) to the statement p = q + r
+   */
+  def copyRuleInvolvingExpressions(stmt: jimple.AssignStmt, method: SootMethod, defs: SimpleLocalDefs) = {
+    stmt.getRightOp.getUseBoxes.forEach(box => {
+      if(box.getValue.isInstanceOf[Local]) {
+        val local = box.getValue.asInstanceOf[Local]
+        copyRule(stmt, local, method, defs)
+      }
+    })
+  }
+
+  /*
+   * This rule deals with the following situations:
+   *
+   *  (*) p = q.f
+   */
   private def loadRule(stmt: soot.Unit, ref: InstanceFieldRef, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
     val base = ref.getBase
     // value field of a string.
@@ -246,13 +257,11 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
     }
   }
 
-  private def loadRule(targetStmt: soot.Unit, ref: JArrayRef, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
+  private def loadArrayRule(targetStmt: soot.Unit, ref: ArrayRef, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
     val base = ref.getBase
-    logger.info(base.getClass.toString)
+
     if(base.isInstanceOf[Local]) {
       val local = base.asInstanceOf[Local]
-      // an edge for each full assignment of the array to
-      // this target statement.
 
       defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
         val source = createNode(method, sourceStmt)
@@ -260,8 +269,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
         updateGraph(source, target)
       })
 
-      // and edge for each assignment to a single position
-      // of the array, to this target assignment.
       val stores = arrayStores.getOrElseUpdate(local, List())
       stores.foreach(sourceStmt => {
         val source = createNode(method, sourceStmt)
@@ -269,6 +276,45 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
         updateGraph(source, target)
       })
     }
+  }
+
+  /*
+   * This rule deals with statements in the form:
+   *
+   * (*) p.f = expression
+   */
+  private def storeRule(targetStmt: jimple.AssignStmt, fieldRef: InstanceFieldRef, method: SootMethod, defs: SimpleLocalDefs) = {
+    val local = targetStmt.getRightOp.asInstanceOf[Local]
+    if (fieldRef.getBase.isInstanceOf[Local]) {
+      val base = fieldRef.getBase.asInstanceOf[Local]
+      if (fieldRef.getField.getDeclaringClass.getName == "java.lang.String" && fieldRef.getField.getName == "value") {
+        defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
+          val source = createNode(method, sourceStmt)
+          val allocationNodes = findAllocationSites(base)
+          allocationNodes.foreach(targetNode => {
+            updateGraph(source, targetNode)
+          })
+        })
+      }
+      else {
+        //        val allocationNodes = findAllocationSites(base, true, fieldRef.getField)
+        //        if(!allocationNodes.isEmpty) {
+        //allocationNodes.foreach(targetNode => {
+        defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
+          val source = createNode(method, sourceStmt)
+          val target = createNode(method, targetStmt)
+          updateGraph(source, target)
+        })
+        //})
+        //}
+      }
+    }
+  }
+
+  def storeArrayRule(assignStmt: AssignStmt) {
+    val l = assignStmt.stmt.getLeftOp.asInstanceOf[JArrayRef].getBase.asInstanceOf[Local]
+    val stores = assignStmt.stmt :: arrayStores.getOrElseUpdate(l, List())
+    arrayStores.put(l, stores)
   }
 
   private def defsToCallSite(caller: SootMethod, callee: SootMethod, calleeDefs: SimpleLocalDefs, callStmt: soot.Unit, retStmt: soot.Unit) = {
@@ -366,7 +412,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
    * creates a graph node from a sootMethod / sootUnit
    */
   def createNode(method: SootMethod, stmt: soot.Unit): StmtNode =
-    new StmtNode(Stmt(method.getDeclaringClass.toString, method.getSignature, stmt.toString, stmt.getJavaSourceStartLineNumber), analyze(stmt))
+    new StmtNode(br.unb.cic.soot.graph.Stmt(method.getDeclaringClass.toString, method.getSignature, stmt.toString, stmt.getJavaSourceStartLineNumber), analyze(stmt))
 
   def createCSOpenLabel(method: SootMethod, stmt: soot.Unit, sourceStmt: soot.Unit, callee: SootMethod): CallSiteLabel =
     new CallSiteLabel(CallSite(method.getDeclaringClass.toString, method.getSignature,

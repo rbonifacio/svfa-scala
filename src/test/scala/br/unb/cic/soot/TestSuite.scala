@@ -2,6 +2,7 @@ package br.unb.cic.soot
 
 import br.unb.cic.soot.basic.Basic11Test
 import org.scalatest.{BeforeAndAfter, FunSuite}
+import samples.FieldSample
 
 class TestSuite extends FunSuite with BeforeAndAfter {
 
@@ -105,6 +106,13 @@ class TestSuite extends FunSuite with BeforeAndAfter {
     svfa.buildSparseValueFlowGraph()
     // println(svfa.svgToDotModel())
     assert(svfa.reportConflicts().size == 1)
+  }
+
+  test("we should find exactly one conflict in the FieldSample  analysis") {
+    val svfa = new FieldTest()
+    svfa.buildSparseValueFlowGraph()
+    System.out.println(svfa.svgToDotModel())
+    assert(svfa.reportConflicts().size >= 2)
   }
 
 }
