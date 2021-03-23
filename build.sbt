@@ -23,7 +23,7 @@ resolvers += Classpaths.typesafeReleases
 
 libraryDependencies += "org.typelevel" %% "cats-core" % "1.6.0"
 
-libraryDependencies += "ca.mcgill.sable" % "soot" % "3.3.1"
+libraryDependencies += "ca.mcgill.sable" % "soot" % "4.1.0"
 libraryDependencies += "com.google.guava" % "guava" % "27.1-jre"
 libraryDependencies += "org.scala-graph" %% "graph-core" % "1.13.0"
 
