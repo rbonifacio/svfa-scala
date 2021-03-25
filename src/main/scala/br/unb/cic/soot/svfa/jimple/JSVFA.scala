@@ -1,10 +1,9 @@
 package br.unb.cic.soot.svfa.jimple
 
 import java.util
-
 import br.unb.cic.soot.graph._
-import br.unb.cic.soot.svfa.rules.ArrayCopyRule
-import br.unb.cic.soot.graph.{CallSiteCloseEdge, CallSite, CallSiteOpenEdge, CallSiteLabel, LambdaNode, SimpleNode, SinkNode, SourceNode, Stmt, StmtNode}
+import br.unb.cic.soot.svfa.jimple.rules.{DoNothing, MissingActiveBodyRule, NamedMethodRule, NativeRule, RuleAction}
+import br.unb.cic.soot.graph.{CallSite, CallSiteCloseEdge, CallSiteLabel, CallSiteOpenEdge, LambdaNode, SimpleNode, SinkNode, SourceNode, Stmt, StmtNode}
 import br.unb.cic.soot.svfa.{SVFA, SourceSinkDef}
 import com.typesafe.scalalogging.LazyLogging
 import soot.jimple._
@@ -19,17 +18,49 @@ import soot.{ArrayType, Local, Scene, SceneTransformer, SootField, SootMethod, T
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
+
+
 /**
   * A Jimple based implementation of
   * SVFA.
   */
 abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with SourceSinkDef with LazyLogging {
 
+
   var methods = 0
   val traversedMethods = scala.collection.mutable.Set.empty[SootMethod]
   val allocationSites = scala.collection.mutable.HashMap.empty[soot.Value, soot.Unit]
   val arrayStores = scala.collection.mutable.HashMap.empty[Local, List[soot.Unit]]
-  val phantomMethodRules = List(new ArrayCopyRule)
+
+  val phantomMethodRules = List(
+    new NamedMethodRule("java.lang.System","arraycopy") with CopyBetweenArgs {
+      override def from: Int = 0
+      override def target: Int = 2
+    },
+    new NativeRule with DoNothing,
+    new MissingActiveBodyRule with DoNothing
+  )
+
+  trait CopyBetweenArgs extends RuleAction {
+    def from: Int
+    def target : Int
+
+    def apply(sootMethod: SootMethod, invokeStmt: jimple.Stmt, localDefs: SimpleLocalDefs) = {
+      val srcArg = invokeStmt.getInvokeExpr.getArg(from)
+      val destArg = invokeStmt.getInvokeExpr.getArg(target)
+      if (srcArg.isInstanceOf[Local] && destArg.isInstanceOf[Local]) {
+        localDefs.getDefsOfAt(srcArg.asInstanceOf[Local], invokeStmt).forEach(srcArgDefStmt => {
+          val sourceNode = createNode(sootMethod, srcArgDefStmt)
+          val allocationNodes = findAllocationSites(destArg.asInstanceOf[Local])
+          allocationNodes.foreach(targetNode => {
+            updateGraph(sourceNode, targetNode)
+          })
+        })
+      }
+    }
+  }
+
+
 
   def createSceneTransform(): (String, Transform) = ("wjtp", new Transform("wjtp.svfa", new Transformer()))
 
@@ -148,15 +179,15 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
     //  Perhaps we should create edges between the
     //  call-site and the target method, even though
     //  the method does not have an active body.
-    if(callee.isPhantom || (!callee.hasActiveBody && callee.getSource == null)) {
-      for(r <- phantomMethodRules) {
-        if(r.check(callee)) {
-          applyPhantomMethodCallRule(callStmt, exp, caller, defs)
-          return
-        }
+    //if(callee.isPhantom || (!callee.hasActiveBody && callee.getSource == null)) {
+    for(r <- phantomMethodRules) {
+      if(r.check(callee)) {
+        r.apply(caller, callStmt.base.asInstanceOf[jimple.Stmt], defs)
+        return
       }
-      return
     }
+//      return
+//    }
 
     if(intraprocedural()) return
 
@@ -409,11 +440,13 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
     }
   }
 
+
   /*
    * creates a graph node from a sootMethod / sootUnit
    */
   def createNode(method: SootMethod, stmt: soot.Unit): StmtNode =
-    new StmtNode(br.unb.cic.soot.graph.Stmt(method.getDeclaringClass.toString, method.getSignature, stmt.toString, stmt.getJavaSourceStartLineNumber), analyze(stmt))
+    StmtNode(br.unb.cic.soot.graph.Stmt(method.getDeclaringClass.toString, method.getSignature, stmt.toString, stmt.getJavaSourceStartLineNumber), analyze(stmt))
+
 
   def createCSOpenLabel(method: SootMethod, stmt: soot.Unit, sourceStmt: soot.Unit, callee: SootMethod): CallSiteLabel =
     new CallSiteLabel(CallSite(method.getDeclaringClass.toString, method.getSignature,
@@ -509,7 +542,9 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
       res = true
     }
 
-    // this first case can still introduce irrelevant nodes
+
+
+  // this first case can still introduce irrelevant nodes
 //    if(svg.contains(source)) {//) || svg.map.contains(target)) {
 //      svg.addEdge(source, target)
 //      res = true
