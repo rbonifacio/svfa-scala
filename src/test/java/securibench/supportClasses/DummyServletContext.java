@@ -14,6 +14,7 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
+import java.util.logging.Filter;
 
 import javax.servlet.*;
 import javax.servlet.descriptor.JspConfigDescriptor;
