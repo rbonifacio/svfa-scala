@@ -53,16 +53,3 @@ abstract class MissingActiveBodyRule() extends MethodRule {
 trait DoNothing extends RuleAction {
   def apply(sootMethod: SootMethod, invokeStmt: Stmt, localDefs: SimpleLocalDefs) = { }
 }
-
-/**
- * An action that copies the argument from to an argument target.
- */
-
-
-trait Foo {
-  def id: Int
-}
-
-class Blah extends Foo {
-  override def id: Int = 1
-}
