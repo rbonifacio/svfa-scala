@@ -1,7 +1,6 @@
 package br.unb.cic.soot.svfa.jimple
 
 import java.util
-import br.unb.cic.soot.graph._
 import br.unb.cic.soot.svfa.jimple.rules.{DoNothing, MissingActiveBodyRule, NamedMethodRule, NativeRule, RuleAction}
 import br.unb.cic.soot.graph.{CallSite, CallSiteCloseEdge, CallSiteLabel, CallSiteOpenEdge, LambdaNode, SimpleNode, SinkNode, SourceNode, Stmt, StmtNode}
 import br.unb.cic.soot.svfa.{SVFA, SourceSinkDef}
@@ -15,7 +14,6 @@ import soot.toolkits.graph.ExceptionalUnitGraph
 import soot.toolkits.scalar.SimpleLocalDefs
 import soot.{ArrayType, Local, Scene, SceneTransformer, SootField, SootMethod, Transform, jimple}
 
-import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 
@@ -32,15 +30,110 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
   val allocationSites = scala.collection.mutable.HashMap.empty[soot.Value, soot.Unit]
   val arrayStores = scala.collection.mutable.HashMap.empty[Local, List[soot.Unit]]
 
-  val phantomMethodRules = List(
+  val methodRules = List(
     new NamedMethodRule("java.lang.System","arraycopy") with CopyBetweenArgs {
       override def from: Int = 0
       override def target: Int = 2
     },
+    new NamedMethodRule("java.lang.StringBuffer", "append") with CopyFromMethodArgumentToBaseObject {
+      override def from: Int = 0
+    },
+    new NamedMethodRule("java.lang.StringBuffer", "toString") with CopyFromMethodCallToLocal,
     new NativeRule with DoNothing,
     new MissingActiveBodyRule with DoNothing
   )
 
+  /*
+   * Create an edge  from the definition of the local argument
+   * to the definitions of the base object of a method call. In
+   * more details, we should use this rule to address a situation
+   * like:
+   *
+   * - virtualinvoke r3.<java.lang.StringBuffer: java.lang.StringBuffer append(java.lang.String)>(r1);
+   *
+   * Where we wanto create an edge from the definitions of r1 to
+   * the definitions of r3.
+   */
+  trait CopyFromMethodArgumentToBaseObject extends RuleAction {
+    def from: Int
+
+    def apply(sootMethod: SootMethod, invokeStmt: jimple.Stmt, localDefs: SimpleLocalDefs) = {
+      val srcArg = invokeStmt.getInvokeExpr.getArg(from)
+      val expr = invokeStmt.getInvokeExpr
+      if(expr.isInstanceOf[VirtualInvokeExpr] && srcArg.isInstanceOf[Local]) {
+        val local = srcArg.asInstanceOf[Local]
+        val base = expr.asInstanceOf[VirtualInvokeExpr].getBase
+        if(base.isInstanceOf[Local]) {
+          val localBase = base.asInstanceOf[Local]
+          localDefs.getDefsOfAt(local, invokeStmt).forEach(sourceStmt => {
+            val sourceNode = createNode(sootMethod, sourceStmt)
+            localDefs.getDefsOfAt(localBase, invokeStmt).forEach(targetStmt =>{
+              val targetNode = createNode(sootMethod, targetStmt)
+              updateGraph(sourceNode, targetNode)
+            })
+          })
+        }
+      }
+    }
+  }
+
+  /*
+   * Create an edge from a method call to a local.
+   * In more details, we should use this rule to address
+   * a situation like:
+   *
+   * - $r6 = virtualinvoke r3.<java.lang.StringBuffer: java.lang.String toString()>();
+   *
+   * Where we want to create an edge from the definitions of r3 to
+   * this statement.
+   */
+  trait CopyFromMethodCallToLocal extends RuleAction {
+    def apply(sootMethod: SootMethod, invokeStmt: jimple.Stmt, localDefs: SimpleLocalDefs) = {
+      val expr = invokeStmt.getInvokeExpr
+      if(expr.isInstanceOf[VirtualInvokeExpr] && invokeStmt.isInstanceOf[jimple.AssignStmt]) {
+        val base = expr.asInstanceOf[VirtualInvokeExpr].getBase
+        val local = invokeStmt.asInstanceOf[jimple.AssignStmt].getLeftOp
+        if(base.isInstanceOf[Local] && local.isInstanceOf[Local]) {
+          val localBase = base.asInstanceOf[Local]
+          localDefs.getDefsOfAt(localBase, invokeStmt).forEach(source => {
+            val sourceNode = createNode(sootMethod, source)
+            val targetNode = createNode(sootMethod, invokeStmt)
+            updateGraph(sourceNode, targetNode)
+          })
+        }
+      }
+    }
+  }
+
+
+  trait CopyFromMethodArgumentToLocal extends RuleAction {
+    def from: Int
+
+    def apply(sootMethod: SootMethod, invokeStmt: jimple.Stmt, localDefs: SimpleLocalDefs) = {
+      val srcArg = invokeStmt.getInvokeExpr.getArg(from)
+
+      if(invokeStmt.isInstanceOf[AssignStmt] && srcArg.isInstanceOf[Local]) {
+        val local = srcArg.asInstanceOf[Local]
+        val targetStmt = invokeStmt.asInstanceOf[jimple.AssignStmt]
+        localDefs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
+          val source = createNode(sootMethod, sourceStmt)
+          val target = createNode(sootMethod, targetStmt)
+          updateGraph(source, target)
+        })
+      }
+    }
+  }
+
+  /*
+ * Create an edge between the definitions of the actual
+ * arguments of a method call. We should use this rule
+ * to address situations like:
+ *
+ * - System.arraycopy(l1, _, l2, _)
+ *
+ * Where we wanto to create an edge from the definitions of
+ * l1 to the definitions of l2.
+ */
   trait CopyBetweenArgs extends RuleAction {
     def from: Int
     def target : Int
@@ -49,17 +142,16 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
       val srcArg = invokeStmt.getInvokeExpr.getArg(from)
       val destArg = invokeStmt.getInvokeExpr.getArg(target)
       if (srcArg.isInstanceOf[Local] && destArg.isInstanceOf[Local]) {
-        localDefs.getDefsOfAt(srcArg.asInstanceOf[Local], invokeStmt).forEach(srcArgDefStmt => {
-          val sourceNode = createNode(sootMethod, srcArgDefStmt)
-          val allocationNodes = findAllocationSites(destArg.asInstanceOf[Local])
-          allocationNodes.foreach(targetNode => {
+        localDefs.getDefsOfAt(srcArg.asInstanceOf[Local], invokeStmt).forEach(sourceStmt => {
+          val sourceNode = createNode(sootMethod, sourceStmt)
+          localDefs.getDefsOfAt(destArg.asInstanceOf[Local], invokeStmt).forEach(targetStmt => {
+            val targetNode = createNode(sootMethod, targetStmt)
             updateGraph(sourceNode, targetNode)
           })
         })
       }
     }
   }
-
 
 
   def createSceneTransform(): (String, Transform) = ("wjtp", new Transform("wjtp.svfa", new Transformer()))
@@ -101,6 +193,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
   }
 
   def traverse(method: SootMethod, forceNewTraversal: Boolean = false) : Unit = {
+    println(method)
     if((!forceNewTraversal) && (method.isPhantom || traversedMethods.contains(method))) {
       return
     }
@@ -174,20 +267,12 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
       svg.addNode(source)
     }
 
-    //TODO:
-    //  Review the impact of this code here.
-    //  Perhaps we should create edges between the
-    //  call-site and the target method, even though
-    //  the method does not have an active body.
-    //if(callee.isPhantom || (!callee.hasActiveBody && callee.getSource == null)) {
-    for(r <- phantomMethodRules) {
+     for(r <- methodRules) {
       if(r.check(callee)) {
         r.apply(caller, callStmt.base.asInstanceOf[jimple.Stmt], defs)
         return
       }
     }
-//      return
-//    }
 
     if(intraprocedural()) return
 

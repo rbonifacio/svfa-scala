@@ -63,7 +63,7 @@ class TestSuite extends FunSuite with BeforeAndAfter {
     assert(svfa.reportConflicts().size == 3)
   }
 
-  ignore("we should find exactly one conflict in the StringBuggerTest analysis") {
+  test("we should find exactly one conflict in the StringBuggerTest analysis") {
     val svfa = new StringBufferTest()
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflicts().size == 1)
