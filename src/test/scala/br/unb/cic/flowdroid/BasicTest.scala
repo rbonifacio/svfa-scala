@@ -159,13 +159,13 @@ class BasicTestSuite extends FunSuite {
     assert(svfa.reportConflicts().size == 1)
   }
 
-  ignore("in the class Basic20 we should detect 1 conflict of a simple SQL injection test case") {
+  test("in the class Basic20 we should detect 1 conflict of a simple SQL injection test case") {
     val svfa = new BasicTest("securibench.micro.basic.Basic20", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflicts().size == 1)
   }
 
-  ignore("in the class Basic21 we should detect 4 conflicts in a SQL injection with less commonly used methods test case") {
+  test("in the class Basic21 we should detect 4 conflicts in a SQL injection with less commonly used methods test case") {
     val svfa = new BasicTest("securibench.micro.basic.Basic21", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflicts().size == 4)
@@ -183,7 +183,7 @@ class BasicTestSuite extends FunSuite {
     assert(svfa.reportConflicts().size == 3)
   }
 
-  ignore("in the class Basic24 we should detect 1 conflict in a unsafe redirect test case") {
+  test("in the class Basic24 we should detect 1 conflict in a unsafe redirect test case") {
     val svfa = new BasicTest("securibench.micro.basic.Basic24", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflicts().size == 1)
