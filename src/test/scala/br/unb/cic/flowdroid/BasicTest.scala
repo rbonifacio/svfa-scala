@@ -99,7 +99,7 @@ class BasicTestSuite extends FunSuite {
     assert(svfa.reportConflicts().size == 1)
   }
 
-  ignore("in the class Basic10 we should detect 1 conflict of a chain of assignments and buffers test case") {
+  test("in the class Basic10 we should detect 1 conflict of a chain of assignments and buffers test case") {
     val svfa = new BasicTest("securibench.micro.basic.Basic10", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflicts().size == 1)
