@@ -38,6 +38,9 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
     new NamedMethodRule("java.lang.StringBuffer", "append") with CopyFromMethodArgumentToBaseObject {
       override def from: Int = 0
     },
+    new NamedMethodRule("java.lang.StringBuffer", "<init>") with CopyFromMethodArgumentToBaseObject {
+      override def from: Int = 0
+    },
     new NamedMethodRule("java.lang.StringBuffer", "toString") with CopyFromMethodCallToLocal,
     new NativeRule with DoNothing,
     new MissingActiveBodyRule with DoNothing
@@ -60,9 +63,11 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
     def apply(sootMethod: SootMethod, invokeStmt: jimple.Stmt, localDefs: SimpleLocalDefs) = {
       val srcArg = invokeStmt.getInvokeExpr.getArg(from)
       val expr = invokeStmt.getInvokeExpr
-      if(expr.isInstanceOf[VirtualInvokeExpr] && srcArg.isInstanceOf[Local]) {
+      if(hasBaseObject(expr) && srcArg.isInstanceOf[Local]) {
         val local = srcArg.asInstanceOf[Local]
-        val base = expr.asInstanceOf[VirtualInvokeExpr].getBase
+
+        val base = getBaseObject(expr)
+
         if(base.isInstanceOf[Local]) {
           val localBase = base.asInstanceOf[Local]
           localDefs.getDefsOfAt(local, invokeStmt).forEach(sourceStmt => {
@@ -77,16 +82,25 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
     }
   }
 
+  private def getBaseObject(expr: InvokeExpr) =
+    if (expr.isInstanceOf[VirtualInvokeExpr])
+      expr.asInstanceOf[VirtualInvokeExpr].getBase
+    else
+      expr.asInstanceOf[SpecialInvokeExpr].getBase
+
+  private def hasBaseObject(expr: InvokeExpr) = (expr.isInstanceOf[VirtualInvokeExpr] || expr.isInstanceOf[SpecialInvokeExpr])
+
+
   /*
-   * Create an edge from a method call to a local.
-   * In more details, we should use this rule to address
-   * a situation like:
-   *
-   * - $r6 = virtualinvoke r3.<java.lang.StringBuffer: java.lang.String toString()>();
-   *
-   * Where we want to create an edge from the definitions of r3 to
-   * this statement.
-   */
+     * Create an edge from a method call to a local.
+     * In more details, we should use this rule to address
+     * a situation like:
+     *
+     * - $r6 = virtualinvoke r3.<java.lang.StringBuffer: java.lang.String toString()>();
+     *
+     * Where we want to create an edge from the definitions of r3 to
+     * this statement.
+     */
   trait CopyFromMethodCallToLocal extends RuleAction {
     def apply(sootMethod: SootMethod, invokeStmt: jimple.Stmt, localDefs: SimpleLocalDefs) = {
       val expr = invokeStmt.getInvokeExpr
@@ -106,6 +120,9 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
   }
 
 
+  /*
+   * specialinvoke $r8.<java.lang.StringBuffer: void <init>(java.lang.String)>(r4);
+   */
   trait CopyFromMethodArgumentToLocal extends RuleAction {
     def from: Int
 
@@ -193,7 +210,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
   }
 
   def traverse(method: SootMethod, forceNewTraversal: Boolean = false) : Unit = {
-    println(method)
     if((!forceNewTraversal) && (method.isPhantom || traversedMethods.contains(method))) {
       return
     }

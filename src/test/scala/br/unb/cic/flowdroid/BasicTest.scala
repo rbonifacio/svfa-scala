@@ -73,13 +73,15 @@ class BasicTestSuite extends FunSuite {
     assert(svfa.reportConflicts().size == 3)
   }
 
+  /* TODO: it seems a flaky test. We have to check it again.
+   */
   ignore("in the class Basic6 we should detect 1 conflict of a complex derived string test") {
     val svfa = new BasicTest("securibench.micro.basic.Basic6", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflicts().size == 1)
   }
 
-  ignore("in the class Basic7 we should detect 1 conflict of a complex derived string with buffers test") {
+  test("in the class Basic7 we should detect 1 conflict of a complex derived string with buffers test") {
     val svfa = new BasicTest("securibench.micro.basic.Basic7", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflicts().size == 1)
