@@ -4,7 +4,25 @@ import soot.SootMethod
 import soot.jimple.Stmt
 import soot.toolkits.scalar.SimpleLocalDefs
 
+
+/**
+ * The common interface for every rule action.
+ * It defines a functional interface with a method
+ * apply that takes a soot method, an statement (with an
+ * invoke expression), and a list of local definitions.
+ */
 trait RuleAction extends ((SootMethod, Stmt, SimpleLocalDefs) => Unit)
+
+/**
+ * A list composition of rule actions.
+ */
+trait ComposedRuleAction extends RuleAction {
+  def actions: List[RuleAction]
+
+  override def apply(sootMethod: SootMethod, stmt: Stmt, localDefs: SimpleLocalDefs): Unit = {
+    actions.foreach(action => action.apply(sootMethod, stmt, localDefs))
+  }
+}
 
 /**
  * The root class in the hierarchy of method rules. Every
