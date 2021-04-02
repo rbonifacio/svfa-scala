@@ -1,12 +1,12 @@
 package br.unb.cic.soot.svfa.jimple
 
 import java.util
-import br.unb.cic.soot.svfa.jimple.rules.{DoNothing, MissingActiveBodyRule, NamedMethodRule, NativeRule, RuleAction}
+import br.unb.cic.soot.svfa.jimple.rules.{ComposedRuleAction, DoNothing, MissingActiveBodyRule, NamedMethodRule, NativeRule, RuleAction}
 import br.unb.cic.soot.graph.{CallSite, CallSiteCloseEdge, CallSiteLabel, CallSiteOpenEdge, LambdaNode, SimpleNode, SinkNode, SourceNode, Stmt, StmtNode}
 import br.unb.cic.soot.svfa.{SVFA, SourceSinkDef}
 import com.typesafe.scalalogging.LazyLogging
 import soot.jimple._
-import soot.jimple.internal.JArrayRef
+import soot.jimple.internal.{JArrayRef, JAssignStmt}
 import soot.jimple.spark.pag
 import soot.jimple.spark.pag.{AllocNode, PAG}
 import soot.jimple.spark.sets.{DoublePointsToSet, HybridPointsToSet, P2SetVisitor}
@@ -34,6 +34,15 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
     new NamedMethodRule("java.lang.System","arraycopy") with CopyBetweenArgs {
       override def from: Int = 0
       override def target: Int = 2
+    },
+    new NamedMethodRule("java.lang.StringBuilder", "toString") with CopyFromMethodCallToLocal,
+    new NamedMethodRule("java.lang.StringBuilder", "append") with ComposedRuleAction {
+      override def actions: List[RuleAction] =
+        List(
+          new CopyFromMethodArgumentToBaseObject { override def from: Int = 0 },
+          new CopyFromMethodArgumentToLocal { override def from: Int = 0 },
+          new CopyFromMethodCallToLocal {}
+        )
     },
     new NamedMethodRule("java.lang.StringBuffer", "append") with CopyFromMethodArgumentToBaseObject {
       override def from: Int = 0
@@ -120,16 +129,17 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
   }
 
 
-  /*
-   * specialinvoke $r8.<java.lang.StringBuffer: void <init>(java.lang.String)>(r4);
+  /* Create an edge from the definitions of a local argument
+   * to the assignment statement. In more details, we should use this rule to address
+   * a situation like:
+   * $r12 = virtualinvoke $r11.<java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)>(r6);
    */
   trait CopyFromMethodArgumentToLocal extends RuleAction {
     def from: Int
 
     def apply(sootMethod: SootMethod, invokeStmt: jimple.Stmt, localDefs: SimpleLocalDefs) = {
       val srcArg = invokeStmt.getInvokeExpr.getArg(from)
-
-      if(invokeStmt.isInstanceOf[AssignStmt] && srcArg.isInstanceOf[Local]) {
+      if(invokeStmt.isInstanceOf[JAssignStmt] && srcArg.isInstanceOf[Local]) {
         val local = srcArg.asInstanceOf[Local]
         val targetStmt = invokeStmt.asInstanceOf[jimple.AssignStmt]
         localDefs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
