@@ -50,6 +50,9 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
     new NamedMethodRule("java.lang.StringBuffer", "<init>") with CopyFromMethodArgumentToBaseObject {
       override def from: Int = 0
     },
+    new NamedMethodRule("java.io.File", "<init>") with CopyFromMethodArgumentToBaseObject {
+      override def from: Int = 0
+    },
     new NamedMethodRule("java.lang.StringBuffer", "toString") with CopyFromMethodCallToLocal,
     new NativeRule with DoNothing,
     new MissingActiveBodyRule with DoNothing
