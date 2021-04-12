@@ -53,6 +53,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
     new NamedMethodRule("java.io.File", "<init>") with CopyFromMethodArgumentToBaseObject {
       override def from: Int = 0
     },
+    new NamedMethodRule("java.util.Enumeration", "nextElement") with  CopyFromMethodCallToLocal,
     new NamedMethodRule("java.lang.StringBuffer", "toString") with CopyFromMethodCallToLocal,
     new NativeRule with DoNothing,
     new MissingActiveBodyRule with DoNothing
@@ -97,10 +98,14 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
   private def getBaseObject(expr: InvokeExpr) =
     if (expr.isInstanceOf[VirtualInvokeExpr])
       expr.asInstanceOf[VirtualInvokeExpr].getBase
-    else
+    else if(expr.isInstanceOf[SpecialInvokeExpr])
       expr.asInstanceOf[SpecialInvokeExpr].getBase
+    else
+      expr.asInstanceOf[InstanceInvokeExpr].getBase
 
-  private def hasBaseObject(expr: InvokeExpr) = (expr.isInstanceOf[VirtualInvokeExpr] || expr.isInstanceOf[SpecialInvokeExpr])
+
+  private def hasBaseObject(expr: InvokeExpr) =
+    (expr.isInstanceOf[VirtualInvokeExpr] || expr.isInstanceOf[SpecialInvokeExpr] || expr.isInstanceOf[InterfaceInvokeExpr])
 
 
   /*
@@ -116,8 +121,8 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
   trait CopyFromMethodCallToLocal extends RuleAction {
     def apply(sootMethod: SootMethod, invokeStmt: jimple.Stmt, localDefs: SimpleLocalDefs) = {
       val expr = invokeStmt.getInvokeExpr
-      if(expr.isInstanceOf[VirtualInvokeExpr] && invokeStmt.isInstanceOf[jimple.AssignStmt]) {
-        val base = expr.asInstanceOf[VirtualInvokeExpr].getBase
+      if(hasBaseObject(expr) && invokeStmt.isInstanceOf[jimple.AssignStmt]) {
+        val base = getBaseObject(expr)
         val local = invokeStmt.asInstanceOf[jimple.AssignStmt].getLeftOp
         if(base.isInstanceOf[Local] && local.isInstanceOf[Local]) {
           val localBase = base.asInstanceOf[Local]
@@ -263,7 +268,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
     }
   }
 
-
   def traverse(stmt: InvokeStmt, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
     val exp = stmt.stmt.getInvokeExpr
     invokeRule(stmt, exp, method, defs)
@@ -288,7 +292,9 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
 
     if(analyze(callStmt.base) == SinkNode) {
       defsToCallOfSinkMethod(callStmt, exp, caller, defs)
-      return
+      return  // TODO: we are not exploring the body of a sink method.
+              //       For this reason, we only find one path in the
+              //       FieldSample test case, instead of two.
     }
 
     if(analyze(callStmt.base) == SourceNode) {
