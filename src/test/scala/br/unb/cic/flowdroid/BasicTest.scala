@@ -121,7 +121,7 @@ class BasicTestSuite extends FunSuite {
     assert(svfa.reportConflicts().size == 1)
   }
 
-  ignore("in the class Basic14 we should detect 1 conflict of a servlet context and casts test case") {
+  test("in the class Basic14 we should detect 1 conflict of a servlet context and casts test case") {
     val svfa = new BasicTest("securibench.micro.basic.Basic14", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflicts().size == 1)
