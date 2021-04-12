@@ -53,6 +53,11 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
     new NamedMethodRule("java.io.File", "<init>") with CopyFromMethodArgumentToBaseObject {
       override def from: Int = 0
     },
+    new NamedMethodRule("java.util.Map", "entrySet") with  CopyFromMethodCallToLocal,
+    new NamedMethodRule("java.util.Map$Entry", "getKey") with  CopyFromMethodCallToLocal,
+    new NamedMethodRule("java.util.Map$Entry", "getValue") with  CopyFromMethodCallToLocal,
+    new NamedMethodRule("java.util.Set", "iterator") with  CopyFromMethodCallToLocal,
+    new NamedMethodRule("java.util.Iterator", "next") with  CopyFromMethodCallToLocal,
     new NamedMethodRule("java.util.Enumeration", "nextElement") with  CopyFromMethodCallToLocal,
     new NamedMethodRule("java.lang.StringBuffer", "toString") with CopyFromMethodCallToLocal,
     new NativeRule with DoNothing,
