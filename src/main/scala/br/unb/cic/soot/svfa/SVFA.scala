@@ -107,7 +107,7 @@ abstract class SVFA {
   }
 
 
-  def reportConflicts(): scala.collection.Set[String] = 
+  def reportConflicts(): scala.collection.Set[String] =
     findConflictingPaths().map(p => p.toString)
 
   def pathToJCE(): String =
