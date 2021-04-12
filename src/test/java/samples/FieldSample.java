@@ -4,7 +4,7 @@ public class FieldSample {
 
     public void main() {
         int x = new Integer(10);              // SOURCE
-        n(x);                    // RIGHT
+        n(x);                                       // RIGHT
     }
 
     public void n(int a) {

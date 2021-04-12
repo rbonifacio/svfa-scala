@@ -69,7 +69,7 @@ class TestSuite extends FunSuite with BeforeAndAfter {
     assert(svfa.reportConflicts().size == 1)
   }
 
-  ignore("we should find exactly one conflict in the InitStringBuggerTest analysis") {
+  test("we should find exactly one conflict in the InitStringBufferTest analysis") {
     val svfa = new InitStringBufferTest()
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflicts().size == 1)
@@ -88,16 +88,15 @@ class TestSuite extends FunSuite with BeforeAndAfter {
 //    assert(svfa.reportConflicts().size == 1)
 //  }
 
-  ignore("we should find exactly one conflict in the StringToStringTest analysis") {
+  test("we should find exactly one conflict in the StringToStringTest analysis") {
     val svfa = new StringToStringTest()
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflicts().size == 1)
   }
 
-  ignore("we should find exactly two conflicts in the basic.Basic11 analysis") {
+  test("we should find exactly two conflicts in the basic.Basic11 analysis") {
     val svfa = new Basic11Test()
     svfa.buildSparseValueFlowGraph()
-    // println(svfa.svgToDotModel())
     assert(svfa.reportConflicts().size == 2)
   }
 
@@ -111,7 +110,6 @@ class TestSuite extends FunSuite with BeforeAndAfter {
   test("we should find exactly one conflict in the FieldSample  analysis") {
     val svfa = new FieldTest()
     svfa.buildSparseValueFlowGraph()
-    System.out.println(svfa.svgToDotModel())
     assert(svfa.reportConflicts().size == 1)   // NOTE: We are not traversing the body of
                                                //       a method associated to a SinkNode. 
   }

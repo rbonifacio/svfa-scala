@@ -193,7 +193,7 @@ class BasicTestSuite extends FunSuite {
     assert(svfa.reportConflicts().size == 1)
   }
 
-  ignore("in the class Basic26 we should detect 1 conflict in a getParameterMap test case") {
+  test("in the class Basic26 we should detect 1 conflict in a getParameterMap test case") {
     val svfa = new BasicTest("securibench.micro.basic.Basic26", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflicts().size == 1)
