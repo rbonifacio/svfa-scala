@@ -107,10 +107,8 @@ abstract class SVFA {
   }
 
 
-  def reportConflicts(): scala.collection.Set[String] = {
-    val conflicts = findConflictingPaths()
+  def reportConflicts(): scala.collection.Set[String] = 
     findConflictingPaths().map(p => p.toString)
-  }
 
   def pathToJCE(): String =
     System.getProperty("java.home") + File.separator + "lib" + File.separator + "jce.jar"

@@ -235,13 +235,13 @@ class BasicTestSuite extends FunSuite {
     assert(svfa.reportConflicts().size == 1)
   }
 
-  ignore("in the class Basic33 we should detect 1 conflict in a values obtained from headers test case") {
+  test("in the class Basic33 we should detect 1 conflict in a values obtained from headers test case") {
     val svfa = new BasicTest("securibench.micro.basic.Basic33", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflicts().size == 1)
   }
 
-  ignore("in the class Basic34 we should detect 2 conflicts in a values obtained from headers test case") {
+  test("in the class Basic34 we should detect 2 conflicts in a values obtained from headers test case") {
     val svfa = new BasicTest("securibench.micro.basic.Basic34", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflicts().size == 2)
