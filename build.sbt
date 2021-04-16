@@ -34,3 +34,7 @@ libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2"
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.8" % "test"
 
 libraryDependencies += "javax.servlet" % "javax.servlet-api" % "3.0.1" % "provided"
+
+libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.2"
+
+parallelExecution in Test := false

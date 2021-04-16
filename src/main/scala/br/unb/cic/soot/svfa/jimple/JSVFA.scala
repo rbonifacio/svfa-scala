@@ -3,6 +3,7 @@ package br.unb.cic.soot.svfa.jimple
 import java.util
 import br.unb.cic.soot.svfa.jimple.rules.{ComposedRuleAction, DoNothing, MissingActiveBodyRule, NamedMethodRule, NativeRule, RuleAction}
 import br.unb.cic.soot.graph.{CallSite, CallSiteCloseEdge, CallSiteLabel, CallSiteOpenEdge, LambdaNode, SimpleNode, SinkNode, SourceNode, Stmt, StmtNode}
+import br.unb.cic.soot.svfa.jimple.dsl.{DSL, LanguageParser}
 import br.unb.cic.soot.svfa.{SVFA, SourceSinkDef}
 import com.typesafe.scalalogging.LazyLogging
 import soot.jimple._
@@ -22,47 +23,16 @@ import scala.collection.mutable.ListBuffer
   * A Jimple based implementation of
   * SVFA.
   */
-abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with SourceSinkDef with LazyLogging {
+abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with SourceSinkDef with LazyLogging  with DSL   {
 
 
   var methods = 0
   val traversedMethods = scala.collection.mutable.Set.empty[SootMethod]
   val allocationSites = scala.collection.mutable.HashMap.empty[soot.Value, soot.Unit]
   val arrayStores = scala.collection.mutable.HashMap.empty[Local, List[soot.Unit]]
+  val languageParser = new LanguageParser(this)
 
-  val methodRules = List(
-    new NamedMethodRule("java.lang.System","arraycopy") with CopyBetweenArgs {
-      override def from: Int = 0
-      override def target: Int = 2
-    },
-    new NamedMethodRule("java.lang.StringBuilder", "toString") with CopyFromMethodCallToLocal,
-    new NamedMethodRule("java.lang.StringBuilder", "append") with ComposedRuleAction {
-      override def actions: List[RuleAction] =
-        List(
-          new CopyFromMethodArgumentToBaseObject { override def from: Int = 0 },
-          new CopyFromMethodArgumentToLocal { override def from: Int = 0 },
-          new CopyFromMethodCallToLocal {}
-        )
-    },
-    new NamedMethodRule("java.lang.StringBuffer", "append") with CopyFromMethodArgumentToBaseObject {
-      override def from: Int = 0
-    },
-    new NamedMethodRule("java.lang.StringBuffer", "<init>") with CopyFromMethodArgumentToBaseObject {
-      override def from: Int = 0
-    },
-    new NamedMethodRule("java.io.File", "<init>") with CopyFromMethodArgumentToBaseObject {
-      override def from: Int = 0
-    },
-    new NamedMethodRule("java.util.Map", "entrySet") with  CopyFromMethodCallToLocal,
-    new NamedMethodRule("java.util.Map$Entry", "getKey") with  CopyFromMethodCallToLocal,
-    new NamedMethodRule("java.util.Map$Entry", "getValue") with  CopyFromMethodCallToLocal,
-    new NamedMethodRule("java.util.Set", "iterator") with  CopyFromMethodCallToLocal,
-    new NamedMethodRule("java.util.Iterator", "next") with  CopyFromMethodCallToLocal,
-    new NamedMethodRule("java.util.Enumeration", "nextElement") with  CopyFromMethodCallToLocal,
-    new NamedMethodRule("java.lang.StringBuffer", "toString") with CopyFromMethodCallToLocal,
-    new NativeRule with DoNothing,
-    new MissingActiveBodyRule with DoNothing
-  )
+  val methodRules = languageParser.evaluate(code())
 
   /*
    * Create an edge  from the definition of the local argument
