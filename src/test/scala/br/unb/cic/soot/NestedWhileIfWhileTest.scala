@@ -3,8 +3,8 @@ package br.unb.cic.soot
 import br.unb.cic.soot.graph.{NodeType, SimpleNode, SinkNode, SourceNode}
 import soot.jimple.{AssignStmt, InvokeExpr, InvokeStmt}
 
-class BlackBoardTest(leftchangedlines: Array[Int] , rightchangedlines: Array[Int]) extends JSVFATest {
-  override def getClassName(): String = "samples.BlackBoard"
+class NestedWhileIfWhileTest(leftchangedlines: Array[Int] , rightchangedlines: Array[Int]) extends JSVFATest {
+  override def getClassName(): String = "samples.NestedWhileIfWhile"
   override def getMainMethod(): String = "main"
 
   def this(){
@@ -43,4 +43,3 @@ class BlackBoardTest(leftchangedlines: Array[Int] , rightchangedlines: Array[Int
     }
 
 }
-

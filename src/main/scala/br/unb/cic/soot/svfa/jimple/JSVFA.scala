@@ -1,28 +1,22 @@
 package br.unb.cic.soot.svfa.jimple
 
 import java.util
-
-import br.unb.cic.soot.graph._
-import br.unb.cic.soot.svfa.rules.ArrayCopyRule
-import br.unb.cic.soot.graph.{CallSiteCloseEdge, CallSite, CallSiteOpenEdge, CallSiteLabel, LambdaNode, SimpleNode, SinkNode, SourceNode, Stmt, StmtNode}
+import soot.toolkits.graph._
+import br.unb.cic.soot.graph.{CallSite, CallSiteCloseEdge, CallSiteLabel, CallSiteOpenEdge, ControlDependency, ControlDependencyFalse, LambdaNode, SimpleNode, SinkNode, SourceNode, Stmt, StmtNode, StringLabel}
 import br.unb.cic.soot.svfa.{SVFA, SourceSinkDef}
+import br.unb.cic.soot.svfa.rules.ArrayCopyRule
 import com.typesafe.scalalogging.LazyLogging
-import soot.jimple._
-import soot.jimple.internal.JArrayRef
-import soot.jimple.spark.pag
-import soot.jimple.spark.pag.{AllocNode, PAG}
-import soot.jimple.spark.sets.{DoublePointsToSet, HybridPointsToSet, P2SetVisitor}
-import soot.toolkits.graph.ExceptionalUnitGraph
+import soot.jimple.GotoStmt
+import soot.toolkits.graph.ExceptionalBlockGraph
 import soot.toolkits.scalar.SimpleLocalDefs
-import soot.{ArrayType, Local, Scene, SceneTransformer, SootField, SootMethod, Transform, jimple}
+import soot.{Local, Scene, SceneTransformer, SootMethod, Transform}
 
-import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 /**
-  * A Jimple based implementation of
-  * SVFA.
-  */
+ * A Jimple based implementation of
+ * SVFA.
+ */
 abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with SourceSinkDef with LazyLogging {
 
   var methods = 0
@@ -30,7 +24,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
   val allocationSites = scala.collection.mutable.HashMap.empty[soot.Value, soot.Unit]
   val arrayStores = scala.collection.mutable.HashMap.empty[Local, List[soot.Unit]]
   val phantomMethodRules = List(new ArrayCopyRule)
-
   def createSceneTransform(): (String, Transform) = ("wjtp", new Transform("wjtp.svfa", new Transformer()))
 
   def configurePackages(): List[String] = List("cg", "wjtp")
@@ -41,21 +34,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
 
   def initAllocationSites(): Unit = {
     val listener = Scene.v().getReachableMethods.listener()
-
-    while(listener.hasNext) {
-      val m = listener.next().method()
-      if (m.hasActiveBody) {
-        val body = m.getActiveBody
-        body.getUnits.forEach(unit => {
-          if (unit.isInstanceOf[soot.jimple.AssignStmt]) {
-            val right = unit.asInstanceOf[soot.jimple.AssignStmt].getRightOp
-            if (right.isInstanceOf[NewExpr] || right.isInstanceOf[NewArrayExpr]) {// || right.isInstanceOf[StringConstant]) {
-              allocationSites += (right -> unit)
-            }
-          }
-        })
-      }
-    }
   }
 
   class Transformer extends SceneTransformer {
@@ -76,124 +54,398 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
 
     traversedMethods.add(method)
 
-    val body  = method.retrieveActiveBody()
+    val body = method.retrieveActiveBody()
+    val blocks = new ExceptionalBlockGraph(body)
 
-    val graph = new ExceptionalUnitGraph(body)
-    val defs  = new SimpleLocalDefs(graph)
+    val EP = createNode(method)
 
-    body.getUnits.forEach(unit => {
-      val v = Statement.convert(unit)
+    addEntryPointEdgesHCD(method, EP, ListBuffer[ValueNodeType](), blocks, 0, true, ListBuffer[Int]())
 
-      v match {
-        case AssignStmt(base) => traverse(AssignStmt(base), method, defs)
-        case InvokeStmt(base) => traverse(InvokeStmt(base), method, defs)
-        case _ if analyze(unit) == SinkNode => traverseSinkStatement(v, method, defs)
-        case _ =>
+  }
+
+  class ValueNodeType(va: Int, stmt: StmtNode) {
+    val value: Int = va
+    val nodeStmt: StmtNode = stmt
+
+    def show(): String = stmt.stmt.toString
+
+    override def equals(o: Any): Boolean = {
+      o match {
+        case stmt: StmtNode => stmt.value == value && stmt.stmt == nodeStmt
+        case _ => false
+      }
+    }
+  }
+
+  def ValueNodeType(va: Int, stmt: StmtNode) {
+    val value: Int = va
+    val nodeStmt: StmtNode = stmt
+
+
+  }
+
+  def addEntryPointEdgesHCD(method: SootMethod, fromNode: StmtNode, visitedBlocks: ListBuffer[ValueNodeType], blocks: ExceptionalBlockGraph, value: Int, typeEdge: Boolean, exitList: ListBuffer[Int]): Unit = {
+
+    visitedBlocks.foreach( x =>{
+      if (x.value == value && x.nodeStmt == fromNode) {
+        return
       }
     })
-  }
 
+    addEPEdgeToBlock(method, fromNode, blocks, value, typeEdge)
 
-  def traverse(assignStmt: AssignStmt, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
-    val left = assignStmt.stmt.getLeftOp
-    val right = assignStmt.stmt.getRightOp
+    var block = blocks.getBlocks.get(value)
 
-    (left, right) match {
-      case (p: Local, q: InstanceFieldRef) => loadRule(assignStmt.stmt, q, method, defs)
-      case (p: Local, q: ArrayRef) => loadArrayRule(assignStmt.stmt, q, method, defs)
-      case (p: Local, q: InvokeExpr) => invokeRule(assignStmt, q, method, defs)
-      case (p: Local, q: Local) => copyRule(assignStmt.stmt, q, method, defs)
-      case (p: Local, _) => copyRuleInvolvingExpressions(assignStmt.stmt, method, defs)
-      case (p: InstanceFieldRef, _: Local) => storeRule(assignStmt.stmt, p, method, defs)
-      case (p: JArrayRef, _) => storeArrayRule(assignStmt)
-      case _ =>
-    }
-  }
+    visitedBlocks += new ValueNodeType(value, fromNode)
 
+    if (block.getSuccs.size() == 2) {
 
-  def traverse(stmt: InvokeStmt, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
-    val exp = stmt.stmt.getInvokeExpr
-    invokeRule(stmt, exp, method, defs)
-  }
-
-  def traverseSinkStatement(statement: Statement, method: SootMethod, defs: SimpleLocalDefs): Unit = {
-    statement.base.getUseBoxes.forEach(box => {
-      box match {
-        case local : Local => copyRule(statement.base, local, method, defs)
-        case fieldRef : InstanceFieldRef => loadRule(statement.base, fieldRef, method, defs)
-        case _ =>
-        // TODO:
-        //   we have to think about other cases here.
-        //   e.g: a reference to a parameter
-      }
-    })
-  }
-
-
-  private def invokeRule(callStmt: Statement, exp: InvokeExpr, caller: SootMethod, defs: SimpleLocalDefs): Unit = {
-    val callee = exp.getMethod
-
-    if(analyze(callStmt.base) == SinkNode) {
-      defsToCallOfSinkMethod(callStmt, exp, caller, defs)
-      return
-    }
-
-    if(analyze(callStmt.base) == SourceNode) {
-      val source = createNode(caller, callStmt.base)
-      svg.addNode(source)
-    }
-
-    //TODO:
-    //  Review the impact of this code here.
-    //  Perhaps we should create edges between the
-    //  call-site and the target method, even though
-    //  the method does not have an active body.
-    if(callee.isPhantom || (!callee.hasActiveBody && callee.getSource == null)) {
-      for(r <- phantomMethodRules) {
-        if(r.check(callee)) {
-          applyPhantomMethodCallRule(callStmt, exp, caller, defs)
+      var ifStmt = blockToIfstatement(blocks, value)
+      var stmNodeX = createNode(method, ifStmt).stmt
+      visitedBlocks.foreach( x =>{
+        if (x.nodeStmt.stmt.stmt == stmNodeX.stmt) {
           return
         }
+      })
+      var succ = block.getSuccs
+      var pred = block.getPreds
+
+      var enterBlock = block.getSuccs.get(0).getIndexInMethod
+      var exitBlock = block.getSuccs.get(1).getIndexInMethod
+      var aux = exitBlock
+
+      var ll = ListBuffer[Boolean]()
+      var ll2 = ListBuffer[Int]()
+
+      hasAPathFromTo(blocks.getBlocks.get(enterBlock), block, ll, ll2)
+      var hasAPathLoop = false
+      if (ll.contains(true)){
+        hasAPathLoop = true
       }
-      return
+
+      var hasReturnEdge = false
+      pred.forEach(x =>{
+        if (x.getIndexInMethod > block.getIndexInMethod){
+          hasReturnEdge = true
+        }
+      })
+
+      var valueHDC = HCD(blocks, value)
+
+      var isAnIf = false
+
+      var l2 = ListBuffer[Boolean]()
+      var l3 = ListBuffer[Int]()
+      l3 += block.getIndexInMethod
+      hasAPathFromTo(block.getSuccs.get(0), block.getSuccs.get(1), l2, l3)
+      if (l2.contains(true)){
+        isAnIf = true
+      }
+
+      var hasReturn = false
+
+      var x = ListBuffer[Boolean]()
+      var y = ListBuffer[Int]()
+      y += block.getIndexInMethod
+      hasAPathFromTo(blocks.getBlocks.get(exitBlock) , block, x, y)
+      if (x.contains(true)){
+        hasReturn = true
+      }
+
+      var w = ListBuffer[Boolean]()
+      var z = ListBuffer[Int]()
+
+      z += exitBlock
+      var itsDoWhile = true
+      hasAPathFromToDoWhile(blocks.getBlocks.get(enterBlock), block, exitBlock, w, z)
+      if (w.contains(true)){
+        itsDoWhile = false
+      }
+
+      var isAnIfElse = false
+
+      if (enterBlock < valueHDC && exitBlock < valueHDC && valueHDC != -1) {
+        isAnIfElse = true
+      }
+
+      if (valueHDC == -1 || isAnIf) {
+        var exitNotVisited = true
+        if (isAnIf && !itsDoWhile) {
+//          println(value + " It's an IF")
+          exitList.foreach(x =>{
+            if (x == exitBlock) {
+              exitNotVisited = false
+            }
+          })
+          if (hasReturnEdge){
+            exitNotVisited = true
+          }
+
+          exitList += exitBlock
+        }else if (!itsDoWhile){
+//          println(value + " It's a WHILE or FOR")
+        }
+        if (itsDoWhile){ //swap enter and exit blocks
+          exitBlock = enterBlock
+          enterBlock = aux
+//          println(value + " It's a DO-WHILE")
+        }
+
+        if (exitBlock > value+1 && exitNotVisited) {
+          addEntryPointEdgesHCD(method, fromNode, visitedBlocks, blocks, exitBlock, true, exitList)
+        }
+
+        if (itsDoWhile) {
+          addEntryPointEdgesHCD(method, fromNode, visitedBlocks, blocks, exitBlock, true, ListBuffer[Int]())
+        }
+
+        addEntryPointEdgesHCD(method, createNode(method, ifStmt), visitedBlocks, blocks, enterBlock, false, exitList)
+
+      }else{
+//        println(value + " It's an IF-ELSE")
+
+        addEntryPointEdgesHCD(method, fromNode, visitedBlocks, blocks, valueHDC, typeEdge, exitList)
+
+        visitedBlocks += new ValueNodeType(valueHDC, createNode(method, ifStmt))
+        exitList += valueHDC
+
+          addEntryPointEdgesHCD(method, createNode(method, ifStmt), visitedBlocks, blocks, exitBlock, false, exitList)
+          addEntryPointEdgesHCD(method, createNode(method, ifStmt), visitedBlocks, blocks, enterBlock, true, exitList)
+
+      }
+
+    }else if (block.getSuccs.size() == 1){
+      exitList.foreach(x =>{
+        if (x == block.getSuccs.get(0).getIndexInMethod) {
+          return
+        }
+      })
+      if (isNotContainsGoto(block.getSuccs.get(0)) && isNotContainsGoto(block)) {
+        addEntryPointEdgesHCD(method, fromNode, visitedBlocks, blocks, block.getSuccs.get(0).getIndexInMethod, typeEdge, exitList)
+      }
     }
-
-    if(intraprocedural()) return
-
-    var pmtCount = 0
-    val body = callee.retrieveActiveBody()
-    val g = new ExceptionalUnitGraph(body)
-    val calleeDefs = new SimpleLocalDefs(g)
-
-    body.getUnits.forEach(s => {
-      if(isThisInitStmt(exp, s)) {
-        defsToThisObject(callStmt, caller, defs, s, exp, callee)
-      }
-      else if(isParameterInitStmt(exp, pmtCount, s)) {
-        defsToFormalArgs(callStmt, caller, defs, s, exp, callee, pmtCount)
-        pmtCount = pmtCount + 1
-      }
-      else if(isAssignReturnStmt(callStmt.base, s)) {
-        defsToCallSite(caller, callee, calleeDefs, callStmt.base, s)
-      }
-    })
-
-    traverse(callee)
   }
 
-  private def applyPhantomMethodCallRule(callStmt: Statement, exp: InvokeExpr, caller: SootMethod, defs: SimpleLocalDefs) = {
-    val srcArg = exp.getArg(0)
-    val destArg = exp.getArg(2)
-    if (srcArg.isInstanceOf[Local] && destArg.isInstanceOf[Local]) {
-      defs.getDefsOfAt(srcArg.asInstanceOf[Local], callStmt.base).forEach(srcArgDefStmt => {
-        val sourceNode = createNode(caller, srcArgDefStmt)
-        val allocationNodes = findAllocationSites(destArg.asInstanceOf[Local])
-        allocationNodes.foreach(targetNode => {
-          updateGraph(sourceNode, targetNode)
-        })
+  def getBlockContainsIf(blocks: ExceptionalBlockGraph, stm: String): Int = {
+    var pos = 0
+    for (i <- 0 to (blocks.getBlocks.size()-1)){
+      blocks.getBlocks.get(i).forEach(stmBlock =>{
+        if (stm.equals(stmBlock.toString())){
+          pos = i
+        }
+      })
+    }
+    return pos
+  }
+
+  def isNotContainsGoto(block: Block): Boolean = {
+    var contains = true
+    block.forEach(x => {
+      if (x.isInstanceOf[GotoStmt]) {
+        contains = false
+      }
+    })
+    return contains
+  }
+
+
+  def hasReturnEdge(block: Block, value: Int, visitedPaths: ListBuffer[Boolean]): Unit = {
+    val suc = block.getSuccs
+
+    suc.forEach(x => {
+      if (x.getIndexInMethod == value) {
+        visitedPaths += true
+        return
+      }
+      if (x.getIndexInMethod > value)
+        hasReturnEdge(x, value, visitedPaths)
+    })
+
+  }
+
+  def hasAPathFromToDoWhile(enter: Block, block: Block, exit: Int, visitedPaths: ListBuffer[Boolean], visitedBlock: ListBuffer[Int]): Unit = {
+
+    if (visitedBlock.contains(enter.getIndexInMethod)) return
+
+    visitedBlock += enter.getIndexInMethod
+
+    val suc = enter.getSuccs
+
+    if (suc.size() > 0){
+      suc.forEach(x => {
+
+        if (x.getIndexInMethod == block.getIndexInMethod || x.getIndexInMethod == exit) {
+          visitedPaths += true
+          return visitedPaths
+        }
+        if (!visitedBlock.contains(x.getIndexInMethod) && x.getIndexInMethod > block.getIndexInMethod){
+          hasAPathFromToDoWhile(x, block, exit, visitedPaths, visitedBlock)
+        }
+
       })
     }
   }
+
+  def hasAPathFromTo(enter: Block, exit: Block, visitedPaths: ListBuffer[Boolean], visitedBlock: ListBuffer[Int]): Unit = {
+
+    if (visitedBlock.contains(enter.getIndexInMethod)) return
+
+    visitedBlock += enter.getIndexInMethod
+
+    val suc = enter.getSuccs
+
+    if (suc.size() > 0){
+      suc.forEach(x => {
+
+        if (x.getIndexInMethod == exit.getIndexInMethod) {
+          visitedPaths += true
+          return visitedPaths
+        }
+        if (!visitedBlock.contains(x.getIndexInMethod)){
+          hasAPathFromTo(x, exit, visitedPaths, visitedBlock)
+        }
+
+      })
+    }
+  }
+
+  def hasAPathFromToWith(enter: Block, block: Block, visitedPaths: ListBuffer[Boolean], visitedBlock: ListBuffer[Int]): Unit = {
+
+    if (visitedBlock.contains(enter.getIndexInMethod)) return
+
+    visitedBlock += enter.getIndexInMethod
+
+    val suc = enter.getSuccs
+
+    if (suc.size()>0){
+      suc.forEach(x => {
+        if (x.getIndexInMethod == block.getIndexInMethod) {
+          visitedPaths += true
+          return visitedPaths
+        }
+
+        hasAPathFromToWith(x, block, visitedPaths, visitedBlock)
+
+      })
+    }
+  }
+
+  def blockToIfstatement(blocks: ExceptionalBlockGraph, value: Int): soot.Unit ={
+    blocks.getBlocks.get(value).forEach(unit => {
+      if (unit.isInstanceOf[soot.jimple.IfStmt]){
+        return unit
+      }
+    })
+    return null
+  }
+
+  def HCD(blocks: ExceptionalBlockGraph, pos: Int): Int = {
+    var left =  ListBuffer[Int]()
+    var right = ListBuffer[Int]()
+
+    left += pos
+    right += pos
+    //Succs of left
+    var lIndex =  blocks.getBlocks.get(pos).getSuccs.get(0).getIndexInMethod
+    getSuccsDFS(blocks, lIndex, left)
+
+    //Succs of right
+    var rIndex = blocks.getBlocks.get(pos).getSuccs.get(1).getIndexInMethod
+    getSuccsDFS(blocks, rIndex, right)
+
+    //    TODO: to use Binary Search
+    for (l <- left) {
+      if (right.contains(l) && l != pos){
+        //        println("HCD de "+pos+" : "+l)
+        return l
+      }
+    }
+    return -1
+  }
+
+  def getSuccsDFS(blocks: ExceptionalBlockGraph, v: Int, visited: ListBuffer[Int]): Unit = {
+    if (visited.contains(v)) {
+      return
+    }else {
+      visited += v
+      var block = blocks.getBlocks.get(v).getSuccs
+      for (i <- 0 to block.size()-1){
+        var vActual = block.get(i).getIndexInMethod
+        if (!visited.contains(vActual)) {
+          getSuccsDFS(blocks, vActual, visited)
+        }
+      }
+    }
+  }
+
+  def addEPEdgeToBlock(method: SootMethod, sourceStmt: StmtNode, blocks: ExceptionalBlockGraph, value: Int, typeEdge: Boolean): Unit = {
+    blocks.getBlocks.get(value).forEach(unit => {
+      if (sourceStmt==null){
+        addNodeEP(method, unit)
+      }else{
+        addCDEdgeFromIf(sourceStmt, unit, method, typeEdge)
+      }
+    })
+  }
+
+  def addEPEdges(method: SootMethod, block: Block): Unit = {
+    block.forEach(unit => {
+      addNodeEP(method, unit)
+    })
+  }
+
+  def addNodeEP(method: SootMethod, unit: soot.Unit): Boolean = {
+    val source = createNode(method)
+    val target = createNode(method, unit)
+    addEdgeControlDependency(source, target, true)
+  }
+
+  def addCDEdgeFromIf(sourceStmt: StmtNode, targetStmt: soot.Unit, method: SootMethod, typeEdge: Boolean): Unit ={
+    //    val source = createNode(method, sourceStmt)
+    val target = createNode(method, targetStmt)
+    //    if (targetStmt.isInstanceOf[GotoStmt]){
+    //      targetStmt.getUnitBoxes.forEach(tStmt => {
+    //        if (pos <=3 && pos>0) {
+    //          addNodeEP(method, tStmt.getUnit)
+    //          addEntryPointEdges(method, z, pos)
+    //        }
+    //      })
+    //    }else { //Remove the else to add Goto Edge
+    if (!targetStmt.isInstanceOf[GotoStmt]){
+      addEdgeControlDependency(sourceStmt, target, typeEdge)
+    }
+  }
+
+  def getBlockPositionThatContainsStatement(method: SootMethod, stm: soot.Unit): Int = {
+    val body  = method.retrieveActiveBody()
+    val blocks = new ExceptionalBlockGraph(body)
+    return getBlockPositionThatContainsStatement(blocks, stm)
+  }
+
+  def getBlockPositionThatContainsStatement(blocks: ExceptionalBlockGraph, stm: soot.Unit): Int = {
+    var pos = 0
+    for (i <- 0 to (blocks.getBlocks.size()-1)){
+      blocks.getBlocks.get(i).forEach(stmBlock =>{
+        if (stm.equals(stmBlock)){
+          pos = i
+        }
+      })
+    }
+    return pos
+  }
+
+
+  def addEdgeControlDependency(source: LambdaNode, target: LambdaNode, typeEdge: Boolean): Boolean = {
+    var res = false
+    if(!runInFullSparsenessMode() || true) {
+      val label = new StringLabel( if (typeEdge) (ControlDependency.toString) else (ControlDependencyFalse.toString))
+      svg.addEdge(source, target, label)
+      res = true
+    }
+    return res
+  }
+
+
 
   /*
      * This rule deals with the following situation:
@@ -211,209 +463,15 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
     })
   }
 
-  /*
-   * This rule deals with the following situation:
-   *
-   * (*) p = q + r
-   *
-   * In this case, we create and edge from defs(q) and
-   * from defs(r) to the statement p = q + r
-   */
-  def copyRuleInvolvingExpressions(stmt: jimple.AssignStmt, method: SootMethod, defs: SimpleLocalDefs) = {
-    stmt.getRightOp.getUseBoxes.forEach(box => {
-      if(box.getValue.isInstanceOf[Local]) {
-        val local = box.getValue.asInstanceOf[Local]
-        copyRule(stmt, local, method, defs)
-      }
-    })
-  }
-
-  /*
-   * This rule deals with the following situations:
-   *
-   *  (*) p = q.f
-   */
-  private def loadRule(stmt: soot.Unit, ref: InstanceFieldRef, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
-    val base = ref.getBase
-    // value field of a string.
-    val className = ref.getFieldRef.declaringClass().getName
-    if((className == "java.lang.String") && ref.getFieldRef.name == "value") {
-      if(base.isInstanceOf[Local]) {
-        defs.getDefsOfAt(base.asInstanceOf[Local], stmt).forEach(source => {
-          val sourceNode = createNode(method, source)
-          val targetNode = createNode(method, stmt)
-          updateGraph(sourceNode, targetNode)
-        })
-      }
-      return;
-    }
-    // default case
-    if(base.isInstanceOf[Local]) {
-      val allocationNodes = findAllocationSites(base.asInstanceOf[Local], false, ref.getField)
-      allocationNodes.foreach(source => {
-        val target = createNode(method, stmt)
-        updateGraph(source, target)
-        svg.getAdjacentNodes(source).get.foreach(s => updateGraph(s, target))
-      })
-    }
-  }
-
-  private def loadArrayRule(targetStmt: soot.Unit, ref: ArrayRef, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
-    val base = ref.getBase
-
-    if(base.isInstanceOf[Local]) {
-      val local = base.asInstanceOf[Local]
-
-      defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
-        val source = createNode(method, sourceStmt)
-        val target = createNode(method, targetStmt)
-        updateGraph(source, target)
-      })
-
-      val stores = arrayStores.getOrElseUpdate(local, List())
-      stores.foreach(sourceStmt => {
-        val source = createNode(method, sourceStmt)
-        val target = createNode(method, targetStmt)
-        updateGraph(source, target)
-      })
-    }
-  }
-
-  /*
-   * This rule deals with statements in the form:
-   *
-   * (*) p.f = expression
-   */
-  private def storeRule(targetStmt: jimple.AssignStmt, fieldRef: InstanceFieldRef, method: SootMethod, defs: SimpleLocalDefs) = {
-    val local = targetStmt.getRightOp.asInstanceOf[Local]
-    if (fieldRef.getBase.isInstanceOf[Local]) {
-      val base = fieldRef.getBase.asInstanceOf[Local]
-      if (fieldRef.getField.getDeclaringClass.getName == "java.lang.String" && fieldRef.getField.getName == "value") {
-        defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
-          val source = createNode(method, sourceStmt)
-          val allocationNodes = findAllocationSites(base)
-          allocationNodes.foreach(targetNode => {
-            updateGraph(source, targetNode)
-          })
-        })
-      }
-      else {
-        //        val allocationNodes = findAllocationSites(base, true, fieldRef.getField)
-        //        if(!allocationNodes.isEmpty) {
-        //allocationNodes.foreach(targetNode => {
-        defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
-          val source = createNode(method, sourceStmt)
-          val target = createNode(method, targetStmt)
-          updateGraph(source, target)
-        })
-        //})
-        //}
-      }
-    }
-  }
-
-  def storeArrayRule(assignStmt: AssignStmt) {
-    val l = assignStmt.stmt.getLeftOp.asInstanceOf[JArrayRef].getBase.asInstanceOf[Local]
-    val stores = assignStmt.stmt :: arrayStores.getOrElseUpdate(l, List())
-    arrayStores.put(l, stores)
-  }
-
-  private def defsToCallSite(caller: SootMethod, callee: SootMethod, calleeDefs: SimpleLocalDefs, callStmt: soot.Unit, retStmt: soot.Unit) = {
-    val target = createNode(caller, callStmt)
-
-    val local = retStmt.asInstanceOf[ReturnStmt].getOp.asInstanceOf[Local]
-    calleeDefs.getDefsOfAt(local, retStmt).forEach(sourceStmt => {
-      val source = createNode(callee, sourceStmt)
-      val csCloseLabel = createCSCloseLabel(caller, callStmt, sourceStmt, callee)
-      svg.addEdge(source, target, csCloseLabel)
-
-
-      if(local.getType.isInstanceOf[ArrayType]) {
-        val stores = arrayStores.getOrElseUpdate(local, List())
-        stores.foreach(sourceStmt => {
-          val source = createNode(callee, sourceStmt)
-          val csCloseLabel = createCSCloseLabel(caller, callStmt, sourceStmt, callee)
-          svg.addEdge(source, target, csCloseLabel)
-        })
-      }
-    })
-  }
-
-  private def defsToThisObject(callStatement: Statement, caller: SootMethod, calleeDefs: SimpleLocalDefs, targetStmt: soot.Unit, expr: InvokeExpr, callee: SootMethod) : Unit = {
-    val invokeExpr = expr match {
-      case e: VirtualInvokeExpr => e
-      case e: SpecialInvokeExpr => e
-      case e: InterfaceInvokeExpr => e
-      case _ => null //TODO: not sure if the other cases
-                     // are also relevant here. Otherwise,
-                     // we can just match with InstanceInvokeExpr
-    }
-
-    if(invokeExpr != null) {
-      if(invokeExpr.getBase.isInstanceOf[Local]) {
-
-        val target = createNode(callee, targetStmt)
-
-        val base = invokeExpr.getBase.asInstanceOf[Local]
-        calleeDefs.getDefsOfAt(base, callStatement.base).forEach(sourceStmt => {
-          val source = createNode(caller, sourceStmt)
-          val csOpenLabel = createCSOpenLabel(caller, callStatement.base, sourceStmt, callee)
-          svg.addEdge(source, target, csOpenLabel)
-        })
-      }
-    }
-  }
-
-  private def defsToFormalArgs(stmt: Statement, caller: SootMethod, defs: SimpleLocalDefs, assignStmt: soot.Unit, exp: InvokeExpr, callee: SootMethod, pmtCount: Int) = {
-    val target = createNode(callee, assignStmt)
-
-    val local = exp.getArg(pmtCount).asInstanceOf[Local]
-    defs.getDefsOfAt(local, stmt.base).forEach(sourceStmt => {
-      val source = createNode(caller, sourceStmt)
-      val csOpenLabel = createCSOpenLabel(caller, stmt.base, sourceStmt, callee)
-      svg.addEdge(source, target, csOpenLabel)
-    })
-  }
-
-  private def defsToCallOfSinkMethod(stmt: Statement, exp: InvokeExpr, caller: SootMethod, defs: SimpleLocalDefs) = {
-    // edges from definitions to args
-    exp.getArgs.stream().filter(a => a.isInstanceOf[Local]).forEach(a => {
-      val local = a.asInstanceOf[Local]
-      val targetStmt = stmt.base
-      defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
-        val source = createNode(caller, sourceStmt)
-        val target = createNode(caller, targetStmt)
-        updateGraph(source, target)
-      })
-
-      if(local.getType.isInstanceOf[ArrayType]) {
-        val stores = arrayStores.getOrElseUpdate(local, List())
-        stores.foreach(sourceStmt => {
-          val source = createNode(caller, sourceStmt)
-          val target = createNode(caller, targetStmt)
-          updateGraph(source, target)
-        })
-      }
-    })
-    // edges from definition to base object of an invoke expression
-    if(isFieldSensitiveAnalysis() && exp.isInstanceOf[InstanceInvokeExpr]) {
-      if(exp.asInstanceOf[InstanceInvokeExpr].getBase.isInstanceOf[Local]) {
-        val local = exp.asInstanceOf[InstanceInvokeExpr].getBase.asInstanceOf[Local]
-        val targetStmt = stmt.base
-        defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
-          val source = createNode(caller, sourceStmt)
-          val target = createNode(caller, targetStmt)
-          updateGraph(source, target)
-        })
-      }
-    }
-  }
 
   /*
    * creates a graph node from a sootMethod / sootUnit
    */
   def createNode(method: SootMethod, stmt: soot.Unit): StmtNode =
-    new StmtNode(br.unb.cic.soot.graph.Stmt(method.getDeclaringClass.toString, method.getSignature, stmt.toString, stmt.getJavaSourceStartLineNumber), analyze(stmt))
+    new StmtNode(Stmt(method.getDeclaringClass.toString, method.getSignature, stmt.toString, stmt.getJavaSourceStartLineNumber), analyze(stmt))
+
+  def createNode(method: SootMethod): StmtNode =
+    new StmtNode(Stmt(method.getDeclaringClass.toString, method.getSignature, "Entry Point", 0), SimpleNode)
 
   def createCSOpenLabel(method: SootMethod, stmt: soot.Unit, sourceStmt: soot.Unit, callee: SootMethod): CallSiteLabel =
     new CallSiteLabel(CallSite(method.getDeclaringClass.toString, method.getSignature,
@@ -423,67 +481,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
     new CallSiteLabel(CallSite(method.getDeclaringClass.toString, method.getSignature,
       stmt.toString, stmt.getJavaSourceStartLineNumber, sourceStmt.toString, callee.toString), CallSiteCloseEdge)
 
-  def isThisInitStmt(expr: InvokeExpr, unit: soot.Unit) : Boolean =
-    unit.isInstanceOf[IdentityStmt] && unit.asInstanceOf[IdentityStmt].getRightOp.isInstanceOf[ThisRef]
-
-  def isParameterInitStmt(expr: InvokeExpr, pmtCount: Int, unit: soot.Unit) : Boolean =
-    unit.isInstanceOf[IdentityStmt] && unit.asInstanceOf[IdentityStmt].getRightOp.isInstanceOf[ParameterRef] && expr.getArg(pmtCount).isInstanceOf[Local]
-
-  def isAssignReturnStmt(callSite: soot.Unit, unit: soot.Unit) : Boolean =
-   unit.isInstanceOf[ReturnStmt] && unit.asInstanceOf[ReturnStmt].getOp.isInstanceOf[Local] &&
-     callSite.isInstanceOf[soot.jimple.AssignStmt]
-
-  def findAllocationSites(local: Local, oldSet: Boolean = true, field: SootField = null) : ListBuffer[LambdaNode] = {
-    if(pointsToAnalysis.isInstanceOf[PAG]) {
-      val pta = pointsToAnalysis.asInstanceOf[PAG]
-
-      val reachingObjects = if(field == null) pta.reachingObjects(local.asInstanceOf[Local])
-                            else pta.reachingObjects(local, field)
-
-      if(!reachingObjects.isEmpty) {
-        val allocations = if(oldSet) reachingObjects.asInstanceOf[DoublePointsToSet].getOldSet
-                          else reachingObjects.asInstanceOf[DoublePointsToSet].getNewSet
-
-        val v = new AllocationVisitor()
-        allocations.asInstanceOf[HybridPointsToSet].forall(v)
-        return v.allocationNodes
-      }
-    }
-    new ListBuffer[LambdaNode]()
-  }
-
-  /*
-   * a class to visit the allocation nodes of the objects that
-   * a field might point to.
-   *
-   * @param method method of the statement stmt
-   * @param stmt statement with a load operation
-   */
-  class AllocationVisitor() extends P2SetVisitor {
-    var allocationNodes = new ListBuffer[LambdaNode]()
-    override def visit(n: pag.Node): Unit = {
-      if (n.isInstanceOf[AllocNode]) {
-        val allocationNode = n.asInstanceOf[AllocNode]
-
-        var unit: soot.Unit = null
-
-        if (allocationNode.getNewExpr.isInstanceOf[NewExpr]) {
-          if (allocationSites.contains(allocationNode.getNewExpr.asInstanceOf[NewExpr])) {
-            unit = allocationSites(allocationNode.getNewExpr.asInstanceOf[NewExpr])
-          }
-        }
-        else if(allocationNode.getNewExpr.isInstanceOf[NewArrayExpr]) {
-          if (allocationSites.contains(allocationNode.getNewExpr.asInstanceOf[NewArrayExpr])) {
-            unit = allocationSites(allocationNode.getNewExpr.asInstanceOf[NewArrayExpr])
-          }
-        }
-
-        if(unit != null) {
-          allocationNodes += createNode(allocationNode.getMethod, unit)
-        }
-      }
-    }
-  }
 
   /**
    * Override this method in the case that
@@ -496,12 +493,12 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
    *         false otherwise.
    * @deprecated
    */
-   def runInFullSparsenessMode() = true
+  def runInFullSparsenessMode() = true
 
-//  /*
-//   * It either updates the graph or not, depending on
-//   * the types of the nodes.
-//   */
+  //  /*
+  //   * It either updates the graph or not, depending on
+  //   * the types of the nodes.
+  //   */
   private def updateGraph(source: LambdaNode, target: LambdaNode, forceNewEdge: Boolean = false): Boolean = {
     var res = false
     if(!runInFullSparsenessMode() || true) {
@@ -510,18 +507,18 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
     }
 
     // this first case can still introduce irrelevant nodes
-//    if(svg.contains(source)) {//) || svg.map.contains(target)) {
-//      svg.addEdge(source, target)
-//      res = true
-//    }
-//    else if(source.nodeType == SourceNode || source.nodeType == SinkNode) {
-//      svg.addEdge(source, target)
-//      res = true
-//    }
-//    else if(target.nodeType == SourceNode || target.nodeType == SinkNode) {
-//      svg.addEdge(source, target)
-//      res = true
-//    }
+    //    if(svg.contains(source)) {//) || svg.map.contains(target)) {
+    //      svg.addEdge(source, target)
+    //      res = true
+    //    }
+    //    else if(source.nodeType == SourceNode || source.nodeType == SinkNode) {
+    //      svg.addEdge(source, target)
+    //      res = true
+    //    }
+    //    else if(target.nodeType == SourceNode || target.nodeType == SinkNode) {
+    //      svg.addEdge(source, target)
+    //      res = true
+    //    }
     return res
   }
 }

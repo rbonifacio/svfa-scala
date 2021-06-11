@@ -14,6 +14,9 @@ sealed trait EdgeType
 case object CallSiteOpenEdge extends EdgeType { def instance: CallSiteOpenEdge.type = this }
 case object CallSiteCloseEdge extends EdgeType { def instance: CallSiteCloseEdge.type = this }
 case object SimpleEdge extends EdgeType { def instance: SimpleEdge.type = this }
+case object ControlDependency extends EdgeType { def instance: ControlDependency.type = this }
+case object ControlDependencyFalse extends EdgeType { def instance: ControlDependencyFalse.type = this }
+
 
 case class Stmt(className: String, method: String, stmt: String, line: Int)
 
@@ -26,7 +29,18 @@ trait LambdaLabel {
 class StringLabel(label: String) extends LambdaLabel {
   override type T = String
   override var value: String = label
-  override val edgeType: EdgeType = SimpleEdge
+  override val edgeType: EdgeType = EdgeType.convert(label)
+}
+
+object EdgeType {
+  def convert(edge: String): EdgeType = {
+    if(edge.equals(ControlDependency.toString)) {
+      ControlDependency
+    } else if (edge.equals(ControlDependencyFalse.toString)) {
+      ControlDependencyFalse
+    }
+    else SimpleEdge
+  }
 }
 
 class CallSiteLabel(callSite: CallSite, callSiteType: EdgeType) extends LambdaLabel {
@@ -92,7 +106,9 @@ case class StmtNode(stmt: Stmt, stmtType: NodeType) extends LambdaNode {
   override val value: Stmt = stmt
   override val nodeType: NodeType = stmtType
 
-  override def show(): String = "(" ++ value.method + ": " + value.stmt + " - " + value.line + " <" + nodeType.toString + ">)"
+  override def show(): String = value.stmt
+
+  //  override def show(): String = "(" ++ value.method + ": " + value.stmt + " - " + value.line + " <" + nodeType.toString + ">)"
 
   override def toString: String =
     "Node(" + value.method + "," + value.stmt + "," + value.line.toString + "," + nodeType.toString + ")"
@@ -149,7 +165,6 @@ class Graph() {
     }
     return None
   }
-
 
   def getIgnoredNodes(): HashSet[LambdaNode] = {
     var ignoredNodes = HashSet.empty[LambdaNode]
@@ -293,12 +308,12 @@ class Graph() {
   }
 
   def findPaths(source: LambdaNode, target: LambdaNode, visited: HashSet[LambdaNode],
-               currentPath: graph.PathBuilder, paths: List[graph.Path]): List[graph.Path] = {
+                currentPath: graph.PathBuilder, paths: List[graph.Path]): List[graph.Path] = {
     // TODO: find some optimal way to travel in graph
     val adjacencyList = gNode(source).diSuccessors.map(_node => _node.toOuter)
     if (adjacencyList.contains(target)) {
       currentPath += gNode(target)
-//      return paths ++ List(currentPath.result)
+      //      return paths ++ List(currentPath.result)
       return List(currentPath.result)
     }
 
@@ -311,24 +326,24 @@ class Graph() {
     })
     return List()
 
-//    var possiblePaths = paths
-//    adjacencyList.foreach(next => {
-//      if (! visited(next)) {
-//        var nextPath = currentPath
-//        nextPath += gNode(next)
-//        val possiblePath = findPaths(next, target, visited + next, nextPath, paths)
-//        if (possiblePath.nonEmpty) {
-//          var findAllConflictPaths = false
-//          if (findAllConflictPaths) {
-//            possiblePaths = possiblePaths ++ possiblePath
-//          } else {
-//            return possiblePath
-//          }
-//        }
-//      }
-//    })
-//
-//    return possiblePaths
+    //    var possiblePaths = paths
+    //    adjacencyList.foreach(next => {
+    //      if (! visited(next)) {
+    //        var nextPath = currentPath
+    //        nextPath += gNode(next)
+    //        val possiblePath = findPaths(next, target, visited + next, nextPath, paths)
+    //        if (possiblePath.nonEmpty) {
+    //          var findAllConflictPaths = false
+    //          if (findAllConflictPaths) {
+    //            possiblePaths = possiblePaths ++ possiblePath
+    //          } else {
+    //            return possiblePath
+    //          }
+    //        }
+    //      }
+    //    })
+    //
+    //    return possiblePaths
   }
 
   def isValidPath(path: graph.Path): Boolean = {
