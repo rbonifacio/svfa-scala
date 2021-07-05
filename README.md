@@ -1,4 +1,4 @@
-# SVFA (Sparse Value Flow Analysis) implementation based on Soot
+# PDG (Program Dependence Graph) implementation based on Soot
 
 This is a scala implementation of a framework that builds a sparse-value flow graph using Soot.
 
@@ -12,6 +12,7 @@ This is a scala implementation of a framework that builds a sparse-value flow gr
    * you will need to add a github token to your **~/.gitconfig**.
      ```
      [github]
+             user = USER_NAME
              token = TOKEN
      ```
    * build this project using sbt (`sbt compile test`)
@@ -26,7 +27,7 @@ This is a scala implementation of a framework that builds a sparse-value flow gr
  </dependency>
 ```
 
-   * implement a class that extends the `JSVFA class` (see some examples in the scala tests). you must provide implementations to the following methods
+   * implement a class that extends the `JPDG class` (see some examples in the scala tests). you must provide implementations to the following methods
       * `getEntryPoints()` to set up the "main" methods. This implementation must return a list of Soot methods
       * `sootClassPath()` to set up the soot classpath. This implementation must return a string
       * `analyze(unit)` to identify the type of a node  (source, sink, simple node) in the graph; given a statement (soot unit)

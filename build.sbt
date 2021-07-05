@@ -1,13 +1,11 @@
 scalaVersion := "2.12.8"
 
-name := "svfa-scala"
-organization := "br.unb.cic"
+name := "pdg-control-flow"
+organization := "br.ufpe.cin"
 
 version := "0.1.0-SNAPSHOT"
 
-
-
-githubOwner := "rbonifacio"
+githubOwner := "galilasmb"
 githubRepository := "svfa-scala"
 githubTokenSource := TokenSource.GitConfig("github.token")
 
