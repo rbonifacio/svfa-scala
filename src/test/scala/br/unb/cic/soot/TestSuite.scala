@@ -1,7 +1,7 @@
 package br.unb.cic.soot
 
 import br.unb.cic.soot.basic.Basic11Test
-import org.scalatest.{BeforeAndAfter, FunSuite}
+import org.scalatest.{BeforeAndAfter, FunSuite, Ignore}
 import samples.FieldSample
 
 class TestSuite extends FunSuite with BeforeAndAfter {
@@ -108,8 +108,36 @@ class TestSuite extends FunSuite with BeforeAndAfter {
     assert(svfa.reportConflicts().size == 1)
   }
 
-  test("we should find exactly one conflict in the FieldSample  analysis") {
+  test("we should find exactly one conflict in the FieldSample analysis") {
     val svfa = new FieldTest()
+    svfa.buildSparseValueFlowGraph()
+    System.out.println(svfa.svgToDotModel())
+    assert(svfa.reportConflicts().size >= 1)
+  }
+
+  // This is the case with fields that the source method
+  // changes the field that is subsequently used by a sink line
+  ignore("we should find exactly one conflict in the MethodFieldTest analysis") {
+    val svfa = new MethodFieldTest()
+    svfa.buildSparseValueFlowGraph()
+    System.out.println(svfa.svgToDotModel())
+    assert(svfa.reportConflicts().size >= 1)
+  }
+
+  // This is a simple case that the with a local variable would be detected
+  // but with the field variable it isn't detected
+  ignore("we should find exactly one conflict in the InvokeInstanceMethodOnFieldTest analysis") {
+    val svfa = new InvokeInstanceMethodOnFieldTest()
+    svfa.buildSparseValueFlowGraph()
+    System.out.println(svfa.svgToDotModel())
+    assert(svfa.reportConflicts().size >= 1)
+  }
+
+  // This case is representative of the problem with abstract classes and interfaces
+  // that causes the analysis to not be able to infer the concrete implementation of the
+  // methods.
+  test("we should find exactly one conflict in the HashmapTest analysis") {
+    val svfa = new HashmapTest()
     svfa.buildSparseValueFlowGraph()
     System.out.println(svfa.svgToDotModel())
     assert(svfa.reportConflicts().size >= 1)
