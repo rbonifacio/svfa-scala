@@ -1,6 +1,6 @@
 package br.unb.cic.soot
 
-import br.unb.cic.soot.basic.Basic11Test
+import br.unb.cic.soot.basic.{Basic11Test, Basic16Test}
 import org.scalatest.{BeforeAndAfter, FunSuite}
 import samples.FieldSample
 
@@ -98,6 +98,12 @@ class TestSuite extends FunSuite with BeforeAndAfter {
     val svfa = new Basic11Test()
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflicts().size == 2)
+  }
+
+  test("we should find exactly one conflicts in the basic.Basic16 analysis") {
+    val svfa = new Basic16Test()
+    svfa.buildSparseValueFlowGraph()
+    assert(svfa.reportConflicts().size == 1)
   }
 
   test("we should find exactly one conflict in the ContextSensitiveSample  analysis") {

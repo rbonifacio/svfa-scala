@@ -1,7 +1,7 @@
 package br.unb.cic.soot.svfa
 
 import java.io.File
-import br.unb.cic.soot.graph.{LambdaNode, SinkNode, SourceNode, StmtNode}
+import br.unb.cic.soot.graph.{CallSiteLabel, CallSiteOpenLabel, FieldSensitiveLabel, FieldSensitiveStoreLabel, GraphNode, SinkNode, SourceNode, StatementNode, StringLabel}
 import soot._
 import soot.options.Options
 
@@ -83,7 +83,7 @@ abstract class SVFA {
     }
   }
 
-  def findConflictingPaths(): scala.collection.Set[List[LambdaNode]] = {
+  def findConflictingPaths(): scala.collection.Set[List[GraphNode]] = {
     if (svg.fullGraph) {
       val conflicts = svg.findPathsFullGraph()
       return conflicts.toSet
@@ -94,7 +94,7 @@ abstract class SVFA {
       //      val conflicts = for(source <- sourceNodes; sink <- sinkNodes)
       //         yield svg.findPath(source, sink)
 
-      var conflicts: List[List[LambdaNode]] = List()
+      var conflicts: List[List[GraphNode]] = List()
       sourceNodes.foreach(source => {
         sinkNodes.foreach(sink => {
           val paths = svg.findPath(source, sink)
@@ -128,17 +128,36 @@ abstract class SVFA {
         case _ => ""
       }
 
-      s ++= " " + "\"" + n.show() + "\"" + nodeColor + "\n"
+      s ++= " " + "\"" + n.show() + "\"" + " " + nodeColor + "\n"
     }
+    s  ++= "\n"
 
-    for (n <- svg.nodes) {
-      val adjacencyList = svg.getAdjacentNodes(n).get
-      val edges = adjacencyList.map(next => "\"" + n.show() + "\"" + " -> " + "\"" + next.show() + "\"")
-      for (e <- edges) {
-        s ++= " " + e + "\n"
+//    for (n <- svg.nodes) {
+//      val adjacencyList = svg.getAdjacentNodes(n).get
+//      val edges = adjacencyList.map(next => "\"" + n.show() + "\"" + " -> " + "\"" + next.show() + "\"")
+//      for (e <- edges) {
+//        s ++= " " + e + "\n"
+//      }
+//    }
+
+
+    for (e <- svg.edges) {
+      val edge = "\"" + e.from.show() + "\"" + " -> " + "\"" + e.to.show() + "\""
+
+      val label: String = e.label match {
+        case c: CallSiteLabel =>  {
+          if (c.labelType == CallSiteOpenLabel) { "[label=\"cs(\"]" }
+          else { "[label=\"cs)\"]" }
+        }
+        case f: FieldSensitiveLabel => {
+          if (f.labelType == FieldSensitiveStoreLabel) { "[label=\"fsStore\"]" }
+          else { "[label=\"fsLoad\"]" }
+        }
+        case _ => ""
       }
-    }
 
+      s ++= " " + edge + " " + label + "\n"
+    }
 
     s ++= "}"
 
