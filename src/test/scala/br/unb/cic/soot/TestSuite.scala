@@ -2,6 +2,7 @@ package br.unb.cic.soot
 
 import br.unb.cic.soot.basic.Basic11Test
 import org.scalatest.{BeforeAndAfter, FunSuite, Ignore}
+import br.unb.cic.soot.basic.{Basic11Test, Basic16Test}
 import samples.FieldSample
 
 class TestSuite extends FunSuite with BeforeAndAfter {
@@ -63,13 +64,13 @@ class TestSuite extends FunSuite with BeforeAndAfter {
     assert(svfa.reportConflicts().size == 3)
   }
 
-  ignore("we should find exactly one conflict in the StringBuggerTest analysis") {
+  test("we should find exactly one conflict in the StringBuggerTest analysis") {
     val svfa = new StringBufferTest()
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflicts().size == 1)
   }
 
-  ignore("we should find exactly one conflict in the InitStringBuggerTest analysis") {
+  test("we should find exactly one conflict in the InitStringBufferTest analysis") {
     val svfa = new InitStringBufferTest()
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflicts().size == 1)
@@ -88,17 +89,22 @@ class TestSuite extends FunSuite with BeforeAndAfter {
 //    assert(svfa.reportConflicts().size == 1)
 //  }
 
-  ignore("we should find exactly one conflict in the StringToStringTest analysis") {
+  test("we should find exactly one conflict in the StringToStringTest analysis") {
     val svfa = new StringToStringTest()
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflicts().size == 1)
   }
 
-  ignore("we should find exactly two conflicts in the basic.Basic11 analysis") {
+  test("we should find exactly two conflicts in the basic.Basic11 analysis") {
     val svfa = new Basic11Test()
     svfa.buildSparseValueFlowGraph()
-    // println(svfa.svgToDotModel())
     assert(svfa.reportConflicts().size == 2)
+  }
+
+  test("we should find exactly one conflicts in the basic.Basic16 analysis") {
+    val svfa = new Basic16Test()
+    svfa.buildSparseValueFlowGraph()
+    assert(svfa.reportConflicts().size == 1)
   }
 
   test("we should find exactly one conflict in the ContextSensitiveSample  analysis") {
@@ -111,8 +117,8 @@ class TestSuite extends FunSuite with BeforeAndAfter {
   test("we should find exactly one conflict in the FieldSample analysis") {
     val svfa = new FieldTest()
     svfa.buildSparseValueFlowGraph()
-    System.out.println(svfa.svgToDotModel())
-    assert(svfa.reportConflicts().size >= 1)
+    assert(svfa.reportConflicts().size == 1)   // NOTE: We are not traversing the body of
+                                               //       a method associated to a SinkNode. 
   }
 
   // This is the case with fields that the source method
