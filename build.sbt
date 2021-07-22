@@ -5,8 +5,6 @@ organization := "br.unb.cic"
 
 version := "0.1.0"
 
-
-
 githubOwner := "rbonifacio"
 githubRepository := "svfa-scala"
 githubTokenSource := TokenSource.GitConfig("github.token")
@@ -37,4 +35,3 @@ libraryDependencies += "javax.servlet" % "javax.servlet-api" % "3.0.1" % "provid
 
 libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.2"
 
-parallelExecution in Test := false
