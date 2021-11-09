@@ -377,21 +377,25 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
     }
     // default case
     if(base.isInstanceOf[Local]) {
-      val allocationNodes = findAllocationSites(base.asInstanceOf[Local], false, ref.getField)
+      var allocationNodes = findAllocationSites(base.asInstanceOf[Local], false, ref.getField)
+
+      if (allocationNodes.isEmpty) {
+        allocationNodes = findAllocationSites(base.asInstanceOf[Local], true, ref.getField)
+      }
+
       allocationNodes.foreach(source => {
         val target = createNode(method, stmt)
         updateGraph(source, target)
         svg.getAdjacentNodes(source).get.foreach(s => updateGraph(s, target))
       })
 
-      defs.getDefsOfAt(base.asInstanceOf[Local], stmt).forEach(source => {
-        val sourceNode = createNode(method, source)
-        val targetNode = createNode(method, stmt)
-
-        val fsLoadLabel = createFieldSensitiveLoadLabel(ref)
-        svg.addEdge(sourceNode, targetNode, fsLoadLabel)
-      })
-
+// TODO: Remove
+//      defs.getDefsOfAt(base.asInstanceOf[Local], stmt).forEach(source => {
+//        val sourceNode = createNode(method, source)
+//        val targetNode = createNode(method, stmt)
+//        val fsLoadLabel = createFieldSensitiveLoadLabel(ref)
+//        svg.addEdge(sourceNode, targetNode, fsLoadLabel)
+//      })
 //      if (isFieldSensitiveAnalysis()) {
 //        recursivePointsTo(Statement.convert(stmt), method)
 //      }
@@ -448,10 +452,10 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
           val source = createNode(method, sourceStmt)
           val target = createNode(method, targetStmt)
           updateGraph(source, target)
-
-          if (isFieldSensitiveAnalysis()) {
-            recursivePointsTo(Statement.convert(targetStmt), method)
-          }
+// TODO: Remove
+//          if (isFieldSensitiveAnalysis()) {
+//            recursivePointsTo(Statement.convert(targetStmt), method)
+//          }
         })
         //          })
         //        }
@@ -560,44 +564,45 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
     }
   }
 
-  private def recursivePointsTo(stmt: Statement, caller: SootMethod): Unit = {
-    if (stmt.isInstanceOf[AssignStmt]) {
-      val assign = stmt.asInstanceOf[AssignStmt].stmt
-
-      // On store => q.f = p
-      val leftOp = assign.getLeftOp
-      if (leftOp.isInstanceOf[InstanceFieldRef]) {
-        val fieldRef = leftOp.asInstanceOf[InstanceFieldRef]
-        val ptsBase = findAllocationSites(fieldRef.getBase.asInstanceOf[Local])
-        ptsBase.foreach(target => {
-          val source = createNode(caller, stmt.base)
-//          updateGraph(source, target)
-
-          val fsStoreLabel = createFieldSensitiveStoreLabel(fieldRef)
-          svg.addEdge(source, target, fsStoreLabel)
-        })
-      }
-
-      // On load => p = q.f
-      val rightOp = assign.getRightOp
-      if (rightOp.isInstanceOf[InstanceFieldRef]) {
-        val fieldRef = rightOp.asInstanceOf[InstanceFieldRef]
-        val ptsRight = findAllocationSites(rightOp.asInstanceOf[InstanceFieldRef].getBase.asInstanceOf[Local])
-        ptsRight.foreach(source => {
-          val target = createNode(caller, stmt.base)
-          //          updateGraph(source, target)
-
-          val fsLoadLabel = createFieldSensitiveLoadLabel(fieldRef)
-          svg.addEdge(source, target, fsLoadLabel)
-
-//          svg.getAdjacentNodes(source).get.foreach(s => {
-////            updateGraph(s, target)
-//              svg.addEdge(s, target, fsLoadLabel)
-//          })
-        })
-      }
-    }
-  }
+  // TODO: Remove
+//  private def recursivePointsTo(stmt: Statement, caller: SootMethod): Unit = {
+//    if (stmt.isInstanceOf[AssignStmt]) {
+//      val assign = stmt.asInstanceOf[AssignStmt].stmt
+//
+//      // On store => q.f = p
+//      val leftOp = assign.getLeftOp
+//      if (leftOp.isInstanceOf[InstanceFieldRef]) {
+//        val fieldRef = leftOp.asInstanceOf[InstanceFieldRef]
+//        val ptsBase = findAllocationSites(fieldRef.getBase.asInstanceOf[Local])
+//        ptsBase.foreach(target => {
+//          val source = createNode(caller, stmt.base)
+////          updateGraph(source, target)
+//
+//          val fsStoreLabel = createFieldSensitiveStoreLabel(fieldRef)
+//          svg.addEdge(source, target, fsStoreLabel)
+//        })
+//      }
+//
+//      // On load => p = q.f
+//      val rightOp = assign.getRightOp
+//      if (rightOp.isInstanceOf[InstanceFieldRef]) {
+//        val fieldRef = rightOp.asInstanceOf[InstanceFieldRef]
+//        val ptsRight = findAllocationSites(rightOp.asInstanceOf[InstanceFieldRef].getBase.asInstanceOf[Local])
+//        ptsRight.foreach(source => {
+//          val target = createNode(caller, stmt.base)
+//          //          updateGraph(source, target)
+//
+//          val fsLoadLabel = createFieldSensitiveLoadLabel(fieldRef)
+//          svg.addEdge(source, target, fsLoadLabel)
+//
+////          svg.getAdjacentNodes(source).get.foreach(s => {
+//////            updateGraph(s, target)
+////              svg.addEdge(s, target, fsLoadLabel)
+////          })
+//        })
+//      }
+//    }
+//  }
 
   /*
    * creates a graph node from a sootMethod / sootUnit
@@ -615,18 +620,18 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
     val statement = br.unb.cic.soot.graph.Statement(method.getDeclaringClass.toString, method.getSignature, stmt.toString, stmt.getJavaSourceStartLineNumber)
     CallSiteLabel(ContextSensitiveRegion(statement, callee.toString), CallSiteCloseLabel)
   }
-
-  def createFieldSensitiveStoreLabel(fieldRef: InstanceFieldRef): FieldSensitiveLabel = {
-    val declaringClass = fieldRef.getField.getDeclaringClass.getName
-    val fieldName = fieldRef.getField.getName
-    new FieldSensitiveLabel(FieldReference(declaringClass, fieldName), FieldSensitiveStoreLabel)
-  }
-
-  def createFieldSensitiveLoadLabel(fieldRef: InstanceFieldRef): FieldSensitiveLabel = {
-    val declaringClass = fieldRef.getField.getDeclaringClass.getName
-    val fieldName = fieldRef.getField.getName
-    new FieldSensitiveLabel(FieldReference(declaringClass, fieldName), FieldSensitiveLoadLabel)
-  }
+// TODO: Remove
+//  def createFieldSensitiveStoreLabel(fieldRef: InstanceFieldRef): FieldSensitiveLabel = {
+//    val declaringClass = fieldRef.getField.getDeclaringClass.getName
+//    val fieldName = fieldRef.getField.getName
+//    new FieldSensitiveLabel(FieldReference(declaringClass, fieldName), FieldSensitiveStoreLabel)
+//  }
+//
+//  def createFieldSensitiveLoadLabel(fieldRef: InstanceFieldRef): FieldSensitiveLabel = {
+//    val declaringClass = fieldRef.getField.getDeclaringClass.getName
+//    val fieldName = fieldRef.getField.getName
+//    new FieldSensitiveLabel(FieldReference(declaringClass, fieldName), FieldSensitiveLoadLabel)
+//  }
 
   def isThisInitStmt(expr: InvokeExpr, unit: soot.Unit) : Boolean =
     unit.isInstanceOf[IdentityStmt] && unit.asInstanceOf[IdentityStmt].getRightOp.isInstanceOf[ThisRef]
