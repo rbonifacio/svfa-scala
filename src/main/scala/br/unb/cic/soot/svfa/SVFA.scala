@@ -1,7 +1,7 @@
 package br.unb.cic.soot.svfa
 
 import java.io.File
-import br.unb.cic.soot.graph.{CallSiteLabel, CallSiteOpenLabel, FieldSensitiveLabel, FieldSensitiveStoreLabel, GraphNode, SinkNode, SourceNode, StatementNode, StringLabel}
+import br.unb.cic.soot.graph.{CallSiteLabel, CallSiteOpenLabel, GraphNode, SinkNode, SourceNode, StatementNode, StringLabel}
 import soot._
 import soot.options.Options
 
@@ -149,10 +149,6 @@ abstract class SVFA {
         case c: CallSiteLabel =>  {
           if (c.labelType == CallSiteOpenLabel) { "[label=\"cs(\"]" }
           else { "[label=\"cs)\"]" }
-        }
-        case f: FieldSensitiveLabel => {
-          if (f.labelType == FieldSensitiveStoreLabel) { "[label=\"fsStore\"]" }
-          else { "[label=\"fsLoad\"]" }
         }
         case _ => ""
       }
