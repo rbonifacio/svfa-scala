@@ -64,10 +64,6 @@ sealed trait LabelType
 
 case object SimpleLabel extends LabelType { def instance: SimpleLabel.type = this }
 
-sealed trait FieldSensitiveLabelType extends LabelType
-case object FieldSensitiveStoreLabel extends FieldSensitiveLabelType { def instance: FieldSensitiveStoreLabel.type = this }
-case object FieldSensitiveLoadLabel extends FieldSensitiveLabelType { def instance: FieldSensitiveLoadLabel.type = this }
-
 sealed trait CallSiteLabelType extends LabelType
 case object CallSiteOpenLabel extends CallSiteLabelType { def instance: CallSiteOpenLabel.type = this }
 case object CallSiteCloseLabel extends CallSiteLabelType { def instance: CallSiteCloseLabel.type = this }
@@ -131,36 +127,6 @@ case class CallSiteLabel(csRegion: ContextSensitiveRegion, labelType: CallSiteLa
     }
   }
 }
-
-case class FieldReference(className: String, field: String)
-
-case class FieldSensitiveLabel(fieldRef: FieldReference, labelType: FieldSensitiveLabelType) extends EdgeLabel {
-  override type T = FieldReference
-  override var value = fieldRef
-
-  def matchFieldReference(otherLabel: Any): Boolean = {
-    otherLabel match {
-      case defaultFRLabel: FieldSensitiveLabel =>
-        val frLabel = defaultFRLabel.value
-        // Match store with load or load with store
-        if (labelType != defaultFRLabel.labelType) {
-          return value == frLabel
-        } else {
-          false
-        }
-      case _ => false
-    }
-  }
-
-  override def equals(o: Any): Boolean = {
-    o match {
-      case frLabel: FieldSensitiveLabel =>
-        return value == frLabel.value && labelType == frLabel.labelType
-      case _ => false
-    }
-  }
-}
-
 
 case class GraphEdge(from: GraphNode, to: GraphNode, label: EdgeLabel)
 
@@ -405,37 +371,9 @@ class Graph() {
     return unmatched
   }
 
-  def getUnmatchedFieldReferences(source: List[FieldSensitiveLabel], target: List[FieldSensitiveLabel]): List[FieldSensitiveLabel] = {
-    var unmatched = List.empty[FieldSensitiveLabel]
-    var unvisitedTargets = target
-
-    source.foreach(s => {
-      var matchedFR = List.empty[FieldSensitiveLabel]
-      var unmatchedFR = List.empty[FieldSensitiveLabel]
-      unvisitedTargets.foreach(label => {
-        if (label.matchFieldReference(s))
-          matchedFR = matchedFR ++ List(label)
-        else
-          unmatchedFR = unmatchedFR ++ List(label)
-      })
-
-      if (matchedFR.size > 0) {
-        unvisitedTargets = unmatchedFR ++ matchedFR.init
-      } else {
-        unvisitedTargets = unmatchedFR
-        unmatched = unmatched ++ List(s)
-      }
-    })
-
-    return unmatched
-  }
-
   def isValidPath(path: graph.Path): Boolean = {
     var csOpen = List.empty[CallSiteLabel]
     var csClose = List.empty[CallSiteLabel]
-    var fsStore = List.empty[FieldSensitiveLabel]
-    var fsLoad = List.empty[FieldSensitiveLabel]
-
 
     // Filter the labels by type
     path.edges.foreach(edge => {
@@ -447,12 +385,6 @@ class Graph() {
             csOpen = csOpen ++ List(l)
           else
             csClose = csClose ++ List(l)
-        }
-        case l: FieldSensitiveLabel => {
-          if (l.labelType == FieldSensitiveLoadLabel)
-            fsLoad = fsLoad ++ List(l)
-          else
-            fsStore = fsStore ++ List(l)
         }
         case _ => {}
       }
@@ -471,17 +403,9 @@ class Graph() {
       })
     })
 
-    // Get all the stores without a load
-    val unmatchedStores = getUnmatchedFieldReferences(fsStore, fsLoad)
-    // Get all the loads without a store
-    val unmatchedLoads = getUnmatchedFieldReferences(fsLoad, fsStore)
-
     val validCS = unopenedCS.isEmpty || unclosedCS.isEmpty || matchedUnopenedUnclosedCSCalleeMethod.isEmpty
 
-    val validFieldRefs = unmatchedLoads.isEmpty || unmatchedStores.isEmpty
-    val valid = validCS && validFieldRefs
-
-    return validCS && validFieldRefs
+    return validCS
   }
 
   def nodes(): scala.collection.Set[GraphNode] = graph.nodes.map(node => node.toOuter).toSet

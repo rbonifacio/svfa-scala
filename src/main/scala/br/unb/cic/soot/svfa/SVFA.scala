@@ -42,7 +42,8 @@ abstract class SVFA {
 
   def afterGraphConstruction()
 
-  def callGraph(): CG = SPARK
+//  def callGraph(): CG = SPARK
+  def callGraph(): CG = SPARK_LIBRARY
 
   def buildSparseValueFlowGraph() {
     configureSoot()
