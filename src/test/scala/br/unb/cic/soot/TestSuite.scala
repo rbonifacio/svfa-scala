@@ -142,7 +142,7 @@ class TestSuite extends FunSuite with BeforeAndAfter {
   // This case is representative of the problem with abstract classes and interfaces
   // that causes the analysis to not be able to infer the concrete implementation of the
   // methods.
-  test("we should find exactly one conflict in the HashmapTest analysis") {
+  ignore("we should find exactly one conflict in the HashmapTest analysis") {
     val svfa = new HashmapTest()
     svfa.buildSparseValueFlowGraph()
     System.out.println(svfa.svgToDotModel())

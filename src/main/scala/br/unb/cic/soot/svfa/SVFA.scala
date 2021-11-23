@@ -42,8 +42,7 @@ abstract class SVFA {
 
   def afterGraphConstruction()
 
-//  def callGraph(): CG = SPARK
-  def callGraph(): CG = SPARK_LIBRARY
+  def callGraph(): CG = SPARK
 
   def buildSparseValueFlowGraph() {
     configureSoot()
@@ -76,7 +75,10 @@ abstract class SVFA {
   def configureCallGraphPhase() {
     callGraph() match {
       case CHA => Options.v().setPhaseOption("cg.cha", "on")
-      case SPARK => Options.v().setPhaseOption("cg.spark", "on")
+      case SPARK => {
+        Options.v().setPhaseOption("cg.spark", "on")
+        Options.v().setPhaseOption("cg.spark", "cs-demand:true")
+      }
       case SPARK_LIBRARY => {
         Options.v().setPhaseOption("cg.spark", "on")
         Options.v().setPhaseOption("cg", "library:any-subtype")

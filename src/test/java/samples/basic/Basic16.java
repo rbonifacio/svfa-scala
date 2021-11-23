@@ -2,23 +2,23 @@ package samples.basic;
 
 public class Basic16 {
     public class Widget {
-        String contents;
+        Integer contents;
 
         public Widget() {
-            contents = "";
+            contents = new Integer(0);
         }
 
-        public String getContents() {
+        public Integer getContents() {
             return contents;
         }
 
-        public void setContents(String contents) {
+        public void setContents(Integer contents) {
             this.contents = contents;
         }
     }
 
     public void main(String args[]) {
-        String s1 = source();
+        Integer s1 = source();
 
         Widget w = new Widget();
         w.setContents(s1);
@@ -26,11 +26,11 @@ public class Basic16 {
         sink(w.getContents());                    /* BAD */
     }
 
-    public static String source() {
-        return "secret";
+    public static Integer source() {
+        return new Integer(1);
     }
 
-    public static void sink(String s) {
+    public static void sink(Integer s) {
 
     }
 }

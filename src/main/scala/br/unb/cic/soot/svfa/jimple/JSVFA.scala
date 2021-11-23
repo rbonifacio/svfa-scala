@@ -2,13 +2,14 @@ package br.unb.cic.soot.svfa.jimple
 
 import java.util
 import br.unb.cic.soot.svfa.jimple.rules.{ComposedRuleAction, DoNothing, MissingActiveBodyRule, NamedMethodRule, NativeRule, RuleAction}
-import br.unb.cic.soot.graph.{ContextSensitiveRegion, CallSiteCloseLabel, CallSiteLabel, CallSiteOpenLabel, GraphNode, SinkNode, SourceNode, StatementNode}
+import br.unb.cic.soot.graph.{CallSiteCloseLabel, CallSiteLabel, CallSiteOpenLabel, ContextSensitiveRegion, GraphNode, SinkNode, SourceNode, StatementNode}
 import br.unb.cic.soot.svfa.jimple.dsl.{DSL, LanguageParser}
 import br.unb.cic.soot.svfa.{SVFA, SourceSinkDef}
 import com.typesafe.scalalogging.LazyLogging
 import soot.dava.toolkits.base.AST.structuredAnalysis.ReachingDefs
 import soot.jimple._
 import soot.jimple.internal.{JArrayRef, JAssignStmt}
+import soot.jimple.spark.ondemand.DemandCSPointsTo
 import soot.jimple.spark.pag
 import soot.jimple.spark.pag.{AllocNode, PAG, StringConstantNode}
 import soot.jimple.spark.sets.{DoublePointsToSet, HybridPointsToSet, P2SetVisitor}
@@ -279,7 +280,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
       svg.addNode(source)
     }
 
-     for(r <- methodRules) {
+    for(r <- methodRules) {
       if(r.check(callee)) {
         r.apply(caller, callStmt.base.asInstanceOf[jimple.Stmt], defs)
         return
@@ -572,9 +573,11 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
      callSite.isInstanceOf[soot.jimple.AssignStmt]
 
   def findAllocationSites(local: Local, oldSet: Boolean = true, field: SootField = null) : ListBuffer[GraphNode] = {
-    if(pointsToAnalysis.isInstanceOf[PAG]) {
-      val pta = pointsToAnalysis.asInstanceOf[PAG]
+    val pta = if(pointsToAnalysis.isInstanceOf[PAG]) pointsToAnalysis.asInstanceOf[PAG]
+    else if (pointsToAnalysis.isInstanceOf[DemandCSPointsTo]) pointsToAnalysis.asInstanceOf[DemandCSPointsTo].getPAG
+    else null
 
+    if(pta != null) {
       val reachingObjects = if(field == null) pta.reachingObjects(local.asInstanceOf[Local])
                             else pta.reachingObjects(local, field)
 
