@@ -7,7 +7,7 @@ package securibench.micro.basic;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.mock.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import securibench.micro.BasicTestCase;
 import securibench.micro.MicroTestCase;
@@ -31,7 +31,8 @@ public class Basic16 extends BasicTestCase implements MicroTestCase {
 
     private static final String FIELD_NAME = "name";
 
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    protected void doGet(HttpServletResponse resp) throws IOException {
+        HttpServletRequest req = new HttpServletRequest();
         String s = req.getParameter(FIELD_NAME);
         Widget w = new Widget();
         w.setContents(s);
