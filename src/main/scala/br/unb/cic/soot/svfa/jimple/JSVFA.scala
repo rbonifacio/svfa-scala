@@ -30,7 +30,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
 
   var methods = 0
   val traversedMethods = scala.collection.mutable.Set.empty[SootMethod]
-  val allocationSites = scala.collection.mutable.HashMap.empty[soot.Value, soot.Unit]
+  val allocationSites = scala.collection.mutable.HashMap.empty[soot.Value, StatementNode]
   val arrayStores = scala.collection.mutable.HashMap.empty[Local, List[soot.Unit]]
   val languageParser = new LanguageParser(this)
 
@@ -184,9 +184,14 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
         body.getUnits.forEach(unit => {
           if (unit.isInstanceOf[soot.jimple.AssignStmt]) {
             val right = unit.asInstanceOf[soot.jimple.AssignStmt].getRightOp
-            if (right.isInstanceOf[NewExpr] || right.isInstanceOf[NewArrayExpr]) {// || right.isInstanceOf[StringConstant]) {
-//            if (right.isInstanceOf[NewExpr] || right.isInstanceOf[NewArrayExpr] || right.isInstanceOf[StringConstant]) {
-              allocationSites += (right -> unit)
+            if (right.isInstanceOf[NewExpr] || right.isInstanceOf[NewArrayExpr] || right.isInstanceOf[StringConstant]) {
+              allocationSites += (right -> createNode(m, unit))
+            }
+          }
+          else if(unit.isInstanceOf[soot.jimple.ReturnStmt]) {
+            val exp = unit.asInstanceOf[soot.jimple.ReturnStmt].getOp
+            if(exp.isInstanceOf[StringConstant]) {
+              allocationSites += (exp -> createNode(m, unit))
             }
           }
         })
@@ -302,8 +307,11 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
         defsToFormalArgs(callStmt, caller, defs, s, exp, callee, pmtCount)
         pmtCount = pmtCount + 1
       }
-      else if(isAssignReturnStmt(callStmt.base, s)) {
+      else if(isAssignReturnLocalStmt(callStmt.base, s)) {
         defsToCallSite(caller, callee, calleeDefs, callStmt.base, s)
+      }
+      else if(isReturnStringStmt(callStmt.base, s)) {
+        stringToCallSite(caller, callee, callStmt.base, s)
       }
     })
 
@@ -475,6 +483,12 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
     })
   }
 
+  private def stringToCallSite(caller: SootMethod, callee: SootMethod, callStmt: soot.Unit, retStmt: soot.Unit): Unit = {
+    val target = createNode(caller, callStmt)
+    val source = createNode(callee, retStmt)
+    svg.addEdge(source, target)
+  }
+
   private def defsToThisObject(callStatement: Statement, caller: SootMethod, calleeDefs: SimpleLocalDefs, targetStmt: soot.Unit, expr: InvokeExpr, callee: SootMethod) : Unit = {
     val invokeExpr = expr match {
       case e: VirtualInvokeExpr => e
@@ -568,9 +582,13 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
   def isParameterInitStmt(expr: InvokeExpr, pmtCount: Int, unit: soot.Unit) : Boolean =
     unit.isInstanceOf[IdentityStmt] && unit.asInstanceOf[IdentityStmt].getRightOp.isInstanceOf[ParameterRef] && expr.getArg(pmtCount).isInstanceOf[Local]
 
-  def isAssignReturnStmt(callSite: soot.Unit, unit: soot.Unit) : Boolean =
+  def isAssignReturnLocalStmt(callSite: soot.Unit, unit: soot.Unit) : Boolean =
    unit.isInstanceOf[ReturnStmt] && unit.asInstanceOf[ReturnStmt].getOp.isInstanceOf[Local] &&
      callSite.isInstanceOf[soot.jimple.AssignStmt]
+
+  def isReturnStringStmt(callSite: soot.Unit, unit: soot.Unit): Boolean =
+    unit.isInstanceOf[ReturnStmt] && unit.asInstanceOf[ReturnStmt].getOp.isInstanceOf[StringConstant] &&
+      callSite.isInstanceOf[soot.jimple.AssignStmt]
 
   def findAllocationSites(local: Local, oldSet: Boolean = true, field: SootField = null) : ListBuffer[GraphNode] = {
     val pta = if(pointsToAnalysis.isInstanceOf[PAG]) pointsToAnalysis.asInstanceOf[PAG]
@@ -601,31 +619,32 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
    * @param stmt statement with a load operation
    */
   class AllocationVisitor() extends P2SetVisitor {
+
     var allocationNodes = new ListBuffer[GraphNode]()
+
     override def visit(n: pag.Node): Unit = {
       if (n.isInstanceOf[AllocNode]) {
         val allocationNode = n.asInstanceOf[AllocNode]
 
-        var unit: soot.Unit = null
+        var stmt : StatementNode = null
 
         if (allocationNode.getNewExpr.isInstanceOf[NewExpr]) {
           if (allocationSites.contains(allocationNode.getNewExpr.asInstanceOf[NewExpr])) {
-            unit = allocationSites(allocationNode.getNewExpr.asInstanceOf[NewExpr])
+            stmt = allocationSites(allocationNode.getNewExpr.asInstanceOf[NewExpr])
           }
         }
         else if(allocationNode.getNewExpr.isInstanceOf[NewArrayExpr]) {
           if (allocationSites.contains(allocationNode.getNewExpr.asInstanceOf[NewArrayExpr])) {
-            unit = allocationSites(allocationNode.getNewExpr.asInstanceOf[NewArrayExpr])
+            stmt = allocationSites(allocationNode.getNewExpr.asInstanceOf[NewArrayExpr])
           }
         }
-//        else if(allocationNode.getNewExpr.isInstanceOf[StringConstant]) {
-//          if (allocationSites.contains(allocationNode.getNewExpr.asInstanceOf[StringConstant])) {
-//            unit = allocationSites(allocationNode.getNewExpr.asInstanceOf[StringConstant])
-//          }
-//        }
+        else if(allocationNode.getNewExpr.isInstanceOf[String]) {
+          val str: StringConstant = StringConstant.v(allocationNode.getNewExpr.asInstanceOf[String])
+          stmt = allocationSites.getOrElseUpdate(str, null)
+        }
 
-        if(unit != null) {
-          allocationNodes += createNode(allocationNode.getMethod, unit)
+        if(stmt != null) {
+          allocationNodes += stmt
         }
       }
     }

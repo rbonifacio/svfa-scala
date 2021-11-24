@@ -78,6 +78,7 @@ abstract class SVFA {
       case SPARK => {
         Options.v().setPhaseOption("cg.spark", "on")
         Options.v().setPhaseOption("cg.spark", "cs-demand:true")
+        Options.v().setPhaseOption("cg.spark", "string-constants:true")
       }
       case SPARK_LIBRARY => {
         Options.v().setPhaseOption("cg.spark", "on")
