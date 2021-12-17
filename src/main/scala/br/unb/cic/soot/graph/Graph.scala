@@ -1,6 +1,8 @@
 package br.unb.cic.soot.graph
 
 import scalax.collection.edge.LDiEdge
+import soot.SootMethod
+
 import scala.collection.immutable.HashSet
 
 /*
@@ -22,6 +24,8 @@ trait GraphNode {
   type T
   val value: T
   val nodeType: NodeType
+  def unit(): soot.Unit
+  def method(): soot.SootMethod
   def show(): String
 }
 
@@ -31,7 +35,7 @@ trait GraphNode {
   * it is enough for the analysis, but for some situations, something
   * specific for Jimple or Shimple abstractions can be a better option.
   */
-case class Statement(className: String, method: String, stmt: String, line: Int)
+case class Statement(className: String, method: String, stmt: String, line: Int, sootUnit: soot.Unit = null, sootMethod: soot.SootMethod = null)
 
 /*
  * A graph node defined using the GraphNode abstraction specific for statements.
@@ -53,6 +57,10 @@ case class StatementNode(value: Statement, nodeType: NodeType) extends GraphNode
   }
 
   override def hashCode(): Int = 2 * value.hashCode() + nodeType.hashCode()
+
+  override def unit(): soot.Unit = value.sootUnit
+
+  override def method(): SootMethod = value.sootMethod
 }
 
 /*

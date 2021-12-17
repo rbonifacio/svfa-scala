@@ -145,7 +145,7 @@ class BasicTestSuite extends FunSuite {
     val svfa = new BasicTest("securibench.micro.basic.Basic17", "doGet")
     svfa.buildSparseValueFlowGraph()
     println(svfa.svgToDotModel())
-    assert(svfa.reportConflicts().size == 1)
+    assert(svfa.reportConflicts().size == 1) // the seach should be context sensitive
   }
 
   test("in the class Basic18 we should detect 1 conflict of a simple loop unrolling test case") {

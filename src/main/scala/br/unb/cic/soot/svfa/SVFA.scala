@@ -8,13 +8,10 @@ import soot.options.Options
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
-
 sealed trait CG
 
 case object CHA extends CG
-
 case object SPARK_LIBRARY extends CG
-
 case object SPARK extends CG
 
 /**

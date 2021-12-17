@@ -392,11 +392,16 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
         allocationNodes = findAllocationSites(base.asInstanceOf[Local], true, ref.getField)
       }
 
+      if (allocationNodes.isEmpty) {
+        allocationNodes = findFieldStores(base.asInstanceOf[Local], ref.getField)
+      }
+
       allocationNodes.foreach(source => {
-        val target = createNode(method, stmt)
-        updateGraph(source, target)
-        svg.getAdjacentNodes(source).get.foreach(s => updateGraph(s, target))
-      })
+          val target = createNode(method, stmt)
+          updateGraph(source, target)
+          svg.getAdjacentNodes(source).get.foreach(s => updateGraph(s, target))
+        })
+
     }
   }
 
@@ -563,16 +568,19 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
    * creates a graph node from a sootMethod / sootUnit
    */
   def createNode(method: SootMethod, stmt: soot.Unit): StatementNode =
-    StatementNode(br.unb.cic.soot.graph.Statement(method.getDeclaringClass.toString, method.getSignature, stmt.toString, stmt.getJavaSourceStartLineNumber), analyze(stmt))
+    StatementNode(br.unb.cic.soot.graph.Statement(method.getDeclaringClass.toString, method.getSignature, stmt.toString,
+      stmt.getJavaSourceStartLineNumber, stmt, method), analyze(stmt))
 
 
   def createCSOpenLabel(method: SootMethod, stmt: soot.Unit, callee: SootMethod): CallSiteLabel = {
-    val statement = br.unb.cic.soot.graph.Statement(method.getDeclaringClass.toString, method.getSignature, stmt.toString, stmt.getJavaSourceStartLineNumber)
+    val statement = br.unb.cic.soot.graph.Statement(method.getDeclaringClass.toString, method.getSignature, stmt.toString,
+      stmt.getJavaSourceStartLineNumber, stmt, method)
     CallSiteLabel(ContextSensitiveRegion(statement, callee.toString), CallSiteOpenLabel)
   }
 
   def createCSCloseLabel(method: SootMethod, stmt: soot.Unit, callee: SootMethod): CallSiteLabel = {
-    val statement = br.unb.cic.soot.graph.Statement(method.getDeclaringClass.toString, method.getSignature, stmt.toString, stmt.getJavaSourceStartLineNumber)
+    val statement = br.unb.cic.soot.graph.Statement(method.getDeclaringClass.toString, method.getSignature, stmt.toString,
+      stmt.getJavaSourceStartLineNumber, stmt, method)
     CallSiteLabel(ContextSensitiveRegion(statement, callee.toString), CallSiteCloseLabel)
   }
 
@@ -661,7 +669,25 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
    *         false otherwise.
    * @deprecated
    */
-   def runInFullSparsenessMode() = true
+  def runInFullSparsenessMode() = true
+
+  def findFieldStores(local: Local, field: SootField) : ListBuffer[GraphNode] = {
+    val res: ListBuffer[GraphNode] = new ListBuffer[GraphNode]()
+    for(node <- svg.nodes()) {
+      if(node.unit().isInstanceOf[soot.jimple.AssignStmt]) {
+        val assignment = node.unit().asInstanceOf[soot.jimple.AssignStmt]
+        if(assignment.getLeftOp.isInstanceOf[InstanceFieldRef]) {
+          val base = assignment.getLeftOp.asInstanceOf[InstanceFieldRef].getBase.asInstanceOf[Local]
+          if(pointsToAnalysis.reachingObjects(base).hasNonEmptyIntersection(pointsToAnalysis.reachingObjects(local))) {
+            if(field.equals(assignment.getLeftOp.asInstanceOf[InstanceFieldRef].getField)) {
+              res += createNode(node.method(), node.unit())
+            }
+          }
+        }
+      }
+    }
+    return res
+  }
 
 //  /*
 //   * It either updates the graph or not, depending on

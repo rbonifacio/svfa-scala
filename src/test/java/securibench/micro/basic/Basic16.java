@@ -31,8 +31,7 @@ public class Basic16 extends BasicTestCase implements MicroTestCase {
 
     private static final String FIELD_NAME = "name";
 
-    protected void doGet(HttpServletResponse resp) throws IOException {
-        HttpServletRequest req = new HttpServletRequest();
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String s = req.getParameter(FIELD_NAME);
         Widget w = new Widget();
         w.setContents(s);
