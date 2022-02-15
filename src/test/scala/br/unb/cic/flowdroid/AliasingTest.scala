@@ -84,7 +84,6 @@ class AliasingTestSuite extends FunSuite {
     assert(svfa.reportConflicts().size == 8)
   }
 
-
   ignore("in the class Aliasing9 we should detect 1 conflicts") {
     val svfa = new AliasingTest("securibench.micro.aliasing.Aliasing9", "doGet")
     svfa.buildSparseValueFlowGraph()

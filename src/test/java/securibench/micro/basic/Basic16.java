@@ -41,7 +41,7 @@ public class Basic16 extends BasicTestCase implements MicroTestCase {
     }
     
     public String getDescription() {
-        return "simple heap-allocated data strucure";
+        return "simple heap-allocated data structure";
     }
     
     public int getVulnerabilityCount() {
