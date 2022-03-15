@@ -37,26 +37,22 @@ class FieldSampleTest(var className: String = "", var mainMethod: String = "") e
 
 
 class FieldSamplesTestSuite extends FunSuite with BeforeAndAfter {
-  ignore("in the class FieldSample01 we should detect 1 conflict in a direct sink of a tainted field") {
+  test("in the class FieldSample01 we should detect 1 conflict in a direct sink of a tainted field") {
     val svfa = new FieldSampleTest("samples.fields.FieldSample01", "main")
     svfa.buildSparseValueFlowGraph()
-//    println(svfa.svgToDotModel())
     assert(svfa.reportConflicts().size == 1)
   }
 
-  // LIMITATION: Field overwrite is not supported
-  ignore("in the class FieldSample02 we should not detect any conflict because the tainted field was override") {
+  test("in the class FieldSample02 we should not detect any conflict because the tainted field was override") {
     val svfa = new FieldSampleTest("samples.fields.FieldSample02", "main")
     svfa.buildSparseValueFlowGraph()
-//    println(svfa.svgToDotModel())
     assert(svfa.reportConflicts().size == 0)
   }
 
-  ignore("in the class FieldSample03 we should detect 1 conflict in a direct sink of a tainted field of a " +
+  test("in the class FieldSample03 we should detect 1 conflict in a direct sink of a tainted field of a " +
     "contained object") {
     val svfa = new FieldSampleTest("samples.fields.FieldSample03", "main")
     svfa.buildSparseValueFlowGraph()
-//    println(svfa.svgToDotModel())
     assert(svfa.reportConflicts().size == 1)
   }
 
