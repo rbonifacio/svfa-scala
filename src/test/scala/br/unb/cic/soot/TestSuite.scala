@@ -1,8 +1,9 @@
 package br.unb.cic.soot
 
-import br.unb.cic.soot.basic.{Basic11Test, Basic16StringTest, Basic16Test}
+import br.unb.cic.soot.basic.{Basic11Test, Basic16StringTest, Basic16Test, Basic31Test}
 import org.scalatest.{BeforeAndAfter, FunSuite, Ignore}
 import samples.FieldSample
+import samples.basic.Basic31
 
 class TestSuite extends FunSuite with BeforeAndAfter {
 
@@ -16,7 +17,7 @@ class TestSuite extends FunSuite with BeforeAndAfter {
     val svfa = new BlackBoardTest()
     svfa.buildSparseValueFlowGraph()
     assert(svfa.svg.nodes.size == 10)
-    assert(svfa.svg.numberOfEdges() == 11)
+    assert(svfa.svg.numberOfEdges() == 12)
   }
 
   test("we should not find any conflict in the BlackBoardTest sample") {
@@ -106,6 +107,12 @@ class TestSuite extends FunSuite with BeforeAndAfter {
     assert(svfa.reportConflicts().size == 1)
   }
 
+  test("we should find exactly one conflicts in the basic.Basic31 analysis") {
+    val svfa = new Basic31Test()
+    svfa.buildSparseValueFlowGraph()
+    assert(svfa.reportConflicts().size == 2)
+  }
+
   test("we should find exactly one conflicts in the basic.Basic16String analysis") {
     val svfa = new Basic16StringTest()
     svfa.buildSparseValueFlowGraph()
@@ -122,7 +129,7 @@ class TestSuite extends FunSuite with BeforeAndAfter {
   test("we should find exactly one conflict in the FieldSample analysis") {
     val svfa = new FieldTest()
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflicts().size == 1)   // NOTE: We are not traversing the body of
+    assert(svfa.reportConflicts().size == 2)   // NOTE: We are not traversing the body of
                                                //       a method associated to a SinkNode. 
   }
 

@@ -25,8 +25,7 @@ import scala.collection.mutable.ListBuffer
   * A Jimple based implementation of
   * SVFA.
   */
-abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with SourceSinkDef with LazyLogging  with DSL   {
-
+abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with ObjectPropagation with SourceSinkDef with LazyLogging  with DSL   {
 
   var methods = 0
   val traversedMethods = scala.collection.mutable.Set.empty[SootMethod]
@@ -164,7 +163,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
       }
     }
   }
-
 
   def createSceneTransform(): (String, Transform) = ("wjtp", new Transform("wjtp.svfa", new Transformer()))
 
@@ -402,6 +400,17 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Sou
           svg.getAdjacentNodes(source).get.foreach(s => updateGraph(s, target))
         })
 
+      // create an edge from the base defs to target
+      // if an object is tainted, we should propagate the taint to all
+      // fields as well. Not completely sure if this should be
+      // the case.
+      if(propagateObjectTaint()) {
+        defs.getDefsOfAt(base.asInstanceOf[Local], stmt).forEach(source => {
+          val sourceNode = createNode(method, source)
+          val targetNode = createNode(method, stmt)
+          updateGraph(sourceNode, targetNode)
+        })
+      }
     }
   }
 
