@@ -1,6 +1,6 @@
 package br.unb.cic.soot
 
-import br.unb.cic.soot.basic.{Basic11Test, Basic16StringTest, Basic16Test, Basic31Test}
+import br.unb.cic.soot.basic.{Basic11Test, Basic16StringTest, Basic16Test, Basic31Test, CSSample1Test}
 import org.scalatest.{BeforeAndAfter, FunSuite, Ignore}
 import samples.FieldSample
 import samples.basic.Basic31
@@ -110,6 +110,7 @@ class TestSuite extends FunSuite with BeforeAndAfter {
   test("we should find exactly one conflicts in the basic.Basic31 analysis") {
     val svfa = new Basic31Test()
     svfa.buildSparseValueFlowGraph()
+    println(svfa.svgToDotModel())
     assert(svfa.reportConflicts().size == 2)
   }
 
@@ -159,6 +160,14 @@ class TestSuite extends FunSuite with BeforeAndAfter {
     svfa.buildSparseValueFlowGraph()
     System.out.println(svfa.svgToDotModel())
     assert(svfa.reportConflicts().size >= 1)
+  }
+
+  test("I am trying to learn context sensitivity") {
+    val svfa = new CSSample1Test()
+    svfa.buildSparseValueFlowGraph()
+    //println(svfa.svgToDotModel())
+    println(svfa.reportConflicts().size)
+    //assert(svfa.reportConflicts().size == 2)
   }
 
 }

@@ -219,7 +219,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
 
     val graph = new ExceptionalUnitGraph(body)
     val defs  = new SimpleLocalDefs(graph)
-
+    //println(body)
     body.getUnits.forEach(unit => {
       val v = Statement.convert(unit)
 
