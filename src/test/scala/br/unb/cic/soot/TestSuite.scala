@@ -166,7 +166,7 @@ class TestSuite extends FunSuite with BeforeAndAfter {
     val svfa = new CSSample1Test()
     svfa.buildSparseValueFlowGraph()
     //println(svfa.svgToDotModel())
-    println(svfa.reportConflicts().size)
+    //println(svfa.reportConflicts().size)
     //assert(svfa.reportConflicts().size == 2)
   }
 
