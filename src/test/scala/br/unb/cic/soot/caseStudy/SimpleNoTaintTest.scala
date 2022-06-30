@@ -1,12 +1,12 @@
-package br.unb.cic.soot.basic
+package br.unb.cic.soot.caseStudy
 
 import br.unb.cic.soot.JSVFATest
 import br.unb.cic.soot.graph.{NodeType, SimpleNode, SinkNode, SourceNode}
 import soot.jimple.{AssignStmt, InvokeExpr, InvokeStmt}
 
-class SimpleTaintTest extends JSVFATest {
+class SimpleNoTaintTest extends JSVFATest {
 
-  override def getClassName(): String = "samples.basic.SimpleTaint"
+  override def getClassName(): String = "samples.caseStudy.SimpleNoTaint"
   override def getMainMethod(): String = "main"
 
   override def analyze(unit: soot.Unit): NodeType = {

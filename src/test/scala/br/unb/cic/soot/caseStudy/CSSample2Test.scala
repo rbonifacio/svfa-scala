@@ -1,4 +1,4 @@
-package br.unb.cic.soot.basic
+package br.unb.cic.soot.caseStudy
 
 import br.unb.cic.soot.JSVFATest
 import br.unb.cic.soot.graph.{NodeType, SimpleNode, SinkNode, SourceNode}
@@ -6,7 +6,7 @@ import soot.jimple.{AssignStmt, InvokeExpr, InvokeStmt}
 
 class CSSample2Test extends JSVFATest {
 
-  override def getClassName(): String = "samples.basic.CSSample2"
+  override def getClassName(): String = "samples.caseStudy.CSSample2"
   override def getMainMethod(): String = "main"
 
   override def analyze(unit: soot.Unit): NodeType = {

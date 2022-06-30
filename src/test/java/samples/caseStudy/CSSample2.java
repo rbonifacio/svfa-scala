@@ -1,4 +1,4 @@
-package samples.basic;
+package samples.caseStudy;
 
 public class CSSample2 {
 
