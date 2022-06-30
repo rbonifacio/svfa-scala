@@ -1,7 +1,8 @@
 package br.unb.cic.soot
 
 import br.unb.cic.soot.basic.{
-  Basic11Test, Basic16StringTest, Basic16Test, Basic31Test, CSSample1Test, SimpleTaintTest, SimpleNoTaintTest
+  Basic11Test, Basic16StringTest, Basic16Test, Basic31Test, CSSample1Test, CSSample2Test,
+  SimpleTaintTest, SimpleNoTaintTest
 }
 import org.scalatest.{BeforeAndAfter, FunSuite, Ignore}
 import samples.FieldSample
@@ -169,6 +170,14 @@ class TestSuite extends FunSuite with BeforeAndAfter {
     svfa.buildSparseValueFlowGraph()
     println(svfa.svgToDotModel())
     //println(svfa.reportConflicts().size)
+    //assert(svfa.reportConflicts().size == 2)
+  }
+
+  test("I am trying to learn context sensitivity II") {
+    val svfa = new CSSample2Test()
+    svfa.buildSparseValueFlowGraph()
+    println(svfa.svgToDotModel())
+    println(svfa.reportConflicts().size)
     //assert(svfa.reportConflicts().size == 2)
   }
 
