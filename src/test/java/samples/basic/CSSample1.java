@@ -10,13 +10,8 @@ public class CSSample1 {
         int S1 = source();
         int S2 = m(S1);
         sink(S2);
-
-        /*int S3 = 999;
-        int S4 = m(S3);
-        sink(S4);*/
     }
 
     public void sink(int data) { }
     public int source() {  return 100; }
-
 }
