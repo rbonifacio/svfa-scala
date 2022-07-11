@@ -1,6 +1,6 @@
 package br.unb.cic.soot.graph
 
-import scalax.collection.edge.LDiEdge
+import scalax.collection.edge.LkDiEdge
 import soot.SootMethod
 
 import scala.collection.immutable.HashSet
@@ -44,14 +44,21 @@ case class Statement(className: String, method: String, stmt: String, line: Int,
 case class StatementNode(value: Statement, nodeType: NodeType) extends GraphNode {
   type T = Statement
 
-  override def show(): String = "(" ++ value.method + ": " + value.stmt + " - " + value.line + " <" + nodeType.toString + ">)"
+  //  override def show(): String = "(" ++ value.method + ": " + value.stmt + " - " + value.line + " <" + nodeType.toString + ">)"
+  override def show(): String = value.stmt
 
   override def toString: String =
-    "Node(" + value.method + "," + value.stmt + "," + value.line.toString + "," + nodeType.toString + ")"
+    "Node(" + value.method + "," + value.stmt + "," + "," + nodeType.toString + ")"
 
   override def equals(o: Any): Boolean = {
     o match {
-      case stmt: StatementNode => stmt.value == value && stmt.nodeType == nodeType
+      //      case stmt: StatementNode => stmt.value.toString == value.toString
+      //      case stmt: StatementNode => stmt.value == value && stmt.nodeType == nodeType
+      case stmt: StatementNode => stmt.value.className.equals(value.className) &&
+        stmt.value.method.equals(value.method) &&
+        stmt.value.stmt.equals(value.stmt) &&
+        stmt.value.line.equals(value.line) &&
+        stmt.nodeType.equals(nodeType)
       case _ => false
     }
   }
@@ -68,7 +75,7 @@ case class StatementNode(value: Statement, nodeType: NodeType) extends GraphNode
   * the LabelType is used to inform things relevant for the analysis like context sensitive
   * regions or field sensitive actions (store or load).
   */
-sealed trait LabelType
+trait LabelType
 
 case object SimpleLabel extends LabelType { def instance: SimpleLabel.type = this }
 
@@ -139,14 +146,14 @@ case class CallSiteLabel(csRegion: ContextSensitiveRegion, labelType: CallSiteLa
 case class GraphEdge(from: GraphNode, to: GraphNode, label: EdgeLabel)
 
 class Graph() {
-  val graph = scalax.collection.mutable.Graph.empty[GraphNode, LDiEdge]
+  val graph = scalax.collection.mutable.Graph.empty[GraphNode, LkDiEdge]
 
   var fullGraph: Boolean = false
   var allPaths: Boolean = false
   var optimizeGraph: Boolean = false
 
   def gNode(outerNode: GraphNode): graph.NodeT = graph.get(outerNode)
-  def gEdge(outerEdge: LDiEdge[GraphNode]): graph.EdgeT = graph.get(outerEdge)
+  def gEdge(outerEdge: LkDiEdge[GraphNode]): graph.EdgeT = graph.get(outerEdge)
 
   def contains(node: GraphNode): Boolean = graph.find(node).isDefined
 
@@ -155,12 +162,24 @@ class Graph() {
   def addEdge(source: GraphNode, target: GraphNode): Unit =
     addEdge(source, target, StringLabel("Normal"))
 
+  def addEdge(source: StatementNode, target: StatementNode): Unit =
+    addEdge(source, target, StringLabel("Normal"))
+
   def addEdge(source: GraphNode, target: GraphNode, label: EdgeLabel): Unit = {
     if(source == target) {
       return
     }
 
-    implicit val factory = scalax.collection.edge.LDiEdge
+    implicit val factory = scalax.collection.edge.LkDiEdge
+    graph.addLEdge(source, target)(label)
+  }
+
+  def addEdge(source: StatementNode, target: StatementNode, label: EdgeLabel): Unit = {
+    if(source == target) {
+      return
+    }
+
+    implicit val factory = scalax.collection.edge.LkDiEdge
     graph.addLEdge(source, target)(label)
   }
 
@@ -319,7 +338,7 @@ class Graph() {
     val adjacencyList = gNode(source).diSuccessors.map(_node => _node.toOuter)
     if (adjacencyList.contains(target)) {
       currentPath += gNode(target)
-//      return paths ++ List(currentPath.result)
+      //      return paths ++ List(currentPath.result)
       return List(currentPath.result)
     }
 
@@ -332,24 +351,24 @@ class Graph() {
     })
     return List()
 
-//    var possiblePaths = paths
-//    adjacencyList.foreach(next => {
-//      if (! visited(next)) {
-//        var nextPath = currentPath
-//        nextPath += gNode(next)
-//        val possiblePath = findPaths(next, target, visited + next, nextPath, paths)
-//        if (possiblePath.nonEmpty) {
-//          var findAllConflictPaths = false
-//          if (findAllConflictPaths) {
-//            possiblePaths = possiblePaths ++ possiblePath
-//          } else {
-//            return possiblePath
-//          }
-//        }
-//      }
-//    })
-//
-//    return possiblePaths
+    //    var possiblePaths = paths
+    //    adjacencyList.foreach(next => {
+    //      if (! visited(next)) {
+    //        var nextPath = currentPath
+    //        nextPath += gNode(next)
+    //        val possiblePath = findPaths(next, target, visited + next, nextPath, paths)
+    //        if (possiblePath.nonEmpty) {
+    //          var findAllConflictPaths = false
+    //          if (findAllConflictPaths) {
+    //            possiblePaths = possiblePaths ++ possiblePath
+    //          } else {
+    //            return possiblePath
+    //          }
+    //        }
+    //      }
+    //    })
+    //
+    //    return possiblePaths
   }
 
   def getUnmatchedCallSites(source: List[CallSiteLabel], target: List[CallSiteLabel]): List[CallSiteLabel] = {

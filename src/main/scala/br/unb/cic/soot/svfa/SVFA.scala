@@ -1,35 +1,16 @@
 package br.unb.cic.soot.svfa
 
-import java.io.File
 import br.unb.cic.soot.graph.{CallSiteLabel, CallSiteOpenLabel, GraphNode, SinkNode, SourceNode, StatementNode, StringLabel}
 import soot._
-import soot.options.Options
 
-import scala.collection.JavaConverters._
-import scala.collection.mutable
-
-sealed trait CG
-
-case object CHA extends CG
-case object SPARK_LIBRARY extends CG
-case object SPARK extends CG
 
 /**
  * Base class for all implementations
- * of SVFA algorithms.
+ * of SootConfiguration algorithms.
  */
-abstract class SVFA {
+abstract class SVFA extends  SootConfiguration{
 
-  protected var pointsToAnalysis: PointsToAnalysis = _
   var svg = new br.unb.cic.soot.graph.Graph()
-
-  def sootClassPath(): String
-
-  def applicationClassPath(): List[String]
-
-  def getEntryPoints(): List[SootMethod]
-
-  def getIncludeList(): List[String]
 
   def createSceneTransform(): (String, Transform)
 
@@ -39,8 +20,6 @@ abstract class SVFA {
 
   def afterGraphConstruction()
 
-  def callGraph(): CG = SPARK
-
   def buildSparseValueFlowGraph() {
     configureSoot()
     beforeGraphConstruction()
@@ -48,40 +27,6 @@ abstract class SVFA {
     PackManager.v().getPack(pack).add(t)
     configurePackages().foreach(p => PackManager.v().getPack(p).apply())
     afterGraphConstruction()
-  }
-
-  def configureSoot() {
-    G.reset()
-    Options.v().set_no_bodies_for_excluded(true)
-    Options.v().set_allow_phantom_refs(true)
-    Options.v().set_include(getIncludeList().asJava);
-    Options.v().set_output_format(Options.output_format_none)
-    Options.v().set_whole_program(true)
-    Options.v().set_soot_classpath(sootClassPath() + File.pathSeparator + pathToJCE() + File.pathSeparator + pathToRT())
-    Options.v().set_process_dir(applicationClassPath().asJava)
-    Options.v().set_full_resolver(true)
-    Options.v().set_keep_line_number(true)
-    Options.v().set_prepend_classpath(true)
-
-    configureCallGraphPhase()
-
-    Scene.v().loadNecessaryClasses()
-    Scene.v().setEntryPoints(getEntryPoints().asJava)
-  }
-
-  def configureCallGraphPhase() {
-    callGraph() match {
-      case CHA => Options.v().setPhaseOption("cg.cha", "on")
-      case SPARK => {
-        Options.v().setPhaseOption("cg.spark", "on")
-        Options.v().setPhaseOption("cg.spark", "cs-demand:true")
-        Options.v().setPhaseOption("cg.spark", "string-constants:true")
-      }
-      case SPARK_LIBRARY => {
-        Options.v().setPhaseOption("cg.spark", "on")
-        Options.v().setPhaseOption("cg", "library:any-subtype")
-      }
-    }
   }
 
   def findConflictingPaths(): scala.collection.Set[List[GraphNode]] = {
@@ -111,12 +56,6 @@ abstract class SVFA {
   def reportConflicts(): scala.collection.Set[String] =
     findConflictingPaths().map(p => p.toString)
 
-  def pathToJCE(): String =
-    System.getProperty("java.home") + File.separator + "lib" + File.separator + "jce.jar"
-
-  def pathToRT(): String =
-    System.getProperty("java.home") + File.separator + "lib" + File.separator + "rt.jar"
-
   def svgToDotModel(): String = {
     val s = new StringBuilder
     var nodeColor = ""
@@ -133,13 +72,13 @@ abstract class SVFA {
     }
     s  ++= "\n"
 
-//    for (n <- svg.nodes) {
-//      val adjacencyList = svg.getAdjacentNodes(n).get
-//      val edges = adjacencyList.map(next => "\"" + n.show() + "\"" + " -> " + "\"" + next.show() + "\"")
-//      for (e <- edges) {
-//        s ++= " " + e + "\n"
-//      }
-//    }
+    //    for (n <- svg.nodes) {
+    //      val adjacencyList = svg.getAdjacentNodes(n).get
+    //      val edges = adjacencyList.map(next => "\"" + n.show() + "\"" + " -> " + "\"" + next.show() + "\"")
+    //      for (e <- edges) {
+    //        s ++= " " + e + "\n"
+    //      }
+    //    }
 
 
     for (e <- svg.edges) {
