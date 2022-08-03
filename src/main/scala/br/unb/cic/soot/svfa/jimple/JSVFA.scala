@@ -1,32 +1,28 @@
 package br.unb.cic.soot.svfa.jimple
 
 import java.util
-import br.unb.cic.soot.svfa.jimple.rules.{ComposedRuleAction, DoNothing, MissingActiveBodyRule, NamedMethodRule, NativeRule, RuleAction}
-import br.unb.cic.soot.graph.{CallSiteCloseLabel, CallSiteLabel, CallSiteOpenLabel, ContextSensitiveRegion, EdgeLabel, GraphNode, SinkNode, SourceNode, StatementNode}
+import br.unb.cic.soot.svfa.jimple.rules.RuleAction
+import br.unb.cic.soot.graph.{CallSiteCloseLabel, CallSiteLabel, CallSiteOpenLabel, ContextSensitiveRegion, GraphNode, SinkNode, SourceNode, StatementNode}
 import br.unb.cic.soot.svfa.jimple.dsl.{DSL, LanguageParser}
 import br.unb.cic.soot.svfa.{SVFA, SourceSinkDef}
 import com.typesafe.scalalogging.LazyLogging
-import soot.dava.toolkits.base.AST.structuredAnalysis.ReachingDefs
 import soot.jimple._
 import soot.jimple.internal.{JArrayRef, JAssignStmt}
 import soot.jimple.spark.ondemand.DemandCSPointsTo
 import soot.jimple.spark.pag
-import soot.jimple.spark.pag.{AllocNode, PAG, StringConstantNode}
+import soot.jimple.spark.pag.{AllocNode, PAG}
 import soot.jimple.spark.sets.{DoublePointsToSet, HybridPointsToSet, P2SetVisitor}
 import soot.toolkits.graph.ExceptionalUnitGraph
 import soot.toolkits.scalar.SimpleLocalDefs
-import soot.{ArrayType, Local, Scene, SceneTransformer, SootField, SootMethod, Transform, jimple}
+import soot.{ArrayType, Local, Scene, SceneTransformer, SootField, SootMethod, Transform, Value, jimple}
 
 import scala.collection.mutable.ListBuffer
-
-
 
 /**
  * A Jimple based implementation of
  * SVFA.
  */
-abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with ObjectPropagation with SourceSinkDef with LazyLogging  with DSL   {
-
+abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with ObjectPropagation with SourceSinkDef with LazyLogging  with DSL {
 
   var methods = 0
   val traversedMethods = scala.collection.mutable.Set.empty[SootMethod]
@@ -51,8 +47,18 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     def from: Int
 
     def apply(sootMethod: SootMethod, invokeStmt: jimple.Stmt, localDefs: SimpleLocalDefs) = {
-      val srcArg = invokeStmt.getInvokeExpr.getArg(from)
-      val expr = invokeStmt.getInvokeExpr
+      var srcArg: Value = null
+      var expr: InvokeExpr = null
+
+      try{
+        srcArg = invokeStmt.getInvokeExpr.getArg(from)
+        expr = invokeStmt.getInvokeExpr
+      }catch {
+        case e: Exception=>
+          srcArg = invokeStmt.getInvokeExpr.getArg(from)
+          expr = invokeStmt.getInvokeExpr
+          println("Entrou com errro!")
+      }
       if(hasBaseObject(expr) && srcArg.isInstanceOf[Local]) {
         val local = srcArg.asInstanceOf[Local]
 
@@ -167,12 +173,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
 
 
   def createSceneTransform(): (String, Transform) = ("wjtp", new Transform("wjtp.svfa", new Transformer()))
-
-  def configurePackages(): List[String] = List("cg", "wjtp")
-
-  def beforeGraphConstruction(): Unit = { }
-
-  def afterGraphConstruction() { }
 
   def initAllocationSites(): Unit = {
     val listener = Scene.v().getReachableMethods.listener()
@@ -340,7 +340,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
      * In this case, we create an edge from defs(q)
      * to the statement p = q.
      */
-  private def copyRule(targetStmt: soot.Unit, local: Local, method: SootMethod, defs: SimpleLocalDefs) = {
+  protected def copyRule(targetStmt: soot.Unit, local: Local, method: SootMethod, defs: SimpleLocalDefs) = {
     defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
       val source = createNode(method, sourceStmt)
       val target = createNode(method, targetStmt)
@@ -370,7 +370,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
    *
    *  (*) p = q.f
    */
-  private def loadRule(stmt: soot.Unit, ref: InstanceFieldRef, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
+  protected def loadRule(stmt: soot.Unit, ref: InstanceFieldRef, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
     val base = ref.getBase
     // value field of a string.
     val className = ref.getFieldRef.declaringClass().getName
@@ -416,7 +416,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     }
   }
 
-  private def loadArrayRule(targetStmt: soot.Unit, ref: ArrayRef, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
+  protected def loadArrayRule(targetStmt: soot.Unit, ref: ArrayRef, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
     val base = ref.getBase
 
     if(base.isInstanceOf[Local]) {
@@ -579,8 +579,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
    * creates a graph node from a sootMethod / sootUnit
    */
   def createNode(method: SootMethod, stmt: soot.Unit): StatementNode =
-    StatementNode(br.unb.cic.soot.graph.Statement(method.getDeclaringClass.toString, method.getSignature, stmt.toString,
-      stmt.getJavaSourceStartLineNumber, stmt, method), analyze(stmt))
+    svg.createNode(method, stmt, analyze)
 
 
   def createCSOpenLabel(method: SootMethod, stmt: soot.Unit, callee: SootMethod): CallSiteLabel = {

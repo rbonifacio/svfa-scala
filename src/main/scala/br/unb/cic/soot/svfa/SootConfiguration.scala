@@ -29,11 +29,11 @@ abstract class SootConfiguration {
 
   def createSceneTransform(): (String, Transform)
 
-  def configurePackages(): List[String]
+  def configurePackages(): List[String] = List("cg", "wjtp")
 
-  def beforeGraphConstruction()
+  def beforeGraphConstruction(): scala.Unit = {}
 
-  def afterGraphConstruction()
+  def afterGraphConstruction(): scala.Unit = {}
 
   def callGraph(): CG = SPARK
 

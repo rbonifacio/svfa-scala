@@ -29,6 +29,13 @@ trait GraphNode {
   def show(): String
 }
 
+trait LambdaNode extends scala.AnyRef {
+  type T
+  val value : LambdaNode.this.T
+  val nodeType : br.unb.cic.soot.graph.NodeType
+  def show() : _root_.scala.Predef.String
+}
+
 /*
   * Simple class to hold all the information needed about a statement,
   * this value is stored in the value attribute of the GraphNode. For the most cases,
@@ -151,6 +158,11 @@ class Graph() {
   var fullGraph: Boolean = false
   var allPaths: Boolean = false
   var optimizeGraph: Boolean = false
+  var permitedReturnEdge: Boolean = false
+
+  def enableReturnEdge(): Unit = {
+    permitedReturnEdge = true
+  }
 
   def gNode(outerNode: GraphNode): graph.NodeT = graph.get(outerNode)
   def gEdge(outerEdge: LkDiEdge[GraphNode]): graph.EdgeT = graph.get(outerEdge)
@@ -166,7 +178,7 @@ class Graph() {
     addEdge(source, target, StringLabel("Normal"))
 
   def addEdge(source: GraphNode, target: GraphNode, label: EdgeLabel): Unit = {
-    if(source == target) {
+    if(source == target && !permitedReturnEdge) {
       return
     }
 
@@ -175,7 +187,7 @@ class Graph() {
   }
 
   def addEdge(source: StatementNode, target: StatementNode, label: EdgeLabel): Unit = {
-    if(source == target) {
+    if(source == target && !permitedReturnEdge) {
       return
     }
 
@@ -351,24 +363,6 @@ class Graph() {
     })
     return List()
 
-    //    var possiblePaths = paths
-    //    adjacencyList.foreach(next => {
-    //      if (! visited(next)) {
-    //        var nextPath = currentPath
-    //        nextPath += gNode(next)
-    //        val possiblePath = findPaths(next, target, visited + next, nextPath, paths)
-    //        if (possiblePath.nonEmpty) {
-    //          var findAllConflictPaths = false
-    //          if (findAllConflictPaths) {
-    //            possiblePaths = possiblePaths ++ possiblePath
-    //          } else {
-    //            return possiblePath
-    //          }
-    //        }
-    //      }
-    //    })
-    //
-    //    return possiblePaths
   }
 
   def getUnmatchedCallSites(source: List[CallSiteLabel], target: List[CallSiteLabel]): List[CallSiteLabel] = {
@@ -448,4 +442,70 @@ class Graph() {
   def numberOfNodes(): Int = graph.nodes.size
 
   def numberOfEdges(): Int = graph.edges.size
+  /*
+ * creates a graph node from a sootMethod / sootUnit
+ */
+  def createNode(method: SootMethod, stmt: soot.Unit, f: (soot.Unit) => NodeType): StatementNode =
+    StatementNode(br.unb.cic.soot.graph.Statement(method.getDeclaringClass.toString, method.getSignature, stmt.toString,
+      stmt.getJavaSourceStartLineNumber, stmt, method), f(stmt))
+
+  def reportConflicts(): scala.collection.Set[String] =
+    findConflictingPaths().map(p => p.toString)
+
+  def findConflictingPaths(): scala.collection.Set[List[GraphNode]] = {
+    if (fullGraph) {
+      val conflicts = findPathsFullGraph()
+      conflicts.toSet
+    } else {
+      val sourceNodes = nodes.filter(n => n.nodeType == SourceNode)
+      val sinkNodes = nodes.filter(n => n.nodeType == SinkNode)
+
+      var conflicts: List[List[GraphNode]] = List()
+      sourceNodes.foreach(source => {
+        sinkNodes.foreach(sink => {
+          val paths = findPath(source, sink)
+          conflicts = conflicts ++ paths
+        })
+      })
+      conflicts.filter(p => p.nonEmpty).toSet
+    }
+  }
+
+  def toDotModel(): String = {
+    val s = new StringBuilder
+    var nodeColor = ""
+    s ++= "digraph { \n"
+
+    for(n <- nodes) {
+      nodeColor = n.nodeType match  {
+        case SourceNode => "[fillcolor=blue, style=filled]"
+        case SinkNode   => "[fillcolor=red, style=filled]"
+        case _          => ""
+      }
+
+      s ++= " " + "\"" + n.show() + "\"" + nodeColor + "\n"
+    }
+
+    s  ++= "\n"
+
+    for (e <- edges) {
+      val edge = "\"" + e.from.show() + "\"" + " -> " + "\"" + e.to.show() + "\""
+      var l = e.label
+      val label: String = e.label match {
+        case c: CallSiteLabel =>  {
+          if (c.labelType == CallSiteOpenLabel) { "[label=\"cs(\"]" }
+          else { "[label=\"cs)\"]" }
+        }
+        case c: TrueLabelType =>{ "[penwidth=3][label=\"T\"]" }
+        case c: FalseLabelType => { "[penwidth=3][label=\"F\"]" }
+        case c: DefLabelType => { "[style=dashed, color=black]" }
+        case _ => ""
+      }
+      s ++= " " + edge + " " + label + "\n"
+    }
+    s ++= "}"
+    s.toString()
+  }
+
 }
+

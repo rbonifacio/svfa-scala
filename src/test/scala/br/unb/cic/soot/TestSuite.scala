@@ -1,16 +1,14 @@
 package br.unb.cic.soot
 
 import br.unb.cic.soot.basic.{Basic11Test, Basic16StringTest, Basic16Test, Basic31Test}
-import org.scalatest.{BeforeAndAfter, FunSuite, Ignore}
-import samples.FieldSample
-import samples.basic.Basic31
+import org.scalatest.{BeforeAndAfter, FunSuite}
 
 class TestSuite extends FunSuite with BeforeAndAfter {
 
   ignore("we should find exactly three conflicts in this analysis") {
     val svfa = new ArrayTest()
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflicts().size == 3)
+    assert(svfa.reportConflictsSVG().size == 3)
   }
 
   test("we should correctly compute the number of nodes and edges in the BlackBoardTest sample") {
@@ -24,7 +22,7 @@ class TestSuite extends FunSuite with BeforeAndAfter {
   test("we should not find any conflict in the BlackBoardTest sample") {
     val svfa = new BlackBoardTest()
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflicts().size == 0)
+    assert(svfa.reportConflictsSVG().size == 0)
   }
 
   ignore("we should correctly compute the number of nodes and edges of the CC16Test sample") {
@@ -38,7 +36,7 @@ class TestSuite extends FunSuite with BeforeAndAfter {
     val svfa = new CC16Test()
     svfa.buildSparseValueFlowGraph()
     // println(svfa.svgToDotModel())
-    assert(svfa.reportConflicts().size == 1)
+    assert(svfa.reportConflictsSVG().size == 1)
   }
 
   ignore("we should correctly compute the number of nodes and edges of the IfElseTest sample") {
@@ -56,31 +54,31 @@ class TestSuite extends FunSuite with BeforeAndAfter {
   test("we should find exactly one conflict in this analysis of the IfElseTest sample") {
     val svfa = new IfElseTest()
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflicts().size == 1)
+    assert(svfa.reportConflictsSVG().size == 1)
   }
 
   test("we should find two conflicts in the LogbackSampleTest analysis") {
     val svfa = new LogbackSampleTest()
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflicts().size == 3)
+    assert(svfa.reportConflictsSVG().size == 3)
   }
 
   test("we should find exactly one conflict in the StringBuggerTest analysis") {
     val svfa = new StringBufferTest()
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflicts().size == 1)
+    assert(svfa.reportConflictsSVG().size == 1)
   }
 
   test("we should find exactly one conflict in the InitStringBufferTest analysis") {
     val svfa = new InitStringBufferTest()
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflicts().size == 1)
+    assert(svfa.reportConflictsSVG().size == 1)
   }
 
   ignore("we should find exactly one conflict in the StringConcatTest analysis") {
     val svfa = new StringConcatTest()
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflicts().size == 6)
+    assert(svfa.reportConflictsSVG().size == 6)
   }
 
 //  test("we should find exactly one conflict in the StringGetCharsTest analysis") {
@@ -93,19 +91,19 @@ class TestSuite extends FunSuite with BeforeAndAfter {
   test("we should find exactly one conflict in the StringToStringTest analysis") {
     val svfa = new StringToStringTest()
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflicts().size == 1)
+    assert(svfa.reportConflictsSVG().size == 1)
   }
 
   test("we should find exactly two conflicts in the basic.Basic11 analysis") {
     val svfa = new Basic11Test()
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflicts().size == 2)
+    assert(svfa.reportConflictsSVG().size == 2)
   }
 
   test("we should find exactly one conflicts in the basic.Basic16 analysis") {
     val svfa = new Basic16Test()
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflicts().size == 1)
+    assert(svfa.reportConflictsSVG().size == 1)
   }
 
   test("we should find exactly one conflicts in the basic.Basic31 analysis") {
@@ -113,27 +111,27 @@ class TestSuite extends FunSuite with BeforeAndAfter {
 //    This
     svfa.buildSparseValueFlowGraph()
     print(svfa.svgToDotModel())
-    assert(svfa.reportConflicts().size == 2)
+    assert(svfa.reportConflictsSVG().size == 2)
   }
 
   test("we should find exactly one conflicts in the basic.Basic16String analysis") {
     val svfa = new Basic16StringTest()
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflicts().size == 1)
+    assert(svfa.reportConflictsSVG().size == 1)
   }
 
   test("we should find exactly one conflict in the ContextSensitiveSample  analysis") {
     val svfa = new ContextSensitiveTest()
     svfa.buildSparseValueFlowGraph()
     // println(svfa.svgToDotModel())
-    assert(svfa.reportConflicts().size == 1)
+    assert(svfa.reportConflictsSVG().size == 1)
   }
 
   test("we should find exactly one conflict in the FieldSample analysis") {
     val svfa = new FieldTest()
 //    This
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflicts().size == 2)   // NOTE: We are not traversing the body of
+    assert(svfa.reportConflictsSVG().size == 2)   // NOTE: We are not traversing the body of
                                                //       a method associated to a SinkNode. 
   }
 
@@ -143,7 +141,7 @@ class TestSuite extends FunSuite with BeforeAndAfter {
     val svfa = new MethodFieldTest()
     svfa.buildSparseValueFlowGraph()
     System.out.println(svfa.svgToDotModel())
-    assert(svfa.reportConflicts().size >= 1)
+    assert(svfa.reportConflictsSVG().size >= 1)
   }
 
   // This is a simple case that the with a local variable would be detected
@@ -152,7 +150,7 @@ class TestSuite extends FunSuite with BeforeAndAfter {
     val svfa = new InvokeInstanceMethodOnFieldTest()
     svfa.buildSparseValueFlowGraph()
     System.out.println(svfa.svgToDotModel())
-    assert(svfa.reportConflicts().size >= 1)
+    assert(svfa.reportConflictsSVG().size >= 1)
   }
 
   // This case is representative of the problem with abstract classes and interfaces
@@ -162,7 +160,7 @@ class TestSuite extends FunSuite with BeforeAndAfter {
     val svfa = new HashmapTest()
     svfa.buildSparseValueFlowGraph()
     System.out.println(svfa.svgToDotModel())
-    assert(svfa.reportConflicts().size >= 1)
+    assert(svfa.reportConflictsSVG().size >= 1)
   }
 
 }

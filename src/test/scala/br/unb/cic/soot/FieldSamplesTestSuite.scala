@@ -40,20 +40,20 @@ class FieldSamplesTestSuite extends FunSuite with BeforeAndAfter {
   test("in the class FieldSample01 we should detect 1 conflict in a direct sink of a tainted field") {
     val svfa = new FieldSampleTest("samples.fields.FieldSample01", "main")
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflicts().size == 1)
+    assert(svfa.reportConflictsSVG().size == 1)
   }
 
   test("in the class FieldSample02 we should not detect any conflict because the tainted field was override") {
     val svfa = new FieldSampleTest("samples.fields.FieldSample02", "main")
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflicts().size == 0)
+    assert(svfa.reportConflictsSVG().size == 0)
   }
 
   test("in the class FieldSample03 we should detect 1 conflict in a direct sink of a tainted field of a " +
     "contained object") {
     val svfa = new FieldSampleTest("samples.fields.FieldSample03", "main")
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflicts().size == 1)
+    assert(svfa.reportConflictsSVG().size == 1)
   }
 
   // In the field sensitive analysis we not mark the whole object as tainted,
@@ -62,15 +62,15 @@ class FieldSamplesTestSuite extends FunSuite with BeforeAndAfter {
     "and the tainted field was override") {
     val svfa = new FieldSampleTest("samples.fields.FieldSample04", "main")
     svfa.buildSparseValueFlowGraph()
-//    println(svfa.svgToDotModel())
-    assert(svfa.reportConflicts().size == 1)
+    //    println(svfa.svgToDotModel())
+    assert(svfa.reportConflictsSVG().size == 1)
   }
 
   ignore("in the class FieldSample05 we should detect 1 conflict in a direct sink of a object with a tainted field") {
     val svfa = new FieldSampleTest("samples.fields.FieldSample05", "main")
     svfa.buildSparseValueFlowGraph()
-//    println(svfa.svgToDotModel())
-    assert(svfa.reportConflicts().size == 1)
+    //    println(svfa.svgToDotModel())
+    assert(svfa.reportConflictsSVG().size == 1)
   }
 
   // LIMITATION: The Spark not support field sensitive analysis with context sensitivity
@@ -78,15 +78,15 @@ class FieldSamplesTestSuite extends FunSuite with BeforeAndAfter {
     "and the tainted field was override") {
     val svfa = new FieldSampleTest("samples.fields.FieldSample06", "main")
     svfa.buildSparseValueFlowGraph()
-//    println(svfa.svgToDotModel())
-    assert(svfa.reportConflicts().size == 1)
+    //    println(svfa.svgToDotModel())
+    assert(svfa.reportConflictsSVG().size == 1)
   }
 
   ignore("in the class FieldSample07 we should detect 1 conflict in a direct sink of a object with a tainted field") {
     val svfa = new FieldSampleTest("samples.fields.FieldSample07", "main")
     svfa.buildSparseValueFlowGraph()
-//    println(svfa.svgToDotModel())
-    assert(svfa.reportConflicts().size == 1)
+    //    println(svfa.svgToDotModel())
+    assert(svfa.reportConflictsSVG().size == 1)
   }
 
   // LIMITATION: Field overwrite is not supported
@@ -94,16 +94,16 @@ class FieldSamplesTestSuite extends FunSuite with BeforeAndAfter {
     "and the tainted field was override") {
     val svfa = new FieldSampleTest("samples.fields.FieldSample08", "main")
     svfa.buildSparseValueFlowGraph()
-//    println(svfa.svgToDotModel())
-    assert(svfa.reportConflicts().size == 0)
+    //    println(svfa.svgToDotModel())
+    assert(svfa.reportConflictsSVG().size == 0)
   }
 
   ignore("in the class FieldSample09 we should not detect any conflict because the contained tainted object " +
     "and the tainted field was override") {
     val svfa = new FieldSampleTest("samples.fields.FieldSample09", "main")
     svfa.buildSparseValueFlowGraph()
-//    println(svfa.svgToDotModel())
-    assert(svfa.reportConflicts().size == 1)
+    //    println(svfa.svgToDotModel())
+    assert(svfa.reportConflictsSVG().size == 1)
   }
 
   // LIMITATION: Primitive type variables (like Int and String) created without 'new'
@@ -111,23 +111,23 @@ class FieldSamplesTestSuite extends FunSuite with BeforeAndAfter {
   ignore("in the class FieldSample10 we should detect 1 conflict in a direct sink of a tainted field") {
     val svfa = new FieldSampleTest("samples.fields.FieldSample10", "main")
     svfa.buildSparseValueFlowGraph()
-//    println(svfa.svgToDotModel())
-    assert(svfa.reportConflicts().size == 1)
+    //    println(svfa.svgToDotModel())
+    assert(svfa.reportConflictsSVG().size == 1)
   }
 
   test("in the class FieldSample11 we should not detect any conflict because the tainted field was override") {
     val svfa = new FieldSampleTest("samples.fields.FieldSample11", "main")
     svfa.buildSparseValueFlowGraph()
-//    println(svfa.svgToDotModel())
-    assert(svfa.reportConflicts().size == 0)
+    //    println(svfa.svgToDotModel())
+    assert(svfa.reportConflictsSVG().size == 0)
   }
 
   ignore("in the class FieldSample12 we should detect 1 conflict in a direct sink of a tainted field of a " +
     "contained object") {
     val svfa = new FieldSampleTest("samples.fields.FieldSample12", "main")
     svfa.buildSparseValueFlowGraph()
-//    println(svfa.svgToDotModel())
-    assert(svfa.reportConflicts().size == 1)
+    //    println(svfa.svgToDotModel())
+    assert(svfa.reportConflictsSVG().size == 1)
   }
 
   // LIMITATION: Field overwrite is not supported
@@ -135,8 +135,8 @@ class FieldSamplesTestSuite extends FunSuite with BeforeAndAfter {
     "and the tainted field was override") {
     val svfa = new FieldSampleTest("samples.fields.FieldSample13", "main")
     svfa.buildSparseValueFlowGraph()
-//    println(svfa.svgToDotModel())
-    assert(svfa.reportConflicts().size == 0)
+    //    println(svfa.svgToDotModel())
+    assert(svfa.reportConflictsSVG().size == 0)
   }
 
   // LIMITATION: Primitive type variables (like Int and String) created without 'new'
@@ -144,8 +144,8 @@ class FieldSamplesTestSuite extends FunSuite with BeforeAndAfter {
   ignore("in the class FieldSample14 we should detect 1 conflict in a direct sink of a object with a tainted field") {
     val svfa = new FieldSampleTest("samples.fields.FieldSample14", "main")
     svfa.buildSparseValueFlowGraph()
-//    println(svfa.svgToDotModel())
-    assert(svfa.reportConflicts().size == 1)
+    //    println(svfa.svgToDotModel())
+    assert(svfa.reportConflictsSVG().size == 1)
   }
 
   // LIMITATION: The Spark not support field sensitive analysis with context sensitivity
@@ -153,7 +153,7 @@ class FieldSamplesTestSuite extends FunSuite with BeforeAndAfter {
     "and the tainted field was override") {
     val svfa = new FieldSampleTest("samples.fields.FieldSample15", "main")
     svfa.buildSparseValueFlowGraph()
-//    println(svfa.svgToDotModel())
-    assert(svfa.reportConflicts().size == 1)
+    //    println(svfa.svgToDotModel())
+    assert(svfa.reportConflictsSVG().size == 1)
   }
 }
