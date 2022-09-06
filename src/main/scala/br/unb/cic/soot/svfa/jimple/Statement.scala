@@ -2,7 +2,9 @@ package br.unb.cic.soot.svfa.jimple
 
 import soot._
 
-abstract class Statement(val base: Unit)
+import soot._
+
+abstract class Statement(val base: Unit){}
 
 case class AssignStmt(b: Unit) extends Statement(b) {
   val stmt = base.asInstanceOf[soot.jimple.AssignStmt]
