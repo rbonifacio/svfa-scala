@@ -1,24 +1,24 @@
 package samples.basic;
 
-public class Basic16 {
+public class Basic16String {
     public class Widget {
-        Integer contents;
+        String contents;
 
         public Widget() {
-            contents = new Integer(0);
+            contents = "safe";
         }
 
-        public Integer getContents() {
+        public String getContents() {
             return contents;
         }
 
-        public void setContents(Integer contents) {
+        public void setContents(String contents) {
             this.contents = contents;
         }
     }
 
     public void main(String args[]) {
-        Integer s1 = source();
+        String s1 = source();
 
         Widget w = new Widget();
         w.setContents(s1);
@@ -26,11 +26,11 @@ public class Basic16 {
         sink(w.getContents());                    /* BAD */
     }
 
-    public static Integer source() {
-        return new Integer(1);
+    public static String source() {
+        return "secret";
     }
 
-    public static void sink(Integer s) {
+    public static void sink(String s) {
 
     }
 }

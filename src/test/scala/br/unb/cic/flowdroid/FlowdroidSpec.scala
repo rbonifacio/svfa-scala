@@ -26,6 +26,7 @@ abstract class FlowdroidSpec extends JSVFATest {
 
   val sourceList = List(
     "<javax.servlet.ServletRequest: java.lang.String getParameter(java.lang.String)>",
+    "<javax.servlet.http.mock.HttpServletRequest: java.lang.String getParameter(java.lang.String)>",
     "<javax.servlet.http.HttpServletRequest: java.lang.String getParameter(java.lang.String)>",
     "<javax.servlet.ServletRequest: java.lang.String[] getParameterValues(java.lang.String)>",
     "<javax.servlet.http.HttpServletRequest: java.lang.String[] getParameterValues(java.lang.String)>",

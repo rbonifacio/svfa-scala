@@ -31,7 +31,7 @@ public class Basic18 extends BasicTestCase implements MicroTestCase {
     }
     
     public String getDescription() {
-        return "protect agains simple loop unrolling";
+        return "protect against simple loop unrolling";
     }
     
     public int getVulnerabilityCount() {

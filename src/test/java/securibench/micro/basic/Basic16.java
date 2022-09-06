@@ -7,7 +7,7 @@ package securibench.micro.basic;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.mock.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import securibench.micro.BasicTestCase;
 import securibench.micro.MicroTestCase;
@@ -41,7 +41,7 @@ public class Basic16 extends BasicTestCase implements MicroTestCase {
     }
     
     public String getDescription() {
-        return "simple heap-allocated data strucure";
+        return "simple heap-allocated data structure";
     }
     
     public int getVulnerabilityCount() {
