@@ -36,32 +36,32 @@ class CallSiteMatchTestSuite extends FunSuite {
   test("in the class CallSiteMatch1 we should detect 1 conflict of a unopened callsite test case") {
     val svfa = new CallSiteMatch("samples.callSiteMatch.CallSiteMatch1", "main")
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflicts().size == 1)
+    assert(svfa.reportConflictsSVG().size == 1)
   }
 
   test("in the class CallSiteMatch2 we should detect 1 conflict of a unclosed callsite test case") {
     val svfa = new CallSiteMatch("samples.callSiteMatch.CallSiteMatch2", "main")
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflicts().size == 1)
+    assert(svfa.reportConflictsSVG().size == 1)
   }
 
   test("in the class CallSiteMatch3 we should detect 1 conflict of a unclosed and unopened " +
-      "callsite test case") {
+    "callsite test case") {
     val svfa = new CallSiteMatch("samples.callSiteMatch.CallSiteMatch3", "main")
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflicts().size == 1)
+    assert(svfa.reportConflictsSVG().size == 1)
   }
 
   ignore("in the class CallSiteMatch4 we should detect 2 conflict of a unclosed and unopened " +
     "callsite with a common method in between test case") {
     val svfa = new CallSiteMatch("samples.callSiteMatch.CallSiteMatch4", "main")
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflicts().size == 2)
+    assert(svfa.reportConflictsSVG().size == 2)
   }
 
   test("in the class CallSiteMatch5 we should detect 2 conflict of a balanced callsite test case") {
     val svfa = new CallSiteMatch("samples.callSiteMatch.CallSiteMatch5", "main")
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflicts().size == 2)
+    assert(svfa.reportConflictsSVG().size == 2)
   }
 }
