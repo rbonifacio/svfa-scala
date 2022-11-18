@@ -135,6 +135,14 @@ class TestSuite extends FunSuite with BeforeAndAfter {
                                                //       a method associated to a SinkNode. 
   }
 
+  test("we should find exactly one conflict in the FieldSample2 analysis") {
+    val svfa = new FieldTest2()
+    svfa.buildSparseValueFlowGraph()
+    print(svfa.svgToDotModel())
+    assert(svfa.reportConflictsSVG().size == 1)   // NOTE: We are not traversing the body of
+    //       a method associated to a SinkNode.
+  }
+
   // This is the case with fields that the source method
   // changes the field that is subsequently used by a sink line
   ignore("we should find exactly one conflict in the MethodFieldTest analysis") {

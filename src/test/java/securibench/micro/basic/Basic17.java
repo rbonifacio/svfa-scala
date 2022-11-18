@@ -32,12 +32,12 @@ public class Basic17 extends BasicTestCase implements MicroTestCase {
     private static final String FIELD_NAME = "name";
 
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String s = req.getParameter(FIELD_NAME);
+        String s = req.getParameter(FIELD_NAME);  // source
         Widget w1 = new Widget();
         w1.setContents(s);
         
         Widget w2 = new Widget();
-        w2.setContents("abc");
+        w2.setContents("abc");   // OK
         
         PrintWriter writer = resp.getWriter();  
         writer.println(w1.getContents());                    /* BAD */

@@ -219,6 +219,8 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
 
     val body  = method.retrieveActiveBody()
 
+    print(body)
+
     val graph = new ExceptionalUnitGraph(body)
     val defs  = new SimpleLocalDefs(graph)
 
