@@ -7,7 +7,7 @@ class Foo2 {
         this.blah = b;
     }
 
-     Blah2 getBlah() {
+    Blah2 getBlah() {
         return this.blah;
     }
 }
@@ -16,10 +16,6 @@ class Blah2 {
 
 }
 public class FieldSample2 {
-
-
-
-
 
     public void main() {
         Foo2 A = new Foo2();
