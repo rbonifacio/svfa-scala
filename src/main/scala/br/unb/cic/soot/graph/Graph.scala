@@ -51,8 +51,9 @@ case class Statement(className: String, method: String, stmt: String, line: Int,
 case class StatementNode(value: Statement, nodeType: NodeType) extends GraphNode {
   type T = Statement
 
-  //  override def show(): String = "(" ++ value.method + ": " + value.stmt + " - " + value.line + " <" + nodeType.toString + ">)"
-  override def show(): String = value.stmt
+  //override def show(): String = "(" ++ value.method + ": " + value.stmt + " - " + value.line + " <" + nodeType.toString + ">)"
+  //override def show(): String = value.stmt
+  override def show(): String = value.method + "\n" + value.stmt
 
   override def toString: String =
     "Node(" + value.method + "," + value.stmt + "," + "," + nodeType.toString + ")"
@@ -483,7 +484,7 @@ class Graph() {
         case _          => ""
       }
 
-      s ++= " " + "\"" + n.show() + "\"" + nodeColor + "\n"
+      s ++= " " +  "\"" + n.show() + "\"" + nodeColor + "\n"
     }
 
     s  ++= "\n"
