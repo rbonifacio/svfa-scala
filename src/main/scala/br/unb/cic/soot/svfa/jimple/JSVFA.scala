@@ -400,7 +400,14 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
 
       allocationNodes.foreach(source => {
         val target = createNode(method, stmt)
+
         updateGraph(source, target)
+//        val csCloseLabel = createCSCloseLabel(caller, callStmt, callee)
+//        val a = method
+//        val b = source.method()
+//        val csCloseLabel = createCSCloseLabel(method, stmt, source.method())
+//        svg.addEdge(source, target, csCloseLabel)
+//        2.6
         svg.getAdjacentNodes(source).get.foreach(s => updateGraph(s, target))
       })
 
