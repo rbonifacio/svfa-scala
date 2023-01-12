@@ -4,7 +4,7 @@ import br.unb.cic.soot.graph.{NodeType, SimpleNode, SinkNode, SourceNode}
 import soot.jimple.{AssignStmt, InvokeExpr, InvokeStmt}
 
 class FieldTest3 extends JSVFATest {
-  override def getClassName(): String = "samples.FieldSample2"
+  override def getClassName(): String = "samples.FieldSample3"
 
   override def getMainMethod(): String = "main"
 

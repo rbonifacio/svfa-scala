@@ -1,6 +1,6 @@
 package samples;
 
-class Foo3 {
+class Foo4 {
     int blah;
 
     void setBlah(int b) {
@@ -12,7 +12,7 @@ class Foo3 {
     }
 }
 
-public class FieldSample3 {
+public class FieldSample4 {
 
     public void main() {
 //        Foo3 A = new Foo3();
