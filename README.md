@@ -31,6 +31,19 @@ This is a scala implementation of a framework that builds a sparse-value flow gr
       * `sootClassPath()` to set up the soot classpath. This implementation must return a string
       * `analyze(unit)` to identify the type of a node  (source, sink, simple node) in the graph; given a statement (soot unit)
 
+# Installing steps
+
+## fedora
+Install Java JRE
+```
+sudo dnf install java-1.8.0-openjdk.x86_64
+```
+
+Install Java JDK
+```
+sudo dnf install java-8-openjdk-devel
+```
+
 
 ## Dependencies
 
