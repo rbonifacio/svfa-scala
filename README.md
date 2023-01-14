@@ -65,9 +65,9 @@ Install Java JRE
 sudo dnf install java-1.8.0-openjdk.x86_64
 ```
 
-Install Java JDK
+Install Java JDK (/usr/lib/jvm/java-1.8.0-openjdk)
 ```
-sudo dnf install java-8-openjdk-devel
+sudo dnf install java-1.8.0-openjdk-devel.x86_64
 ```
 
 ## IntelliJ set up
