@@ -33,6 +33,32 @@ This is a scala implementation of a framework that builds a sparse-value flow gr
 
 # Installing steps
 
+Install .....
+```
+
+```
+Install IntelliJ IDEA Community Edition
+```
+sudo snap install intellij-idea-community --classic
+```
+Install Scala Plugin
+```
+https://www.jetbrains.com/help/idea/managing-plugins.html
+```
+
+## Ubuntu
+
+Install Java (/usr/lib/jvm/*)
+```
+apt install openjdk-8-jdk-headless
+```
+Install SBT
+```
+https://www.scala-sbt.org/1.x/docs/Installing-sbt-on-Linux.html
+```
+
+
+
 ## fedora
 Install Java JRE
 ```
@@ -42,6 +68,33 @@ sudo dnf install java-1.8.0-openjdk.x86_64
 Install Java JDK
 ```
 sudo dnf install java-8-openjdk-devel
+```
+
+## IntelliJ set up
+
+Set JDK (main)
+
+```
+file > Project Structure > Platform Settings > SDK > Add new SDK > Choose Java JDK path
+```
+
+Set JDK (For Projects)
+
+```
+file > Project Structure > Project Settings > Project > ........
+```
+
+Set JDK (For Modules)
+
+```
+file > Project Structure > Project Settings > Module > ........
+```
+
+## Build 
+
+To start build the project
+```
+sbt compile test
 ```
 
 
