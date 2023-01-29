@@ -219,7 +219,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
 
     val body  = method.retrieveActiveBody()
 
-    print(body)
+    //print(body)
 
     val graph = new ExceptionalUnitGraph(body)
     val defs  = new SimpleLocalDefs(graph)
@@ -419,7 +419,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         allocationNodes = findFieldStores(base.asInstanceOf[Local], ref.getField)
       }
 
-      var abc: Any = null
+      var abc: soot.Unit = null
       defs.getDefsOfAt(base.asInstanceOf[Local], stmt).forEach(sourceStmt => {
         abc = sourceStmt
       })
@@ -437,7 +437,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
           updateGraph(source, target)
         }
 //        2.6
-//        svg.getAdjacentNodes(source).get.foreach(s => updateGraph(s, target))
+        svg.getAdjacentNodes(source).get.foreach(s => updateGraph(s, target))
       })
 
       // create an edge from the base defs to target
@@ -580,12 +580,15 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       // we can just match with InstanceInvokeExpr
     }
 
-    val base = invokeExpr.getBase.asInstanceOf[Local]
-    var abc: Any = null
-    defs.getDefsOfAt(base, stmt.base).forEach(sourceStmt => {
-      abc = sourceStmt
-    })
-    val aaaa = findStatement(caller.toString, abc.toString)
+    var aaaa: soot.Unit = null
+    if (invokeExpr != null) {
+      val base = invokeExpr.getBase.asInstanceOf[Local]
+      var abc: Any = null
+      defs.getDefsOfAt(base, stmt.base).forEach(sourceStmt => {
+        abc = sourceStmt
+      })
+      aaaa = findStatement(caller.toString, abc.toString)
+    }
 
     val local = exp.getArg(pmtCount).asInstanceOf[Local]
     defs.getDefsOfAt(local, stmt.base).forEach(sourceStmt => {
