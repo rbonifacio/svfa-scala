@@ -397,21 +397,17 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       }
 
       // start code for object sensitivity
-      var abc: Any = null
-      defs.getDefsOfAt(base.asInstanceOf[Local], stmt).forEach(sourceStmt => {
-        abc = sourceStmt
-      })
-      val aaaa = findStatement(method.toString, abc.toString)
+      val baseDefs = defs.getDefsOfAt(base.asInstanceOf[Local], stmt)
+      val baseStmt = findStatement(method.toString, baseDefs.get(0).toString)
       // end code for object sensitivity
 
       allocationNodes.foreach(source => {
         val target = createNode(method, stmt)
-//        updateGraph(source, target)
 
         // start code for object sensitivity
         var csCloseLabelX : CallSiteLabel = null
-        if (aaaa != null) {
-          csCloseLabelX = createCSCloseLabel(method, aaaa, source.method())
+        if (baseStmt != null) {
+          csCloseLabelX = createCSCloseLabel(method, baseStmt, source.method())
         }
         updateGraph(source, target, false, csCloseLabelX)
         // end code for object sensitivity
@@ -634,14 +630,11 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       case _ => null //TODO: not sure if the other cases
     }
 
-    var aaaa: soot.Unit = null
+    var baseStmt: soot.Unit = null
     if (invokeExpr != null) {
       val base = invokeExpr.getBase.asInstanceOf[Local]
-      var abc: Any = null
-      defs.getDefsOfAt(base, stmt.base).forEach(sourceStmt => {
-        abc = sourceStmt
-      })
-      aaaa = findStatement(caller.toString, abc.toString)
+      val baseDefs = defs.getDefsOfAt(base, stmt.base)
+      baseStmt = findStatement(caller.toString, baseDefs.get(0).toString)
     }
     // end code for object sensitivity
 
@@ -651,8 +644,8 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       val csOpenLabel = createCSOpenLabel(caller, stmt.base, callee)
       svg.addEdge(source, target, csOpenLabel)
       // start code for object sensitivity
-      if (aaaa != null) {
-        val csOpenLabelX = createCSOpenLabel(caller, aaaa, callee)
+      if (baseStmt != null) {
+        val csOpenLabelX = createCSOpenLabel(caller, baseStmt, callee)
         svg.addEdge(source, target, csOpenLabelX)
       }
       // end code for object sensitivity
