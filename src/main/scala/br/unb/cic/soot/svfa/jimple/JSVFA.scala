@@ -447,64 +447,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     }
   }
 
-  /**
-   * It returns a list of stmts, where an object is instantiated by a class
-   *  Example: if s8 is send as a node parameter, the method will return s1
-   *
-   *  s1: $stack5 = new samples.Foo3
-   *  s5: A = $stack5
-   *  s8: $stack8 = A.<samples.Foo3: int blah>
-   *
-    * @param node
-   * @param defs
-   * @return
-   */
-  def findClassDef(node: GraphNode, defs: SimpleLocalDefs): List[Value] = {
-
-    val base = getBaseFromAssignment(node)
-
-    var sourceDef = List[Value]()
-
-    if(base.isInstanceOf[Local]) {
-
-      defs.getDefsOfAt(base.asInstanceOf[Local], Statement.convert(node.unit()).base).forEach( u => {
-        val stmt = getBaseFromAssignment(u)
-        if(stmt.isInstanceOf[Local]) {
-          defs.getDefsOfAt(stmt.asInstanceOf[Local], u).forEach( uu => {
-            if (uu.isInstanceOf[soot.jimple.AssignStmt]) {
-              sourceDef = uu.asInstanceOf[soot.jimple.AssignStmt].getRightOp :: sourceDef
-            }
-          })
-        }
-      })
-    }
-    sourceDef
-  }
-
-  def getBaseFromAssignment(GraphUnit: soot.Unit): Any = {
-    val stmt = Statement.convert(GraphUnit)
-    getBaseFromAssignment(stmt)
-  }
-
-  def getBaseFromAssignment(node: GraphNode): Any = {
-    val stmt = Statement.convert(node.unit())
-    getBaseFromAssignment(stmt)
-  }
-
-  def getBaseFromAssignment(stmt: Statement): Any = {
-    stmt match {
-      case AssignStmt(base) => {
-        val stmtRight = AssignStmt(base).stmt.getRightOp
-        stmtRight match {
-          case sr: InstanceFieldRef => sr.getBase.asInstanceOf[Local]
-          case sr: Local => sr
-          case _ => null
-        }
-      }
-      case _ => null
-    }
-  }
-
   protected def loadArrayRule(targetStmt: soot.Unit, ref: ArrayRef, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
     val base = ref.getBase
 
@@ -686,17 +628,25 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     }
   }
 
+  /**
+   * Find specific statement in all program body
+   * using method name and stmt
+   *
+   * @param methodName
+   * @param stmt
+   * @return
+   */
   def findStatement(methodName: String, stmt: String): soot.Unit = {
     var result: soot.Unit = null
     traversedMethods.foreach(method => {
       if (method.toString == methodName) {
-        method.retrieveActiveBody().getUnits.forEach(s => {
-          Statement.convert(s) match {
+        method.retrieveActiveBody().getUnits.forEach(unit => {
+          Statement.convert(unit) match {
             case AssignStmt(base) => {
-              val a = AssignStmt(base)
-              val stmtString: String = a.stmt.toString
+              val assignStmt = AssignStmt(base)
+              val stmtString: String = assignStmt.stmt.toString
               if (stmtString == stmt) {
-                result = s
+                result = unit
               }
             }
             case _ =>
@@ -706,6 +656,84 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     })
     result
   }
+
+  /**
+   * It returns a list of stmts, where an object is instantiated by a class
+   *  Example: if s8 is send as a node parameter, the method will return s1
+   *
+   *  s1: $stack5 = new samples.Foo3
+   *  s5: A = $stack5
+   *  s8: $stack8 = A.<samples.Foo3: int blah>
+   *
+   * @param node
+   * @param defs
+   * @return
+   */
+  def findClassDef(node: GraphNode, defs: SimpleLocalDefs): List[Value] = {
+
+    val base = getBaseFromAssignment(node)
+
+    var sourceDef = List[Value]()
+
+    if(base.isInstanceOf[Local]) {
+
+      defs.getDefsOfAt(base.asInstanceOf[Local], Statement.convert(node.unit()).base).forEach( u => {
+        val stmt = getBaseFromAssignment(u)
+        if(stmt.isInstanceOf[Local]) {
+          defs.getDefsOfAt(stmt.asInstanceOf[Local], u).forEach( uu => {
+            if (uu.isInstanceOf[soot.jimple.AssignStmt]) {
+              sourceDef = uu.asInstanceOf[soot.jimple.AssignStmt].getRightOp :: sourceDef
+            }
+          })
+        }
+      })
+    }
+    sourceDef
+  }
+
+  /**
+   * get base from statement
+   * Example: For s1 it will return q
+   *
+   *  s1: p = q.r
+   *
+   * @param stmt
+   * @return
+   */
+  def getBaseFromAssignment(stmt: Statement): Any = {
+    stmt match {
+      case AssignStmt(base) => {
+        val stmtRight = AssignStmt(base).stmt.getRightOp
+        stmtRight match {
+          case sr: InstanceFieldRef => sr.getBase.asInstanceOf[Local]
+          case sr: Local => sr
+          case _ => null
+        }
+      }
+      case _ => null
+    }
+  }
+
+  /**
+   * similar to above
+   * @param GraphUnit
+   * @return
+   */
+  def getBaseFromAssignment(GraphUnit: soot.Unit): Any = {
+    val stmt = Statement.convert(GraphUnit)
+    getBaseFromAssignment(stmt)
+  }
+
+  /**
+   * similar to above
+   * @param node
+   * @return
+   */
+  def getBaseFromAssignment(node: GraphNode): Any = {
+    val stmt = Statement.convert(node.unit())
+    getBaseFromAssignment(stmt)
+  }
+
 
   /*
    * creates a graph node from a sootMethod / sootUnit
