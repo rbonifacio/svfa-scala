@@ -215,7 +215,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       return
     }
 
-    traversedMethods.add(method)
+    traversedMethods.add(method) //keeps a list of methods that are already traversed
 
     val body  = method.retrieveActiveBody()
 
@@ -236,6 +236,26 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     })
   }
 
+  def findStatement(methodName: String, stmt: String): soot.Unit = {
+    var result: soot.Unit = null
+    traversedMethods.foreach(method => {
+        if (method.toString == methodName) {
+           method.retrieveActiveBody().getUnits.forEach(s => {
+             Statement.convert(s) match {
+               case AssignStmt(base) => {
+                 val a = AssignStmt(base)
+                 val stmtString: String = a.stmt.toString
+                 if (stmtString == stmt) {
+                   result = s
+                 }
+               }
+               case _ =>
+             }
+           })
+        }
+    })
+    result
+  }
 
   def traverse(assignStmt: AssignStmt, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
     val left = assignStmt.stmt.getLeftOp
@@ -287,6 +307,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       svg.addNode(source)
     }
 
+//    do not know yet what is happening inside the below for
     for(r <- methodRules) {
       if(r.check(callee)) {
         r.apply(caller, callStmt.base.asInstanceOf[jimple.Stmt], defs)
@@ -398,17 +419,25 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         allocationNodes = findFieldStores(base.asInstanceOf[Local], ref.getField)
       }
 
+      var abc: Any = null
+      defs.getDefsOfAt(base.asInstanceOf[Local], stmt).forEach(sourceStmt => {
+        abc = sourceStmt
+      })
+      //    Statement.convert(abc)
+      val aaaa = findStatement(method.toString, abc.toString)
+
       allocationNodes.foreach(source => {
         val target = createNode(method, stmt)
 
-        updateGraph(source, target)
-//        val csCloseLabel = createCSCloseLabel(caller, callStmt, callee)
-//        val a = method
-//        val b = source.method()
-//        val csCloseLabel = createCSCloseLabel(method, stmt, source.method())
-//        svg.addEdge(source, target, csCloseLabel)
+        //xdxd
+        if (aaaa != null) {
+          val csCloseLabelX = createCSCloseLabel(method, aaaa, source.method())
+          svg.addEdge(source, target, csCloseLabelX)
+        } else {
+          updateGraph(source, target)
+        }
 //        2.6
-        svg.getAdjacentNodes(source).get.foreach(s => updateGraph(s, target))
+//        svg.getAdjacentNodes(source).get.foreach(s => updateGraph(s, target))
       })
 
       // create an edge from the base defs to target
@@ -539,14 +568,35 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     }
   }
 
-  private def defsToFormalArgs(stmt: Statement, caller: SootMethod, defs: SimpleLocalDefs, assignStmt: soot.Unit, exp: InvokeExpr, callee: SootMethod, pmtCount: Int) = {
+  private def defsToFormalArgs(stmt: Statement, caller: SootMethod, defs: SimpleLocalDefs, assignStmt: soot.Unit, exp: InvokeExpr, callee: SootMethod, pmtCount: Int): Any = {
     val target = createNode(callee, assignStmt)
+
+    val invokeExpr = exp match {
+      case e: VirtualInvokeExpr => e
+      case e: SpecialInvokeExpr => e
+      case e: InterfaceInvokeExpr => e
+      case _ => null //TODO: not sure if the other cases
+      // are also relevant here. Otherwise,
+      // we can just match with InstanceInvokeExpr
+    }
+
+    val base = invokeExpr.getBase.asInstanceOf[Local]
+    var abc: Any = null
+    defs.getDefsOfAt(base, stmt.base).forEach(sourceStmt => {
+      abc = sourceStmt
+    })
+    val aaaa = findStatement(caller.toString, abc.toString)
 
     val local = exp.getArg(pmtCount).asInstanceOf[Local]
     defs.getDefsOfAt(local, stmt.base).forEach(sourceStmt => {
       val source = createNode(caller, sourceStmt)
       val csOpenLabel = createCSOpenLabel(caller, stmt.base, callee)
       svg.addEdge(source, target, csOpenLabel)
+  // xdxd
+      if (aaaa != null) {
+        val csOpenLabelX = createCSOpenLabel(caller, aaaa, callee)
+        svg.addEdge(source, target, csOpenLabelX)
+      }
     })
   }
 
