@@ -406,17 +406,35 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
 
       allocationNodes.foreach(source => {
         val target = createNode(method, stmt)
-        updateGraph(source, target)
+//        updateGraph(source, target)
 
         // start code for object sensitivity
-        val csCloseLabelX = null
+        var csCloseLabelX : CallSiteLabel = null
         if (aaaa != null) {
-          val csCloseLabelX = createCSCloseLabel(method, aaaa, source.method())
+          csCloseLabelX = createCSCloseLabel(method, aaaa, source.method())
         }
         updateGraph(source, target, false, csCloseLabelX)
         // end code for object sensitivity
 
-        svg.getAdjacentNodes(source).get.foreach(s => updateGraph(s, target))
+        svg.getAdjacentNodes(source).get.foreach(s => {
+          /**
+           * not update graph when there is an edge between different
+           * object from a same class
+           */
+          if (! s.equals(target)) {
+            val sourceBase = getBaseFromAssignment(s)
+            val targetBase = getBaseFromAssignment(target)
+            val sourceDef: List[Value] = findClassDef(s, defs)
+            val targetDef: List[Value] = findClassDef(target, defs)
+            if (sourceDef.zip(targetDef).filter(x => x._1.getType != x._2.getType).size == 0) {
+              if (sourceBase == targetBase) {
+                updateGraph(s, target)
+              }
+            } else {
+              updateGraph(s, target)
+            }
+          }
+        })
       })
 
       // create an edge from the base defs to target
@@ -430,6 +448,64 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
           updateGraph(sourceNode, targetNode)
         })
       }
+    }
+  }
+
+  /**
+   * It returns a list of stmts, where an object is instantiated by a class
+   *  Example: if s8 is send as a node parameter, the method will return s1
+   *
+   *  s1: $stack5 = new samples.Foo3
+   *  s5: A = $stack5
+   *  s8: $stack8 = A.<samples.Foo3: int blah>
+   *
+    * @param node
+   * @param defs
+   * @return
+   */
+  def findClassDef(node: GraphNode, defs: SimpleLocalDefs): List[Value] = {
+
+    val base = getBaseFromAssignment(node)
+
+    var sourceDef = List[Value]()
+
+    if(base.isInstanceOf[Local]) {
+
+      defs.getDefsOfAt(base.asInstanceOf[Local], Statement.convert(node.unit()).base).forEach( u => {
+        val stmt = getBaseFromAssignment(u)
+        if(stmt.isInstanceOf[Local]) {
+          defs.getDefsOfAt(stmt.asInstanceOf[Local], u).forEach( uu => {
+            if (uu.isInstanceOf[soot.jimple.AssignStmt]) {
+              sourceDef = uu.asInstanceOf[soot.jimple.AssignStmt].getRightOp :: sourceDef
+            }
+          })
+        }
+      })
+    }
+    sourceDef
+  }
+
+  def getBaseFromAssignment(GraphUnit: soot.Unit): Any = {
+    val stmt = Statement.convert(GraphUnit)
+    getBaseFromAssignment(stmt)
+  }
+
+  def getBaseFromAssignment(node: GraphNode): Any = {
+    val stmt = Statement.convert(node.unit())
+    getBaseFromAssignment(stmt)
+  }
+
+  def getBaseFromAssignment(stmt: Statement): Any = {
+    stmt match {
+      case AssignStmt(base) => {
+        val stmtRight = AssignStmt(base).stmt.getRightOp
+        stmtRight match {
+          case sr: InstanceFieldRef => sr.getBase.asInstanceOf[Local]
+          case sr: Local => sr
+          case _ => null
+        }
+      }
+      case _ => null
     }
   }
 
