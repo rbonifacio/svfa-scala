@@ -396,22 +396,25 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         allocationNodes = findFieldStores(base.asInstanceOf[Local], ref.getField)
       }
 
+      // start code for object sensitivity
       var abc: Any = null
       defs.getDefsOfAt(base.asInstanceOf[Local], stmt).forEach(sourceStmt => {
         abc = sourceStmt
       })
       val aaaa = findStatement(method.toString, abc.toString)
+      // end code for object sensitivity
 
       allocationNodes.foreach(source => {
         val target = createNode(method, stmt)
         updateGraph(source, target)
 
-        //xdxd
+        // start code for object sensitivity
         val csCloseLabelX = null
         if (aaaa != null) {
           val csCloseLabelX = createCSCloseLabel(method, aaaa, source.method())
         }
         updateGraph(source, target, false, csCloseLabelX)
+        // end code for object sensitivity
 
         svg.getAdjacentNodes(source).get.foreach(s => updateGraph(s, target))
       })
@@ -547,14 +550,12 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
   private def defsToFormalArgs(stmt: Statement, caller: SootMethod, defs: SimpleLocalDefs, assignStmt: soot.Unit, exp: InvokeExpr, callee: SootMethod, pmtCount: Int) = {
     val target = createNode(callee, assignStmt)
 
-    //
+    // start code for object sensitivity
     val invokeExpr = exp match {
       case e: VirtualInvokeExpr => e
       case e: SpecialInvokeExpr => e
       case e: InterfaceInvokeExpr => e
       case _ => null //TODO: not sure if the other cases
-      // are also relevant here. Otherwise,
-      // we can just match with InstanceInvokeExpr
     }
 
     var aaaa: soot.Unit = null
@@ -566,18 +567,19 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       })
       aaaa = findStatement(caller.toString, abc.toString)
     }
-    //
+    // end code for object sensitivity
 
     val local = exp.getArg(pmtCount).asInstanceOf[Local]
     defs.getDefsOfAt(local, stmt.base).forEach(sourceStmt => {
       val source = createNode(caller, sourceStmt)
       val csOpenLabel = createCSOpenLabel(caller, stmt.base, callee)
       svg.addEdge(source, target, csOpenLabel)
-      // xdxd
+      // start code for object sensitivity
       if (aaaa != null) {
         val csOpenLabelX = createCSOpenLabel(caller, aaaa, callee)
         svg.addEdge(source, target, csOpenLabelX)
       }
+      // end code for object sensitivity
     })
   }
 
