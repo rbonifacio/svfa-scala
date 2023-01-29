@@ -400,7 +400,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       defs.getDefsOfAt(base.asInstanceOf[Local], stmt).forEach(sourceStmt => {
         abc = sourceStmt
       })
-      //    Statement.convert(abc)
       val aaaa = findStatement(method.toString, abc.toString)
 
       allocationNodes.foreach(source => {
@@ -408,12 +407,11 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         updateGraph(source, target)
 
         //xdxd
+        val csCloseLabelX = null
         if (aaaa != null) {
           val csCloseLabelX = createCSCloseLabel(method, aaaa, source.method())
-          svg.addEdge(source, target, csCloseLabelX)
-        } else {
-          updateGraph(source, target )
         }
+        updateGraph(source, target, false, csCloseLabelX)
 
         svg.getAdjacentNodes(source).get.foreach(s => updateGraph(s, target))
       })
@@ -776,32 +774,45 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     }
     return null
   }
-  def updateGraph(source: GraphNode, target: GraphNode, forceNewEdge: Boolean = false): Boolean = {
+  def updateGraph(source: GraphNode, target: GraphNode, forceNewEdge: Boolean = false, label: CallSiteLabel = null): Boolean = {
     var res = false
     if(!runInFullSparsenessMode() || true) {
-      addNodeAndEdgeDF(source.asInstanceOf[StatementNode], target.asInstanceOf[StatementNode])
+      addNodeAndEdgeDF(source.asInstanceOf[StatementNode], target.asInstanceOf[StatementNode], label)
 
       res = true
     }
     return res
   }
 
-  def addNodeAndEdgeDF(from: StatementNode, to: StatementNode): Unit = {
+  def addNodeAndEdgeDF(from: StatementNode, to: StatementNode, label: CallSiteLabel = null): Unit = {
     var auxNodeFrom = containsNodeDF(from)
     var auxNodeTo = containsNodeDF(to)
-    if (auxNodeFrom != null){
-      if (auxNodeTo != null){
-        svg.addEdge(auxNodeFrom, auxNodeTo)
-      }else{
-        svg.addEdge(auxNodeFrom, to)
+    var sourceNode: StatementNode = null
+    var targetNode: StatementNode = null
+    if (auxNodeFrom != null) {
+      sourceNode = auxNodeFrom
+      if (auxNodeTo != null) {
+        targetNode = auxNodeTo
+        //svg.addEdge(auxNodeFrom, auxNodeTo)
+      } else {
+        targetNode = to
+        //svg.addEdge(auxNodeFrom, to)
       }
     }else {
+      sourceNode = from
       if (auxNodeTo != null) {
-        svg.addEdge(from, auxNodeTo)
+        targetNode = auxNodeTo
+        //svg.addEdge(from, auxNodeTo)
       } else {
-        svg.addEdge(from, to)
+        targetNode = to
+        //svg.addEdge(from, to)
       }
     }
-  }
 
+    if (label == null) {
+      svg.addEdge(sourceNode, targetNode)
+    } else {
+      svg.addEdge(sourceNode, targetNode, label)
+    }
+  }
 }
