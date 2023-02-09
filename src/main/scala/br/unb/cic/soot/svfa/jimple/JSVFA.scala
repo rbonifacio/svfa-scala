@@ -218,7 +218,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     traversedMethods.add(method)
 
     val body  = method.retrieveActiveBody()
-
+    print(body)
     val graph = new ExceptionalUnitGraph(body)
     val defs  = new SimpleLocalDefs(graph)
 
@@ -372,6 +372,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
    */
   protected def loadRule(stmt: soot.Unit, ref: InstanceFieldRef, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
     val base = ref.getBase
+    val targetMethod = ref.getFieldRef
     // value field of a string.
     val className = ref.getFieldRef.declaringClass().getName
     if((className == "java.lang.String") && ref.getFieldRef.name == "value") {
@@ -396,10 +397,47 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         allocationNodes = findFieldStores(base.asInstanceOf[Local], ref.getField)
       }
 
+
+      // start code for object sensitivity
+      val baseDefs = defs.getDefsOfAt(base.asInstanceOf[Local], stmt)
+      val baseStmt = findStatement(method.toString, baseDefs.get(0).toString)
+      // end code for object sensitivity
+
       allocationNodes.foreach(source => {
         val target = createNode(method, stmt)
-        updateGraph(source, target)
-        svg.getAdjacentNodes(source).get.foreach(s => updateGraph(s, target))
+
+        // updateGraph(source, target)
+        // start code for object sensitivity
+        var csCloseLabelX : CallSiteLabel = null
+//        if (baseStmt != null) {
+//          csCloseLabelX = createCSCloseLabel(method, baseStmt, source.method())
+//        }
+        updateGraph(source, target, false, csCloseLabelX)
+//        // end code for object sensitivity
+//
+        svg.getAdjacentNodes(source).get.foreach(s => {
+          updateGraph(s, target)
+//          var csCloseLabelX : CallSiteLabel = null
+//          var sameM : Boolean = true
+//          if (baseStmt != null) {
+//            if (method.getName == s.method().getName) {
+//              sameM = false
+//            } else {
+//              csCloseLabelX = createCSCloseLabel(method, baseStmt, s.method())
+//            }
+//          }
+//
+////          val sourceBase = getBaseFromXXX(s)
+//          val sourceMethod = getMethodFromXXX(s)
+//          if (sourceMethod == null) {
+//            updateGraph(s, target, false, csCloseLabelX)
+//          } else {
+//            if (sourceMethod != targetMethod) {
+//              updateGraph(s, target, false, csCloseLabelX)
+//            }
+//          }
+//
+        })
       })
 
       // create an edge from the base defs to target
@@ -533,11 +571,33 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
   private def defsToFormalArgs(stmt: Statement, caller: SootMethod, defs: SimpleLocalDefs, assignStmt: soot.Unit, exp: InvokeExpr, callee: SootMethod, pmtCount: Int) = {
     val target = createNode(callee, assignStmt)
 
+    // start code for object sensitivity
+    val invokeExpr = exp match {
+      case e: VirtualInvokeExpr => e
+      case e: SpecialInvokeExpr => e
+      case e: InterfaceInvokeExpr => e
+      case _ => null //TODO: not sure if the other cases
+    }
+
+    var baseStmt: soot.Unit = null
+    if (invokeExpr != null) {
+      val base = invokeExpr.getBase.asInstanceOf[Local]
+      val baseDefs = defs.getDefsOfAt(base, stmt.base)
+      baseStmt = findStatement(caller.toString, baseDefs.get(0).toString)
+    }
+    // end code for object sensitivity
+
     val local = exp.getArg(pmtCount).asInstanceOf[Local]
     defs.getDefsOfAt(local, stmt.base).forEach(sourceStmt => {
       val source = createNode(caller, sourceStmt)
       val csOpenLabel = createCSOpenLabel(caller, stmt.base, callee)
       svg.addEdge(source, target, csOpenLabel)
+      // start code for object sensitivity
+//      if (baseStmt != null) {
+//        val csOpenLabelX = createCSOpenLabel(caller, baseStmt, callee)
+//        svg.addEdge(source, target, csOpenLabelX)
+//      }
+      // end code for object sensitivity
     })
   }
 
@@ -629,6 +689,35 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     new ListBuffer[GraphNode]()
   }
 
+  /**
+   * Find specific statement in all program body
+   * using method name and stmt
+   *
+   * @param methodName
+   * @param stmt
+   * @return
+   */
+  def findStatement(methodName: String, stmt: String): soot.Unit = {
+    var result: soot.Unit = null
+    traversedMethods.foreach(method => {
+      if (method.toString == methodName) {
+        method.retrieveActiveBody().getUnits.forEach(unit => {
+          Statement.convert(unit) match {
+            case AssignStmt(base) => {
+              val assignStmt = AssignStmt(base)
+              val stmtString: String = assignStmt.stmt.toString
+              if (stmtString == stmt) {
+                result = unit
+              }
+            }
+            case _ =>
+          }
+        })
+      }
+    })
+    result
+  }
+
   /*
    * a class to visit the allocation nodes of the objects that
    * a field might point to.
@@ -713,32 +802,72 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     }
     return null
   }
-  def updateGraph(source: GraphNode, target: GraphNode, forceNewEdge: Boolean = false): Boolean = {
+
+  def updateGraph(source: GraphNode, target: GraphNode, forceNewEdge: Boolean = false, label: CallSiteLabel = null): Boolean = {
     var res = false
     if(!runInFullSparsenessMode() || true) {
-      addNodeAndEdgeDF(source.asInstanceOf[StatementNode], target.asInstanceOf[StatementNode])
+      addNodeAndEdgeDF(source.asInstanceOf[StatementNode], target.asInstanceOf[StatementNode], label)
 
       res = true
     }
     return res
   }
 
-  def addNodeAndEdgeDF(from: StatementNode, to: StatementNode): Unit = {
+  def addNodeAndEdgeDF(from: StatementNode, to: StatementNode, label: CallSiteLabel = null): Unit = {
     var auxNodeFrom = containsNodeDF(from)
     var auxNodeTo = containsNodeDF(to)
-    if (auxNodeFrom != null){
-      if (auxNodeTo != null){
-        svg.addEdge(auxNodeFrom, auxNodeTo)
-      }else{
-        svg.addEdge(auxNodeFrom, to)
+    var sourceNode: StatementNode = null
+    var targetNode: StatementNode = null
+    if (auxNodeFrom != null) {
+      sourceNode = auxNodeFrom
+      if (auxNodeTo != null) {
+        targetNode = auxNodeTo
+        //svg.addEdge(auxNodeFrom, auxNodeTo)
+      } else {
+        targetNode = to
+        //svg.addEdge(auxNodeFrom, to)
       }
     }else {
+      sourceNode = from
       if (auxNodeTo != null) {
-        svg.addEdge(from, auxNodeTo)
+        targetNode = auxNodeTo
+        //svg.addEdge(from, auxNodeTo)
       } else {
-        svg.addEdge(from, to)
+        targetNode = to
+        //svg.addEdge(from, to)
       }
+    }
+
+    if (label == null) {
+      svg.addEdge(sourceNode, targetNode)
+    } else {
+      svg.addEdge(sourceNode, targetNode, label)
     }
   }
 
+  /**
+   * get base from statement
+   * Example: For s1 it will return q
+   *
+   *  s1: p = q.r
+   *
+   * @param stmt
+   * @return
+   */
+//  def getBaseFromXXX(node: GraphNode): Any = {
+  def getMethodFromXXX(node: GraphNode): Any = {
+    val s = Statement.convert(node.unit())
+
+    s match {
+      case AssignStmt(base) => {
+        val right = AssignStmt(base).stmt.getRightOp
+        right match {
+          case r: InstanceFieldRef => r.getFieldRef //val m = ref.getFieldRef // r.getBase
+          case _ => null
+        }
+      }
+      case InvokeStmt(base) => null
+      case _ => null
+    }
+  }
 }

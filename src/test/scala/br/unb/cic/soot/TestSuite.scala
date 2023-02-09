@@ -173,6 +173,7 @@ class TestSuite extends FunSuite with BeforeAndAfter {
   test("[Confluence01] We should find exactly one conflict") {
     val svfa = new ConfluenceTest01()
     svfa.buildSparseValueFlowGraph()
+    System.out.println(svfa.svgToDotModel())
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
@@ -194,5 +195,13 @@ class TestSuite extends FunSuite with BeforeAndAfter {
     svfa.buildSparseValueFlowGraph()
     println(svfa.svgToDotModel())
     assert(svfa.reportConflictsSVG().size > 0)
+  }
+
+  test("ObjectSensitivityTest") {
+    val svfa = new ObjectSensitivityTest()
+    svfa.buildSparseValueFlowGraph()
+    print(svfa.svgToDotModel())
+    assert(svfa.reportConflictsSVG().size == 1)   // NOTE: We are not traversing the body of
+    //       a method associated to a SinkNode.
   }
 }
