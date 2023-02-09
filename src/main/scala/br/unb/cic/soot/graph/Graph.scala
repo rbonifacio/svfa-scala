@@ -133,13 +133,86 @@ case class CallSiteLabel(csRegion: ContextSensitiveRegion, labelType: CallSiteLa
         val csLabel = defaultCSLabel.value
         // Match close with open OR open with close
         if (labelType != defaultCSLabel.labelType) {
-          return value.calleeMethod == csLabel.calleeMethod
+//          value.calleeMethod == csLabel.calleeMethod]
+            val stmt1 = getBaseFromAssignment(value.statement.stmt)
+            val stmt2 = getBaseFromAssignment(csLabel.statement.stmt)
+            if (areGetSet(value.calleeMethod, csLabel.calleeMethod)) {
+              if (stmt1 == stmt2) {
+                false
+              } else {
+                true
+              }
+            } else {
+              value.calleeMethod == csLabel.calleeMethod
+            }
         } else {
           false
         }
       case _ => false
     }
   }
+
+  def areGetSet(methodNameSource: String, methodNameTarget: String): Boolean = {
+
+    val methodNameSourceR = methodIsGetOrSet(methodNameSource)
+    val methodNameTargetR = methodIsGetOrSet(methodNameTarget)
+
+    if (methodNameSourceR == 0 || methodNameTargetR == 0) {
+      false
+    } else {
+      if (methodNameSourceR != methodNameTargetR) {
+        true
+      } else {
+        false
+      }
+    }
+  }
+
+  def methodIsGetOrSet(methodName: String): Int = {
+    if (methodName contains "get") {
+      1
+    } else if (methodName contains "set") {
+      2
+    } else {
+      0
+    }
+  }
+
+  /**
+   * get base from statement
+   * Example: For s1 it will return q
+   *
+   *  s1: p = q.r
+   *
+   * @param stmt
+   * @return
+   */
+//  def getBaseFromAssignment(stmt: Statement): Any = {
+//    stmt match {
+//      case AssignStmt(base) => {
+//        val stmtRight = AssignStmt(base).stmt.getRightOp
+//        stmtRight match {
+//          case sr: InstanceFieldRef => sr.getBase.asInstanceOf[Local]
+//          case sr: Local => sr
+//          case _ => null
+//        }
+//      }
+//      case _ => null
+//    }
+//  }
+  def getBaseFromAssignment(stmt: String): String = {
+    var stmt_ = stmt
+    if (stmt contains "=") {
+      val Array(_, x) = stmt_ split '=' take 2
+      stmt_ = x.trim
+    }
+    val Array(_,y) = stmt_ split ' ' take 2
+    stmt_ = y.trim
+    val Array(z, _) = stmt_ split '.' take 2
+    stmt_ = z.trim
+    stmt_
+  }
+
 
   override def equals(o: Any): Boolean = {
     o match {
