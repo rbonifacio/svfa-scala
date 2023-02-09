@@ -195,4 +195,12 @@ class TestSuite extends FunSuite with BeforeAndAfter {
     println(svfa.svgToDotModel())
     assert(svfa.reportConflictsSVG().size > 0)
   }
+
+  test("ObjectSensitivityTest") {
+    val svfa = new ObjectSensitivityTest()
+    svfa.buildSparseValueFlowGraph()
+    print(svfa.svgToDotModel())
+    assert(svfa.reportConflictsSVG().size == 1)   // NOTE: We are not traversing the body of
+    //       a method associated to a SinkNode.
+  }
 }
