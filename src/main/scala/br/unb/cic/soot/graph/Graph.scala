@@ -52,8 +52,8 @@ case class StatementNode(value: Statement, nodeType: NodeType) extends GraphNode
   type T = Statement
 
   //  override def show(): String = "(" ++ value.method + ": " + value.stmt + " - " + value.line + " <" + nodeType.toString + ">)"
-  override def show(): String = value.stmt
-
+//  override def show(): String = value.stmt
+override def show(): String = value.method + "\n" + value.stmt
   override def toString: String =
     "Node(" + value.method + "," + value.stmt + "," + "," + nodeType.toString + ")"
 
@@ -493,8 +493,12 @@ class Graph() {
       var l = e.label
       val label: String = e.label match {
         case c: CallSiteLabel =>  {
-          if (c.labelType == CallSiteOpenLabel) { "[label=\"cs(\"]" }
-          else { "[label=\"cs)\"]" }
+//          if (c.labelType == CallSiteOpenLabel) { "[label=\"cs(\"]" }
+//          else { "[label=\"cs)\"]" }
+          if (c.labelType == CallSiteOpenLabel) { "[label=\"cs(\n" + c.csRegion.statement.method +"\n" +
+            c.csRegion.statement.stmt +"\n" + c.csRegion.calleeMethod  + "\"]" }
+          else { "[label=\"cs)\n" + c.csRegion.statement.method +"\n" +
+            c.csRegion.statement.stmt +"\n" + c.csRegion.calleeMethod  + "\"]" }
         }
         case c: TrueLabelType =>{ "[penwidth=3][label=\"T\"]" }
         case c: FalseLabelType => { "[penwidth=3][label=\"F\"]" }
