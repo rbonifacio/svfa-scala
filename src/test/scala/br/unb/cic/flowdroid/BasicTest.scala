@@ -141,7 +141,7 @@ class BasicTestSuite extends FunSuite {
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
-  ignore("in the class Basic17 we should detect 1 conflict of a store statement in heap-allocated data structures and a false positive test case") {
+  test("in the class Basic17 we should detect 1 conflict of a store statement in heap-allocated data structures and a false positive test case") {
     val svfa = new BasicTest("securibench.micro.basic.Basic17", "doGet")
     svfa.buildSparseValueFlowGraph()
     println(svfa.svgToDotModel())
