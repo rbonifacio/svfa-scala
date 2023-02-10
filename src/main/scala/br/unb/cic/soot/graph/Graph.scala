@@ -169,9 +169,9 @@ case class CallSiteLabel(csRegion: ContextSensitiveRegion, labelType: CallSiteLa
   }
 
   def methodIsGetOrSet(methodName: String): Int = {
-    if (methodName contains "get") {
+    if (methodName contains " get") {
       1
-    } else if (methodName contains "set") {
+    } else if (methodName contains " set") {
       2
     } else {
       0
@@ -566,12 +566,14 @@ class Graph() {
       var l = e.label
       val label: String = e.label match {
         case c: CallSiteLabel =>  {
-//          if (c.labelType == CallSiteOpenLabel) { "[label=\"cs(\"]" }
-//          else { "[label=\"cs)\"]" }
-          if (c.labelType == CallSiteOpenLabel) { "[label=\"cs(\n" + c.csRegion.statement.method +"\n" +
-            c.csRegion.statement.stmt +"\n" + c.csRegion.calleeMethod  + "\"]" }
-          else { "[label=\"cs)\n" + c.csRegion.statement.method +"\n" +
-            c.csRegion.statement.stmt +"\n" + c.csRegion.calleeMethod  + "\"]" }
+          if (c.labelType == CallSiteOpenLabel) { "[label=\"cs(\"]" }
+          else { "[label=\"cs)\"]" }
+//          if (c.labelType == CallSiteOpenLabel) { "[label=\"cs(\n" + c.csRegion.statement.stmt + "\"]" }
+//          else { "[label=\"cs)\n" +  c.csRegion.statement.stmt + "\"]" }
+//          if (c.labelType == CallSiteOpenLabel) { "[label=\"cs(\n" + c.csRegion.statement.method +"\n" +
+//            c.csRegion.statement.stmt +"\n" + c.csRegion.calleeMethod  + "\"]" }
+//          else { "[label=\"cs)\n" + c.csRegion.statement.method +"\n" +
+//            c.csRegion.statement.stmt +"\n" + c.csRegion.calleeMethod  + "\"]" }
         }
         case c: TrueLabelType =>{ "[penwidth=3][label=\"T\"]" }
         case c: FalseLabelType => { "[penwidth=3][label=\"F\"]" }
