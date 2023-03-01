@@ -1,5 +1,6 @@
 package br.unb.cic.soot
 
+import br.unb.cic.soot.aliasing.Aliasing5Test
 import br.unb.cic.soot.basic.{Basic11Test, Basic16StringTest, Basic16Test, Basic31Test}
 import org.scalatest.{BeforeAndAfter, FunSuite}
 
@@ -163,4 +164,35 @@ class TestSuite extends FunSuite with BeforeAndAfter {
     assert(svfa.reportConflictsSVG().size >= 1)
   }
 
+  test("[Alias5Test] We should find exactly two conflicts in the Alias5 analysis") {
+    val svfa = new Aliasing5Test()
+    svfa.buildSparseValueFlowGraph()
+    assert(svfa.reportConflictsSVG().size == 2)
+  }
+
+  test("[Confluence01] We should find exactly one conflict") {
+    val svfa = new ConfluenceTest01()
+    svfa.buildSparseValueFlowGraph()
+    assert(svfa.reportConflictsSVG().size == 1)
+  }
+
+  test("[Confluence02] We should find exactly one conflict") {
+    val svfa = new ConfluenceTest02()
+    svfa.buildSparseValueFlowGraph()
+    assert(svfa.reportConflictsSVG().size == 1)
+  }
+
+  test("[Confluence03] We should find exactly one conflict") {
+    val svfa = new ConfluenceTest03()
+    svfa.buildSparseValueFlowGraph()
+    println(svfa.svgToDotModel())
+    assert(svfa.reportConflictsSVG().size == 1)
+  }
+
+  test("[Confluence04] We should find exactly one conflict") {
+    val svfa = new ConfluenceTest04()
+    svfa.buildSparseValueFlowGraph()
+    println(svfa.svgToDotModel())
+    assert(svfa.reportConflictsSVG().size > 0)
+  }
 }

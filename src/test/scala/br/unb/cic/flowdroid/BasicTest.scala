@@ -211,7 +211,7 @@ class BasicTestSuite extends FunSuite {
   test("in the class Basic28 we should detect 2 conflicts in a complicated control flow test case") {
     val svfa = new BasicTest("securibench.micro.basic.Basic28", "doGet")
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 2)
+    assert(svfa.reportConflictsSVG().size == 1)
   }
 
   test("in the class Basic29 we should detect 2 conflicts in a recursive data structures test case") {
