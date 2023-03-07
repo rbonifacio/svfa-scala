@@ -49,7 +49,6 @@ abstract class SootConfiguration {
     Options.v().set_full_resolver(true)
     Options.v().set_keep_line_number(true)
     Options.v().set_prepend_classpath(true)
-    Options.v().set_ignore_resolution_errors(true)
     Options.v().setPhaseOption("jb", "use-original-names:true")
     configureCallGraphPhase()
 

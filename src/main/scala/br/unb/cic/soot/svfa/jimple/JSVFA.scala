@@ -271,7 +271,14 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
 
 
   private def invokeRule(callStmt: Statement, exp: InvokeExpr, caller: SootMethod, defs: SimpleLocalDefs): Unit = {
-    val callee = exp.getMethod
+    val callee: soot.SootMethod = try { exp.getMethod }
+     catch {
+       case _ : Throwable => null
+     }
+
+    if(callee == null) {
+      return
+    }
 
     if(analyze(callStmt.base) == SinkNode) {
       defsToCallOfSinkMethod(callStmt, exp, caller, defs)
