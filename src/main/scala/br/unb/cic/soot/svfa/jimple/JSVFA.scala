@@ -46,7 +46,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
   trait CopyFromMethodArgumentToBaseObject extends RuleAction {
     def from: Int
 
-    def apply(sootMethod: SootMethod, invokeStmt: jimple.Stmt, localDefs: SimpleLocalDefs) = {
+    def apply(sootMethod: SootMethod, invokeStmt: jimple.Stmt, localDefs: SimpleLocalDefs): Unit = {
       var srcArg: Value = null
       var expr: InvokeExpr = null
 
@@ -54,10 +54,9 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         srcArg = invokeStmt.getInvokeExpr.getArg(from)
         expr = invokeStmt.getInvokeExpr
       }catch {
-        case e: Exception=>
-          srcArg = invokeStmt.getInvokeExpr.getArg(from)
-          expr = invokeStmt.getInvokeExpr
-          println("Entrou com errro!")
+        case e: Throwable =>
+          println(e.printStackTrace())
+          return
       }
       if(hasBaseObject(expr) && srcArg.isInstanceOf[Local]) {
         val local = srcArg.asInstanceOf[Local]
