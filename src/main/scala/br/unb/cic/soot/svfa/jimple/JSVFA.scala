@@ -55,7 +55,10 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         expr = invokeStmt.getInvokeExpr
       }catch {
         case e: Throwable =>
-          println(e.printStackTrace())
+          val invokedMethod = if(invokeStmt.getInvokeExpr != null) invokeStmt.getInvokeExpr.getMethod.getName else ""
+          logger.warn("It was not possible to execute \n")
+          logger.warn("the copy from argument to base object rule. \n")
+          logger.warn("Methods: " + sootMethod.getName + " " + invokedMethod);
           return
       }
       if(hasBaseObject(expr) && srcArg.isInstanceOf[Local]) {
