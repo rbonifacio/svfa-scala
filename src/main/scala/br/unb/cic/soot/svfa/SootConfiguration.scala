@@ -50,6 +50,7 @@ abstract class SootConfiguration {
     Options.v().set_keep_line_number(true)
     Options.v().set_prepend_classpath(true)
     Options.v().setPhaseOption("jb", "use-original-names:true")
+    Options.v().set_ignore_resolution_errors(true);
     configureCallGraphPhase()
 
     Scene.v().loadNecessaryClasses()
