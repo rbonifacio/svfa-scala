@@ -3,9 +3,7 @@ scalaVersion := "2.12.8"
 name := "svfa-scala"
 organization := "br.unb.cic"
 
-version := "0.1.0-SNAPSHOT"
-
-
+version := "0.2.1-SNAPSHOT"
 
 githubOwner := "rbonifacio"
 githubRepository := "svfa-scala"
@@ -37,4 +35,3 @@ libraryDependencies += "javax.servlet" % "javax.servlet-api" % "3.0.1" % "provid
 
 libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.2"
 
-parallelExecution in Test := false
