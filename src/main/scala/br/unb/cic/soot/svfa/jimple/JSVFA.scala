@@ -24,6 +24,9 @@ import scala.collection.mutable.ListBuffer
  */
 abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with ObjectPropagation with SourceSinkDef with LazyLogging  with DSL {
 
+  var methodsVisited = new ListBuffer[SootMethod]()
+  var numberVisitedMethods = 0
+  var printDepthVisitedMethods: Boolean = false
   var methods = 0
   val traversedMethods = scala.collection.mutable.Set.empty[SootMethod]
   val allocationSites = scala.collection.mutable.HashMap.empty[soot.Value, StatementNode]
@@ -55,9 +58,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         expr = invokeStmt.getInvokeExpr
       }catch {
         case e: Exception=>
-          srcArg = invokeStmt.getInvokeExpr.getArg(from)
-          expr = invokeStmt.getInvokeExpr
-          println("Entrou com errro!")
+          println(e)
       }
       if(hasBaseObject(expr) && srcArg.isInstanceOf[Local]) {
         val local = srcArg.asInstanceOf[Local]
@@ -216,7 +217,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     }
 
     traversedMethods.add(method)
-
     val body  = method.retrieveActiveBody()
 
     val graph = new ExceptionalUnitGraph(body)
@@ -232,6 +232,8 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         case _ =>
       }
     })
+
+
   }
 
 
@@ -314,8 +316,18 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         stringToCallSite(caller, callee, callStmt.base, s)
       }
     })
+    methodsVisited += callee.retrieveActiveBody().getMethod
+
+    numberVisitedMethods += 1
+
+    if (printDepthVisitedMethods){
+      println(callee.retrieveActiveBody().getMethod.toString+", deep: "+ methodsVisited.size)
+    }
 
     traverse(callee)
+
+    methodsVisited -= callee.retrieveActiveBody().getMethod
+
   }
 
   private def applyPhantomMethodCallRule(callStmt: Statement, exp: InvokeExpr, caller: SootMethod, defs: SimpleLocalDefs) = {
@@ -739,6 +751,14 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         svg.addEdge(from, to)
       }
     }
+  }
+
+  def setPrintDepthVisitedMethods(printDepthVisitedMethods: Boolean) {
+    this.printDepthVisitedMethods = printDepthVisitedMethods
+  }
+
+  def getNumberVisitedMethods(): Int = {
+    return numberVisitedMethods
   }
 
 }
