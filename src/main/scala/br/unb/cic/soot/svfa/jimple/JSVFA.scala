@@ -2,7 +2,7 @@ package br.unb.cic.soot.svfa.jimple
 
 import java.util
 import br.unb.cic.soot.svfa.jimple.rules.RuleAction
-import br.unb.cic.soot.graph.{CallSiteCloseLabel, CallSiteLabel, CallSiteOpenLabel, ContextSensitiveRegion, GraphNode, SinkNode, SourceNode, StatementNode}
+import br.unb.cic.soot.graph.{CallSiteCloseLabel, CallSiteLabel, CallSiteOpenLabel, ContextSensitiveRegion, GraphNode, SimpleNode, SinkNode, SourceNode, StatementNode}
 import br.unb.cic.soot.svfa.jimple.dsl.{DSL, LanguageParser}
 import br.unb.cic.soot.svfa.{SVFA, SourceSinkDef}
 import com.typesafe.scalalogging.LazyLogging
@@ -14,7 +14,8 @@ import soot.jimple.spark.pag.{AllocNode, PAG}
 import soot.jimple.spark.sets.{DoublePointsToSet, HybridPointsToSet, P2SetVisitor}
 import soot.toolkits.graph.ExceptionalUnitGraph
 import soot.toolkits.scalar.SimpleLocalDefs
-import soot.{ArrayType, Local, Scene, SceneTransformer, SootField, SootMethod, Transform, Value, jimple}
+import soot.util.Chain
+import soot.{ArrayType, EntryPoints, Local, Scene, SceneTransformer, SootField, SootMethod, Transform, Value, jimple}
 
 import scala.collection.mutable.ListBuffer
 
@@ -28,6 +29,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
   var numberVisitedMethods = 0
   var printDepthVisitedMethods: Boolean = false
   var methods = 0
+  var entryPointMethod: soot.SootMethod = null
   val traversedMethods = scala.collection.mutable.Set.empty[SootMethod]
   val allocationSites = scala.collection.mutable.HashMap.empty[soot.Value, StatementNode]
   val arrayStores = scala.collection.mutable.HashMap.empty[Local, List[soot.Unit]]
@@ -204,6 +206,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     override def internalTransform(phaseName: String, options: util.Map[String, String]): Unit = {
       pointsToAnalysis = Scene.v().getPointsToAnalysis
       initAllocationSites()
+      entryPointMethod = Scene.v().getEntryPoints.get(0)
       Scene.v().getEntryPoints.forEach(method => {
         traverse(method)
         methods = methods + 1
@@ -212,8 +215,15 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
   }
 
   def traverse(method: SootMethod, forceNewTraversal: Boolean = false) : Unit = {
+
     if((!forceNewTraversal) && (method.isPhantom || traversedMethods.contains(method))) {
       return
+    }
+    val classPath = method.getDeclaringClass
+    val sootClass = Scene.v().getSootClass(classPath.getName)
+
+    if (printDepthVisitedMethods){
+      println(method.toString+", deep: "+ methodsVisited.size)
     }
 
     traversedMethods.add(method)
@@ -226,6 +236,15 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       val v = Statement.convert(unit)
 
       v match {
+        case AssignStmt(base) => traverseFields(AssignStmt(base), entryPointMethod, defs, sootClass.getFields)
+        case _ =>
+      }
+    })
+
+    body.getUnits.forEach(unit => {
+      val v = Statement.convert(unit)
+
+      v match {
         case AssignStmt(base) => traverse(AssignStmt(base), method, defs)
         case InvokeStmt(base) => traverse(InvokeStmt(base), method, defs)
         case _ if analyze(unit) == SinkNode => traverseSinkStatement(v, method, defs)
@@ -233,9 +252,26 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       }
     })
 
-
   }
 
+  def traverseFields(assignStmt: AssignStmt, method: SootMethod, defs: SimpleLocalDefs, fields: Chain[SootField]) : Unit = {
+    val left = assignStmt.stmt.getLeftOp
+    val right = assignStmt.stmt.getRightOp
+
+    fields.forEach(field => {
+      val stmtNode = createNode(method, assignStmt.stmt)
+      val fieldNode = svg.createNodeField(method, field, analyze)
+
+      if (left.toString().contains(field.toString)){
+        updateGraph(stmtNode, fieldNode)
+      }
+
+      if (right.toString().contains(field.toString)){
+        updateGraph(fieldNode,stmtNode)
+      }
+    })
+
+  }
 
   def traverse(assignStmt: AssignStmt, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
     val left = assignStmt.stmt.getLeftOp
@@ -319,10 +355,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     methodsVisited += callee.retrieveActiveBody().getMethod
 
     numberVisitedMethods += 1
-
-    if (printDepthVisitedMethods){
-      println(callee.retrieveActiveBody().getMethod.toString+", deep: "+ methodsVisited.size)
-    }
 
     traverse(callee)
 
@@ -495,10 +527,12 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
 
     val local = retStmt.asInstanceOf[ReturnStmt].getOp.asInstanceOf[Local]
     calleeDefs.getDefsOfAt(local, retStmt).forEach(sourceStmt => {
+
+      val pointsToStatement = pointsToAnalysis.reachingObjects(local)
+
       val source = createNode(callee, sourceStmt)
       val csCloseLabel = createCSCloseLabel(caller, callStmt, callee)
       svg.addEdge(source, target, csCloseLabel)
-
 
       if(local.getType.isInstanceOf[ArrayType]) {
         val stores = arrayStores.getOrElseUpdate(local, List())

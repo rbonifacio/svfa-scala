@@ -449,6 +449,10 @@ class Graph() {
     StatementNode(br.unb.cic.soot.graph.Statement(method.getDeclaringClass.toString, method.getSignature, stmt.toString,
       stmt.getJavaSourceStartLineNumber, stmt, method), f(stmt))
 
+  def createNodeField(method: SootMethod, field: soot.SootField, f: (soot.Unit) => NodeType): StatementNode =
+    StatementNode(br.unb.cic.soot.graph.Statement(method.getDeclaringClass.toString, method.getSignature, field.toString,
+      -1, null, method), SimpleNode)
+
   def reportConflicts(): scala.collection.Set[String] =
     findConflictingPaths().map(p => p.toString)
 
