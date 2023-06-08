@@ -60,7 +60,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         expr = invokeStmt.getInvokeExpr
       }catch {
         case e: Exception=>
-          println(e)
+          println("An error occurred in getInvokeExpr with args: "+invokeStmt.getInvokeExpr+" -> "+e)
       }
       if(hasBaseObject(expr) && srcArg.isInstanceOf[Local]) {
         val local = srcArg.asInstanceOf[Local]
@@ -174,7 +174,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     }
   }
 
-
   def createSceneTransform(): (String, Transform) = ("wjtp", new Transform("wjtp.svfa", new Transformer()))
 
   def initAllocationSites(): Unit = {
@@ -236,7 +235,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       val v = Statement.convert(unit)
 
       v match {
-        case AssignStmt(base) => traverseFields(AssignStmt(base), entryPointMethod, defs, sootClass.getFields)
+        case AssignStmt(base) => traverseFields(AssignStmt(base), method, entryPointMethod, defs, sootClass.getFields)
         case _ =>
       }
     })
@@ -254,20 +253,27 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
 
   }
 
-  def traverseFields(assignStmt: AssignStmt, method: SootMethod, defs: SimpleLocalDefs, fields: Chain[SootField]) : Unit = {
+  def traverseFields(assignStmt: AssignStmt, method: SootMethod, entryMethod: SootMethod, defs: SimpleLocalDefs, fields: Chain[SootField]) : Unit = {
     val left = assignStmt.stmt.getLeftOp
     val right = assignStmt.stmt.getRightOp
 
     fields.forEach(field => {
       val stmtNode = createNode(method, assignStmt.stmt)
-      val fieldNode = svg.createNodeField(method, field, analyze)
+      val fieldNode = svg.createNodeField(entryMethod, field, analyze)
 
+      //If it is a field definition
       if (left.toString().contains(field.toString)){
         updateGraph(stmtNode, fieldNode)
       }
 
+      //If it is a usage of a field
       if (right.toString().contains(field.toString)){
         updateGraph(fieldNode,stmtNode)
+      }
+
+      //If "right" is merely an auxiliary for an assignment using a "stack," it contains a "this" on the right side and the declaration of the field
+      if (right.toString().replace("this.", "").equals(field.toString)){
+        updateGraph(stmtNode, fieldNode)
       }
     })
 
@@ -313,12 +319,12 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
 
     if(analyze(callStmt.base) == SinkNode) {
       defsToCallOfSinkMethod(callStmt, exp, caller, defs)
-      return  // TODO: we are not exploring the body of a sink method.
+//      return  // TODO: we are not exploring the body of a sink method.
       //       For this reason, we only find one path in the
       //       FieldSample test case, instead of two.
     }
 
-    if(analyze(callStmt.base) == SourceNode) {
+    if(analyze(callStmt.base) == SourceNode || analyze(callStmt.base) == SinkNode) {
       val source = createNode(caller, callStmt.base)
       svg.addNode(source)
     }

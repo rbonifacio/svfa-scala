@@ -1,32 +1,54 @@
 package samples;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MotivatingDF {
+    private String text;
 
-    public Integer text;
-
-    public static void main(){
-        MotivatingDF inst = new MotivatingDF();
-        inst.text = 5;
-        inst.cleanText();
-    }
-
-    public void cleanText() {
-        normalizeWhiteSpaces(); //Left
+    public void cleanText(){
+        normalizeWhiteSpace(); //Left
         removeComments();
-        removeDuplicatedWords(); //Right
-    }
-    private void normalizeWhiteSpaces() {
-
-        text = 1;
+        removeDuplicateWords(); //Right
     }
 
-    private void removeComments() {}
-
-    private void removeDuplicatedWords() {
-        text = text;
+    private void normalizeWhiteSpace(){
+        text.replace("  ", " ");
     }
 
-    public void initAllocationSites(){
-        text = 0;
+    private void removeComments(){
+        String pattern = "(\".*?\"|'.*?')|(/\\*.*?\\*/|//.*?$)";
+        Pattern regex = Pattern.compile(pattern, Pattern.MULTILINE | Pattern.DOTALL);
+        Matcher matcher = regex.matcher(text);
+        StringBuffer buffer = new StringBuffer();
+        while (matcher.find()) {
+            if (matcher.group(1) != null) {
+                matcher.appendReplacement(buffer, matcher.group(1));
+            } else {
+                matcher.appendReplacement(buffer, "");
+            }
+        }
+        matcher.appendTail(buffer);
+        text = buffer.toString();
+    }
+
+    private void removeDuplicateWords(){
+        String[] words = text.split(" ");
+        StringBuilder result = new StringBuilder(words[0]);
+        for (int i = 1; i < words.length; i++) {
+            if (!words[i].equals(words[i - 1])) {
+                result.append(" ");
+                result.append(words[i]);
+            }
+        }
+
+        text = result.toString();
+    }
+
+    public String getText(){
+        return text;
+    }
+
+    public void setText(String text){
+        this.text = text;
     }
 }
