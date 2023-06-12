@@ -28,7 +28,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
   var numberVisitedMethods = 0
   var printDepthVisitedMethods: Boolean = false
   var methods = 0
-  var entryPointMethod: soot.SootMethod = null
   val traversedMethods = scala.collection.mutable.Set.empty[SootMethod]
   val allocationSites = scala.collection.mutable.HashMap.empty[Any, StatementNode]
   val arrayStores = scala.collection.mutable.HashMap.empty[Local, List[soot.Unit]]
@@ -209,7 +208,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
   class Transformer extends SceneTransformer {
     override def internalTransform(phaseName: String, options: util.Map[String, String]): Unit = {
       pointsToAnalysis = Scene.v().getPointsToAnalysis
-      entryPointMethod = Scene.v().getEntryPoints.get(0)
 
       initAllocationSites()
 
