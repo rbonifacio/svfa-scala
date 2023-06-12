@@ -31,7 +31,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
   var methods = 0
   var entryPointMethod: soot.SootMethod = null
   val traversedMethods = scala.collection.mutable.Set.empty[SootMethod]
-  val allocationSites = scala.collection.mutable.HashMap.empty[soot.Value, StatementNode]
+  val allocationSites = scala.collection.mutable.HashMap.empty[Any, StatementNode]
   val arrayStores = scala.collection.mutable.HashMap.empty[Local, List[soot.Unit]]
   val languageParser = new LanguageParser(this)
 
@@ -197,6 +197,12 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
             }
           }
         })
+
+        val sootClass = Scene.v().getSootClass(m.getDeclaringClass.getName)
+        sootClass.getFields.forEach(field => {
+          allocationSites += (field -> svg.createNodeField(m, field, analyze))
+        })
+
       }
     }
   }
@@ -204,8 +210,10 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
   class Transformer extends SceneTransformer {
     override def internalTransform(phaseName: String, options: util.Map[String, String]): Unit = {
       pointsToAnalysis = Scene.v().getPointsToAnalysis
-      initAllocationSites()
       entryPointMethod = Scene.v().getEntryPoints.get(0)
+
+      initAllocationSites()
+
       Scene.v().getEntryPoints.forEach(method => {
         traverse(method)
         methods = methods + 1
@@ -218,8 +226,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     if((!forceNewTraversal) && (method.isPhantom || traversedMethods.contains(method))) {
       return
     }
-    val classPath = method.getDeclaringClass
-    val sootClass = Scene.v().getSootClass(classPath.getName)
 
     if (printDepthVisitedMethods){
       println(method.toString+", deep: "+ methodsVisited.size)
@@ -227,18 +233,8 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
 
     traversedMethods.add(method)
     val body  = method.retrieveActiveBody()
-
     val graph = new ExceptionalUnitGraph(body)
     val defs  = new SimpleLocalDefs(graph)
-
-    body.getUnits.forEach(unit => {
-      val v = Statement.convert(unit)
-
-      v match {
-        case AssignStmt(base) => traverseFields(AssignStmt(base), method, entryPointMethod, defs, sootClass.getFields)
-        case _ =>
-      }
-    })
 
     body.getUnits.forEach(unit => {
       val v = Statement.convert(unit)
@@ -248,32 +244,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         case InvokeStmt(base) => traverse(InvokeStmt(base), method, defs)
         case _ if analyze(unit) == SinkNode => traverseSinkStatement(v, method, defs)
         case _ =>
-      }
-    })
-
-  }
-
-  def traverseFields(assignStmt: AssignStmt, method: SootMethod, entryMethod: SootMethod, defs: SimpleLocalDefs, fields: Chain[SootField]) : Unit = {
-    val left = assignStmt.stmt.getLeftOp
-    val right = assignStmt.stmt.getRightOp
-
-    fields.forEach(field => {
-      val stmtNode = createNode(method, assignStmt.stmt)
-      val fieldNode = svg.createNodeField(entryMethod, field, analyze)
-
-      //If it is a field definition
-      if (left.toString().contains(field.toString)){
-        updateGraph(stmtNode, fieldNode)
-      }
-
-      //If it is a usage of a field
-      if (right.toString().contains(field.toString)){
-        updateGraph(fieldNode,stmtNode)
-      }
-
-      //If "right" is merely an auxiliary for an assignment using a "stack," it contains a "this" on the right side and the declaration of the field
-      if (right.toString().replace("this.", "").equals(field.toString)){
-        updateGraph(stmtNode, fieldNode)
       }
     })
 
@@ -290,9 +260,11 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       case (p: Local, q: Local) => copyRule(assignStmt.stmt, q, method, defs)
       case (p: Local, _) => copyRuleInvolvingExpressions(assignStmt.stmt, method, defs)
       case (p: InstanceFieldRef, _: Local) => storeRule(assignStmt.stmt, p, method, defs)
+      case (p: InstanceFieldRef, _) => storeRuleField(assignStmt.stmt, p, method, defs)
       case (p: JArrayRef, _) => storeArrayRule(assignStmt)
       case _ =>
     }
+
   }
 
   def traverse(stmt: InvokeStmt, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
@@ -446,6 +418,10 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         allocationNodes = findFieldStores(base.asInstanceOf[Local], ref.getField)
       }
 
+      for(node <- findFieldStores(ref.getField)) {
+        allocationNodes += node
+      }
+
       allocationNodes.foreach(source => {
         val target = createNode(method, stmt)
         updateGraph(source, target)
@@ -520,6 +496,22 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         //        }
       }
     }
+  }
+
+  /*
+   * This rule deals with statements in the form:
+   *
+   * (*) p.f = _
+   */
+  private def storeRuleField(targetStmt: jimple.AssignStmt, fieldRef: InstanceFieldRef, method: SootMethod, defs: SimpleLocalDefs) = {
+    val allocationNodes = findFieldStores(fieldRef.getField)
+
+    val target = createNode(method, targetStmt)
+    allocationNodes.foreach(source => {
+      updateGraph(source, target)
+      svg.getAdjacentNodes(source).get.foreach(s => updateGraph(s, target))
+    })
+
   }
 
   def storeArrayRule(assignStmt: AssignStmt) {
@@ -746,6 +738,20 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
             }
           }
         }
+      }
+    }
+    return res
+  }
+
+
+  def findFieldStores(field: SootField) : ListBuffer[GraphNode] = {
+    val res: ListBuffer[GraphNode] = new ListBuffer[GraphNode]()
+    allocationSites.foreach { case (stmt, node) =>
+      stmt match {
+        case _: soot.SootField =>
+          if (field.equals(stmt)) {
+            res += node
+          }
       }
     }
     return res
