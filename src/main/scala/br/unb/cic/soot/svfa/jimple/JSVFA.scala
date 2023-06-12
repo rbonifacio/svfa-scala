@@ -14,8 +14,7 @@ import soot.jimple.spark.pag.{AllocNode, PAG}
 import soot.jimple.spark.sets.{DoublePointsToSet, HybridPointsToSet, P2SetVisitor}
 import soot.toolkits.graph.ExceptionalUnitGraph
 import soot.toolkits.scalar.SimpleLocalDefs
-import soot.util.Chain
-import soot.{ArrayType, EntryPoints, Local, Scene, SceneTransformer, SootField, SootMethod, Transform, Value, jimple}
+import soot.{ArrayType, Local, Scene, SceneTransformer, SootField, SootMethod, Transform, Value, jimple}
 
 import scala.collection.mutable.ListBuffer
 
@@ -199,9 +198,9 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         })
 
         val sootClass = Scene.v().getSootClass(m.getDeclaringClass.getName)
-        sootClass.getFields.forEach(field => {
+        sootClass.getFields.forEach { field: SootField =>
           allocationSites += (field -> svg.createNodeField(m, field, analyze))
-        })
+        }
 
       }
     }
@@ -744,17 +743,18 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
   }
 
 
-  def findFieldStores(field: SootField) : ListBuffer[GraphNode] = {
+  def findFieldStores(field: SootField): ListBuffer[GraphNode] = {
     val res: ListBuffer[GraphNode] = new ListBuffer[GraphNode]()
-    allocationSites.foreach { case (stmt, node) =>
-      stmt match {
-        case _: soot.SootField =>
-          if (field.equals(stmt)) {
+    allocationSites.foreach { case (fieldStmt, node) =>
+      fieldStmt match {
+        case sootField: soot.SootField =>
+          if (field.equals(sootField)) {
             res += node
           }
+        case _ =>
       }
     }
-    return res
+    res
   }
 
   //  /*

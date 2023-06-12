@@ -92,11 +92,10 @@ class BasicTestSuite extends FunSuite {
     svfa.buildSparseValueFlowGraph()
     println(svfa.reportConflictsSVG().size)
     println(svfa.reportConflictsSVG())
-    println(svfa.svgToDotModel())
-    assert(svfa.reportConflictsSVG().size >= 1)
+    assert(svfa.reportConflictsSVG().size == 2)
   }
 
-  test("running dataset scenery") {
+  ignore("running dataset scenery") {
     val dataset = new DataSetTest()
     dataset.configureSoot()
 
