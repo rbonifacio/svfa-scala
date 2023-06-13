@@ -528,9 +528,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
 
     val local = retStmt.asInstanceOf[ReturnStmt].getOp.asInstanceOf[Local]
     calleeDefs.getDefsOfAt(local, retStmt).forEach(sourceStmt => {
-
-      val pointsToStatement = pointsToAnalysis.reachingObjects(local)
-
       val source = createNode(callee, sourceStmt)
       val csCloseLabel = createCSCloseLabel(caller, callStmt, callee)
       svg.addEdge(source, target, csCloseLabel)
