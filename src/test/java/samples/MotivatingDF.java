@@ -12,7 +12,7 @@ public class MotivatingDF {
     }
 
     private void normalizeWhiteSpace(){
-        text.replace("  ", " ");
+        text.replace("  ", "");
     }
 
     private void removeComments(){

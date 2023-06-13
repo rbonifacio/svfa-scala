@@ -195,14 +195,15 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
             }
           }
         })
-
-        val sootClass = Scene.v().getSootClass(m.getDeclaringClass.getName)
-        sootClass.getFields.forEach { field: SootField =>
-          allocationSites += (field -> svg.createNodeField(m, field, analyze))
-        }
-
       }
     }
+
+    val method = Scene.v().getEntryPoints.get(0)
+    val sootClass = Scene.v().getSootClass(method.getDeclaringClass.getName)
+    sootClass.getFields.forEach { field: SootField =>
+      allocationSites += (field -> svg.createNodeField(method, field, analyze))
+    }
+
   }
 
   class Transformer extends SceneTransformer {
@@ -257,7 +258,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       case (p: Local, q: Local) => copyRule(assignStmt.stmt, q, method, defs)
       case (p: Local, _) => copyRuleInvolvingExpressions(assignStmt.stmt, method, defs)
       case (p: InstanceFieldRef, _: Local) => storeRule(assignStmt.stmt, p, method, defs)
-      case (p: InstanceFieldRef, _) => storeRuleField(assignStmt.stmt, p, method, defs)
+      case (p: InstanceFieldRef, q: Any) => storeRuleField(assignStmt.stmt, p, q, method)
       case (p: JArrayRef, _) => storeArrayRule(assignStmt)
       case _ =>
     }
@@ -415,6 +416,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         allocationNodes = findFieldStores(base.asInstanceOf[Local], ref.getField)
       }
 
+      //find all allocationSites for field declarations and add them to allocationNodes
       for(node <- findFieldStores(ref.getField)) {
         allocationNodes += node
       }
@@ -467,6 +469,9 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
    */
   private def storeRule(targetStmt: jimple.AssignStmt, fieldRef: InstanceFieldRef, method: SootMethod, defs: SimpleLocalDefs) = {
     val local = targetStmt.getRightOp.asInstanceOf[Local]
+
+    storeRuleField(targetStmt, fieldRef, null, method)
+
     if (fieldRef.getBase.isInstanceOf[Local]) {
       val base = fieldRef.getBase.asInstanceOf[Local]
       if (fieldRef.getField.getDeclaringClass.getName == "java.lang.String" && fieldRef.getField.getName == "value") {
@@ -479,6 +484,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         })
       }
       else {
+
         //        val allocationNodes = findAllocationSites(base)
 
         //        val allocationNodes = findAllocationSites(base, true, fieldRef.getField)
@@ -500,15 +506,14 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
    *
    * (*) p.f = _
    */
-  private def storeRuleField(targetStmt: jimple.AssignStmt, fieldRef: InstanceFieldRef, method: SootMethod, defs: SimpleLocalDefs) = {
+  private def storeRuleField(targetStmt: jimple.AssignStmt, fieldRef: InstanceFieldRef, q: Any, method: SootMethod) = {
     val allocationNodes = findFieldStores(fieldRef.getField)
 
-    val target = createNode(method, targetStmt)
-    allocationNodes.foreach(source => {
+    val source = createNode(method, targetStmt)
+    allocationNodes.foreach(target => {
       updateGraph(source, target)
       svg.getAdjacentNodes(source).get.foreach(s => updateGraph(s, target))
     })
-
   }
 
   def storeArrayRule(assignStmt: AssignStmt) {
