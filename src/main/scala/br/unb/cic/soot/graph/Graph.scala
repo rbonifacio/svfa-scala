@@ -27,6 +27,7 @@ trait GraphNode {
   def unit(): soot.Unit
   def method(): soot.SootMethod
   def show(): String
+  def line(): Int
 }
 
 trait LambdaNode extends scala.AnyRef {
@@ -51,7 +52,7 @@ case class Statement(className: String, method: String, stmt: String, line: Int,
 case class StatementNode(value: Statement, nodeType: NodeType) extends GraphNode {
   type T = Statement
 
-    override def show(): String = "(" ++ value.method + ": " + value.stmt + " - " + value.line + " <" + nodeType.toString + ">)"
+  override def show(): String = "(" ++ value.method + ": " + value.stmt + " - " + value.line + " <" + nodeType.toString + ">)"
 //  override def show(): String = value.stmt
 
   override def toString: String =
@@ -75,6 +76,8 @@ case class StatementNode(value: Statement, nodeType: NodeType) extends GraphNode
   override def unit(): soot.Unit = value.sootUnit
 
   override def method(): SootMethod = value.sootMethod
+
+  override def line(): Int = value.line
 }
 
 /*
@@ -468,7 +471,10 @@ class Graph() {
       sourceNodes.foreach(source => {
         sinkNodes.foreach(sink => {
           val paths = findPath(source, sink)
-          conflicts = conflicts ++ paths
+          val pathsHaveSameSourceAndSinkRootTraversedLine: Boolean = conflicts.exists(c => paths.exists(p => c.head.line() == p.head.line() && c.last.line() == p.last.line()))
+          if (!pathsHaveSameSourceAndSinkRootTraversedLine){
+            conflicts = conflicts ++ paths
+          }
         })
       })
       conflicts.filter(p => p.nonEmpty).toSet
