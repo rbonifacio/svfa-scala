@@ -7,7 +7,7 @@ import br.unb.cic.soot.svfa.jimple.dsl.{DSL, LanguageParser}
 import br.unb.cic.soot.svfa.{SVFA, SourceSinkDef}
 import com.typesafe.scalalogging.LazyLogging
 import soot.jimple._
-import soot.jimple.internal.{JArrayRef, JAssignStmt}
+import soot.jimple.internal.{JArrayRef, JAssignStmt, JInstanceFieldRef}
 import soot.jimple.spark.ondemand.DemandCSPointsTo
 import soot.jimple.spark.pag
 import soot.jimple.spark.pag.{AllocNode, PAG}
@@ -198,14 +198,51 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       }
     }
 
-    val method = Scene.v().getEntryPoints.get(0)
-    val sootClass = Scene.v().getSootClass(method.getDeclaringClass.getName)
-    sootClass.getFields.forEach { field: SootField =>
-      allocationSites += (field -> svg.createNodeField(method, field, analyze))
-    }
+//    val method = Scene.v().getEntryPoints.get(0)
+//    val sootClass = Scene.v().getSootClass(method.getDeclaringClass.getName)
+//    sootClass.getFields.forEach { field: SootField =>
+//      allocationSites += (field -> svg.createNodeField(method, field, analyze))
+//    }
 
   }
 
+  def newAllocationSites(m: SootMethod): Unit = {
+    if (m.hasActiveBody) {
+      val body = m.getActiveBody
+      body.getUnits.forEach(unit => {
+        if (unit.isInstanceOf[soot.jimple.AssignStmt]) {
+          val right = unit.asInstanceOf[soot.jimple.AssignStmt].getRightOp
+          if (right.isInstanceOf[NewExpr] || right.isInstanceOf[NewArrayExpr] || right.isInstanceOf[StringConstant]) {
+            allocationSites += (right -> createNode(m, unit))
+          }
+          val left = unit.asInstanceOf[soot.jimple.AssignStmt].getLeftOp
+          if (isAllocationSite(right) && left.isInstanceOf[JInstanceFieldRef]){
+            allocationSites += (left -> svg.createNode(m, unit, analyze))
+          }
+        }
+        else if(unit.isInstanceOf[soot.jimple.ReturnStmt]) {
+          val exp = unit.asInstanceOf[soot.jimple.ReturnStmt].getOp
+          if(exp.isInstanceOf[StringConstant]) {
+            allocationSites += (exp -> createNode(m, unit))
+          }
+        }
+      })
+    }
+  }
+
+  def isAllocationSite(right: Value) : Boolean  = {
+    var res = false
+    allocationSites.foreach { case (alloc, node) =>
+      alloc match {
+        case alloc: soot.Value =>
+          if (right.equals(node.value.sootUnit.asInstanceOf[soot.jimple.AssignStmt].getLeftOp)) {
+            res = true
+          }
+        case _ =>
+      }
+    }
+    res
+  }
   class Transformer extends SceneTransformer {
     override def internalTransform(phaseName: String, options: util.Map[String, String]): Unit = {
       pointsToAnalysis = Scene.v().getPointsToAnalysis
@@ -228,6 +265,9 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     if (printDepthVisitedMethods){
       println(method.toString+", deep: "+ methodsVisited.size)
     }
+
+    //add new allocation sites
+    newAllocationSites(method)
 
     traversedMethods.add(method)
     val body  = method.retrieveActiveBody()
@@ -415,10 +455,14 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         allocationNodes = findFieldStores(base.asInstanceOf[Local], ref.getField)
       }
 
-      //find all allocationSites for field declarations and add them to allocationNodes
-      for(node <- findFieldStores(ref.getField)) {
-        allocationNodes += node
+      if (allocationNodes.isEmpty) {
+        allocationNodes = findFieldStores(ref.getField)
       }
+
+      //find all allocationSites for field declarations and add them to allocationNodes
+//      for(node <- findFieldStores(ref.getField)) {
+//        allocationNodes += node
+//      }
 
       allocationNodes.foreach(source => {
         val target = createNode(method, stmt)
@@ -498,7 +542,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       }
     }
 
-    storeRuleField(targetStmt, fieldRef, method)
+//    storeRuleField(targetStmt, fieldRef, method)
 
   }
 
@@ -748,8 +792,8 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     val res: ListBuffer[GraphNode] = new ListBuffer[GraphNode]()
     allocationSites.foreach { case (fieldStmt, node) =>
       fieldStmt match {
-        case sootField: soot.SootField =>
-          if (field.equals(sootField)) {
+        case sootField: JInstanceFieldRef =>
+          if (field.getSignature.equals(sootField.getFieldRef.getSignature)) {
             res += node
           }
         case _ =>
