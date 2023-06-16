@@ -179,23 +179,9 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
 
     while(listener.hasNext) {
       val m = listener.next().method()
-      if (m.hasActiveBody) {
-        val body = m.getActiveBody
-        body.getUnits.forEach(unit => {
-          if (unit.isInstanceOf[soot.jimple.AssignStmt]) {
-            val right = unit.asInstanceOf[soot.jimple.AssignStmt].getRightOp
-            if (right.isInstanceOf[NewExpr] || right.isInstanceOf[NewArrayExpr] || right.isInstanceOf[StringConstant]) {
-              allocationSites += (right -> createNode(m, unit))
-            }
-          }
-          else if(unit.isInstanceOf[soot.jimple.ReturnStmt]) {
-            val exp = unit.asInstanceOf[soot.jimple.ReturnStmt].getOp
-            if(exp.isInstanceOf[StringConstant]) {
-              allocationSites += (exp -> createNode(m, unit))
-            }
-          }
-        })
-      }
+
+      updateAllocationSites(m)
+
     }
 
 //    val method = Scene.v().getEntryPoints.get(0)
@@ -206,7 +192,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
 
   }
 
-  def newAllocationSites(m: SootMethod): Unit = {
+  def updateAllocationSites(m: SootMethod): Unit = {
     if (m.hasActiveBody) {
       val body = m.getActiveBody
       body.getUnits.forEach(unit => {
@@ -214,10 +200,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
           val right = unit.asInstanceOf[soot.jimple.AssignStmt].getRightOp
           if (right.isInstanceOf[NewExpr] || right.isInstanceOf[NewArrayExpr] || right.isInstanceOf[StringConstant]) {
             allocationSites += (right -> createNode(m, unit))
-          }
-          val left = unit.asInstanceOf[soot.jimple.AssignStmt].getLeftOp
-          if (isAllocationSite(right) && left.isInstanceOf[JInstanceFieldRef]){
-            allocationSites += (left -> svg.createNode(m, unit, analyze))
           }
         }
         else if(unit.isInstanceOf[soot.jimple.ReturnStmt]) {
@@ -235,14 +217,53 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     allocationSites.foreach { case (alloc, node) =>
       alloc match {
         case alloc: soot.Value =>
-          if (right.equals(node.value.sootUnit.asInstanceOf[soot.jimple.AssignStmt].getLeftOp)) {
-            res = true
+          try{
+            if (node != null && node.value.sootUnit.isInstanceOf[soot.jimple.AssignStmt]){
+              if (right.equals(node.value.sootUnit.asInstanceOf[soot.jimple.AssignStmt].getLeftOp)) {
+                res = true
+              }
+              right.getUseBoxes.forEach(value =>{
+                if (value.getValue.equals(node.value.sootUnit.asInstanceOf[soot.jimple.AssignStmt].getLeftOp)) {
+                  res = true
+                }
+              })
+            }
+          }catch {
+            case e: Exception=>
+              println("An error occurred in node from allocationSites: "+e)
           }
         case _ =>
       }
     }
     res
   }
+
+  def findAllocationSite(right: Value) : ListBuffer[GraphNode] =  {
+    val res: ListBuffer[GraphNode] = new ListBuffer[GraphNode]()
+    allocationSites.foreach { case (alloc, node) =>
+      alloc match {
+        case alloc: soot.Value =>
+          try{
+            if (node != null && node.value.sootUnit.isInstanceOf[soot.jimple.AssignStmt]){
+              if (right.equals(node.value.sootUnit.asInstanceOf[soot.jimple.AssignStmt].getLeftOp)) {
+                res += node
+              }
+              right.getUseBoxes.forEach(value =>{
+                if (value.getValue.equals(node.value.sootUnit.asInstanceOf[soot.jimple.AssignStmt].getLeftOp)) {
+                  res += node
+                }
+              })
+            }
+          }catch {
+            case e: Exception=>
+              println("An error occurred in node from allocationSites: "+e)
+          }
+        case _ =>
+      }
+    }
+    res
+  }
+
   class Transformer extends SceneTransformer {
     override def internalTransform(phaseName: String, options: util.Map[String, String]): Unit = {
       pointsToAnalysis = Scene.v().getPointsToAnalysis
@@ -267,7 +288,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     }
 
     //add new allocation sites
-    newAllocationSites(method)
+    updateAllocationSites(method)
 
     traversedMethods.add(method)
     val body  = method.retrieveActiveBody()
@@ -538,6 +559,33 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
           })
           //          })
           //        }
+
+          val right = targetStmt.asInstanceOf[soot.jimple.AssignStmt].getRightOp
+          val left = targetStmt.asInstanceOf[soot.jimple.AssignStmt].getLeftOp
+
+          //If right is in allocationSites (already had a new), add left as well (propagating the new)
+          if (isAllocationSite(right)){
+            allocationSites += (left -> svg.createNode(method, targetStmt, analyze))
+          }
+
+
+          if (right.isInstanceOf[Local]) {
+            val source = createNode(method, targetStmt)
+            var allocationNodes = findAllocationSites(right.asInstanceOf[Local]) ++ findAllocationSite(right.asInstanceOf[Local])
+
+            allocationNodes.foreach(targetNode => {
+              updateGraph(source, targetNode)
+            })
+
+          }
+
+
+//          If right is in the abstraction, there was propagation. If left is a field, propagate it to left as well.
+//          Therefore, add left.
+//          if (isAllocationSite(right) && left.isInstanceOf[JInstanceFieldRef]){
+//            allocationSites += (left -> svg.createNode(m, unit, analyze))
+//            allocationSites += (left -> svg.createNodeField(m, left.asInstanceOf[JInstanceFieldRef].getField, analyze))
+//          }
         }
       }
     }
