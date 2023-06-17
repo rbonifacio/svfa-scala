@@ -195,14 +195,15 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
             }
           }
         })
+
+        val sootClass = Scene.v().getSootClass(m.getDeclaringClass.getName)
+        sootClass.getFields.forEach { field: SootField =>
+          allocationSites += (field -> svg.createNodeField(m, field, analyze))
+        }
       }
     }
 
-    val method = Scene.v().getEntryPoints.get(0)
-    val sootClass = Scene.v().getSootClass(method.getDeclaringClass.getName)
-    sootClass.getFields.forEach { field: SootField =>
-      allocationSites += (field -> svg.createNodeField(method, field, analyze))
-    }
+
 
   }
 
