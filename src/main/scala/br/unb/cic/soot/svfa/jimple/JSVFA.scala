@@ -203,7 +203,18 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       }
     }
 
-
+//    try{
+//      val method = Scene.v().getEntryPoints().get(0)
+//      if (method != null){
+//        val sootClass = Scene.v().getSootClass(method.getDeclaringClass.getName)
+//        sootClass.getFields.forEach { field: SootField =>
+//          allocationSites += (field -> svg.createNodeField(method, field, analyze))
+//        }
+//      }
+//    }catch {
+//      case e: Exception=>
+//        println("There isn't an entry point method: "+e)
+//    }
 
   }
 
