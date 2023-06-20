@@ -435,7 +435,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       allocationNodes.foreach(source => {
         val target = createNode(method, stmt)
         updateGraph(source, target)
-        svg.getAdjacentNodes(source).get.foreach(s => updateGraph(s, target))
       })
 
       // create an edge from the base defs to target
@@ -450,6 +449,12 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         })
       }
     }
+
+    //Add edge from stmt to declaration field
+//    if (stmt.isInstanceOf[soot.jimple.AssignStmt]){
+//      storeRuleField(stmt.asInstanceOf[soot.jimple.AssignStmt], ref, defs, method)
+//    }
+
   }
 
   protected def loadArrayRule(targetStmt: soot.Unit, ref: ArrayRef, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
@@ -510,7 +515,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       }
     }
 
-    storeRuleField(targetStmt, fieldRef, method)
+    storeRuleField(targetStmt, fieldRef, defs, method)
 
   }
 
@@ -519,14 +524,22 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
    *
    * (*) p.f = _
    */
-  private def storeRuleField(targetStmt: jimple.AssignStmt, fieldRef: InstanceFieldRef, method: SootMethod) = {
+  private def storeRuleField(targetStmt: jimple.AssignStmt, fieldRef: InstanceFieldRef, defs: SimpleLocalDefs, method: SootMethod) = {
     val allocationNodes = findFieldStores(fieldRef.getField)
 
     val source = createNode(method, targetStmt)
     allocationNodes.foreach(target => {
       updateGraph(source, target)
-      svg.getAdjacentNodes(source).get.foreach(s => updateGraph(s, target))
     })
+
+    if (fieldRef.getBase.isInstanceOf[Local]) {
+      val base = fieldRef.getBase.asInstanceOf[Local]
+      defs.getDefsOf(base).forEach(sourceStmt => {
+        val source = createNode(method, sourceStmt)
+        val targetN = createNode(method, targetStmt)
+        updateGraph(source, targetN)
+      })
+    }
   }
 
   def storeArrayRule(assignStmt: AssignStmt) {
