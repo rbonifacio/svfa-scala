@@ -7,7 +7,7 @@ import br.unb.cic.soot.svfa.jimple.dsl.{DSL, LanguageParser}
 import br.unb.cic.soot.svfa.{SVFA, SourceSinkDef}
 import com.typesafe.scalalogging.LazyLogging
 import soot.jimple._
-import soot.jimple.internal.{JArrayRef, JAssignStmt}
+import soot.jimple.internal.{JArrayRef, JAssignStmt, JInstanceFieldRef}
 import soot.jimple.spark.ondemand.DemandCSPointsTo
 import soot.jimple.spark.pag
 import soot.jimple.spark.pag.{AllocNode, PAG}
@@ -181,25 +181,11 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       val m = listener.next().method()
       if (m.hasActiveBody) {
         val body = m.getActiveBody
-        body.getUnits.forEach(unit => {
-          if (unit.isInstanceOf[soot.jimple.AssignStmt]) {
-            val right = unit.asInstanceOf[soot.jimple.AssignStmt].getRightOp
-            if (right.isInstanceOf[NewExpr] || right.isInstanceOf[NewArrayExpr] || right.isInstanceOf[StringConstant]) {
-              allocationSites += (right -> createNode(m, unit))
-            }
-          }
-          else if(unit.isInstanceOf[soot.jimple.ReturnStmt]) {
-            val exp = unit.asInstanceOf[soot.jimple.ReturnStmt].getOp
-            if(exp.isInstanceOf[StringConstant]) {
-              allocationSites += (exp -> createNode(m, unit))
-            }
-          }
-        })
-
-        val sootClass = Scene.v().getSootClass(m.getDeclaringClass.getName)
-        sootClass.getFields.forEach { field: SootField =>
-          allocationSites += (field -> svg.createNodeField(m, field, analyze))
-        }
+        updateAllocationSites(body, m)
+      }
+      val sootClass = Scene.v().getSootClass(m.getDeclaringClass.getName)
+      sootClass.getFields.forEach { field: SootField =>
+        allocationSites += (field -> svg.createNodeField(m, field, analyze))
       }
     }
 
@@ -215,6 +201,36 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
 //      case e: Exception=>
 //        println("There isn't an entry point method: "+e)
 //    }
+
+  }
+
+  def updateAllocationSites(body: soot.Body, m: SootMethod): Unit = {
+
+      body.getUnits.forEach(unit => {
+        if (unit.isInstanceOf[soot.jimple.AssignStmt]) {
+
+          val left = unit.asInstanceOf[soot.jimple.AssignStmt].getLeftOp
+
+          val right = unit.asInstanceOf[soot.jimple.AssignStmt].getRightOp
+
+          //Se o right é um field, cria um allocationSite com ele e o statement, simulando points-to
+//          if (right.isInstanceOf[JInstanceFieldRef]) {
+//            allocationSites += (left -> createNode(m, unit))
+//          }
+
+          if (left.isInstanceOf[JInstanceFieldRef]) {
+            allocationSites += (left.asInstanceOf[JInstanceFieldRef] -> createNode(m, unit))
+          }else{
+            allocationSites += (left -> createNode(m, unit))
+          }
+        }
+        else if(unit.isInstanceOf[soot.jimple.ReturnStmt]) {
+          val exp = unit.asInstanceOf[soot.jimple.ReturnStmt].getOp
+          if(exp.isInstanceOf[StringConstant]) {
+            allocationSites += (exp -> createNode(m, unit))
+          }
+        }
+      })
 
   }
 
@@ -310,6 +326,18 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       svg.addNode(source)
     }
 
+    callStmt.base.getUseBoxes.forEach(stmt => {
+      if(stmt.getValue.isInstanceOf[Local]) {
+        val local = stmt.getValue.asInstanceOf[Local]
+
+        defs.getDefsOfAt(local, callStmt.base).forEach(sourceStmt => {
+          val sourceNode = createNode(caller, sourceStmt)
+          val targetNode = createNode(caller, callStmt.base)
+          updateGraph(sourceNode, targetNode)
+        })
+      }
+    })
+
     for(r <- methodRules) {
       if(r.check(callee)) {
         r.apply(caller, callStmt.base.asInstanceOf[jimple.Stmt], defs)
@@ -323,6 +351,8 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     val body = callee.retrieveActiveBody()
     val g = new ExceptionalUnitGraph(body)
     val calleeDefs = new SimpleLocalDefs(g)
+
+    updateAllocationSites(body, callee)
 
     body.getUnits.forEach(s => {
       if(isThisInitStmt(exp, s)) {
@@ -513,9 +543,10 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
           //        }
         }
       }
+
     }
 
-    storeRuleField(targetStmt, fieldRef, defs, method)
+    storeRuleField(targetStmt, fieldRef, q, defs, method)
 
   }
 
@@ -524,11 +555,11 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
    *
    * (*) p.f = _
    */
-  private def storeRuleField(targetStmt: jimple.AssignStmt, fieldRef: InstanceFieldRef, defs: SimpleLocalDefs, method: SootMethod) = {
-    val allocationNodes = findFieldStores(fieldRef.getField)
+  private def storeRuleField(targetStmt: jimple.AssignStmt, fieldRef: InstanceFieldRef,  q: Any, defs: SimpleLocalDefs, method: SootMethod) = {
+    val allocationNodes = findFieldStores(q)
 
-    val source = createNode(method, targetStmt)
-    allocationNodes.foreach(target => {
+    val target = createNode(method, targetStmt)
+    allocationNodes.foreach(source => {
       updateGraph(source, target)
     })
 
@@ -769,12 +800,16 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
   }
 
 
-  def findFieldStores(field: SootField): ListBuffer[GraphNode] = {
+  def findFieldStores(field: Any): ListBuffer[GraphNode] = {
     val res: ListBuffer[GraphNode] = new ListBuffer[GraphNode]()
     allocationSites.foreach { case (fieldStmt, node) =>
       fieldStmt match {
         case sootField: soot.SootField =>
           if (field.equals(sootField)) {
+            res += node
+          }
+        case sootField: JInstanceFieldRef =>
+          if (field.equals(sootField.getField)) {
             res += node
           }
         case _ =>

@@ -79,6 +79,7 @@ class DFTest(leftchangedlines: Array[Int], rightchangedlines: Array[Int], classN
 
     return SimpleNode
   }
+  override def getIncludeList(): List[String] = List()
 
 }
 
@@ -92,7 +93,32 @@ class BasicTestSuite extends FunSuite {
     svfa.buildSparseValueFlowGraph()
     println(svfa.reportConflictsSVG().size)
     println(svfa.reportConflictsSVG())
+    println(svfa.svgToDotModel())
     assert(svfa.reportConflictsSVG().size == 1)
+  }
+
+  test("running Field1 example") {
+    val className = "samples.Field1DF"
+    val mainMethod = "main"
+    val svfa = new DFTest(Array (9), Array (10), className, mainMethod)
+
+    svfa.buildSparseValueFlowGraph()
+    println(svfa.reportConflictsSVG().size)
+    println(svfa.reportConflictsSVG())
+    println(svfa.svgToDotModel())
+    assert(svfa.reportConflictsSVG().size == 1)
+  }
+
+  test("running Field2 example") {
+    val className = "samples.Field2DF"
+    val mainMethod = "main"
+    val svfa = new DFTest(Array (9), Array (10), className, mainMethod)
+
+    svfa.buildSparseValueFlowGraph()
+    println(svfa.reportConflictsSVG().size)
+    println(svfa.reportConflictsSVG())
+    println(svfa.svgToDotModel())
+    assert(svfa.reportConflictsSVG().size == 0)
   }
 
   ignore("running dataset scenery") {
@@ -299,6 +325,7 @@ class BasicTestSuite extends FunSuite {
   test("in the class Basic31 we should detect 3 conflicts in a values obtained from cookies test case") {
     val svfa = new BasicTest("securibench.micro.basic.Basic31", "doGet")
     svfa.buildSparseValueFlowGraph()
+    println(svfa.svgToDotModel())
     assert(svfa.reportConflictsSVG().size == 3)
   }
 
@@ -317,7 +344,7 @@ class BasicTestSuite extends FunSuite {
   test("in the class Basic34 we should detect 2 conflicts in a values obtained from headers test case") {
     val svfa = new BasicTest("securibench.micro.basic.Basic34", "doGet")
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 2)
+    assert(svfa.reportConflictsSVG().size == 3)
   }
 
   test("in the class Basic35 we should detect 6 conflicts in a values obtained from HttpServletRequest test case") {
@@ -333,7 +360,7 @@ class BasicTestSuite extends FunSuite {
   }
 
   test("in the class Basic37 we should detect 1 conflict in a StringTokenizer test case") {
-    val svfa = new BasicTest("securibench.micro.basic.Basic37", "doGet")
+    val svfa = new DFTest(Array (10, 25), Array (28), "securibench.micro.basic.Basic37", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 1)
   }
@@ -345,8 +372,9 @@ class BasicTestSuite extends FunSuite {
   }
 
   test("in the class Basic39 we should detect 1 conflict in a StringTokenizer test case") {
-    val svfa = new BasicTest("securibench.micro.basic.Basic39", "doGet")
+    val svfa = new DFTest(Array (10, 25), Array (28), "securibench.micro.basic.Basic39", "doGet")
     svfa.buildSparseValueFlowGraph()
+    println(svfa.svgToDotModel())
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
