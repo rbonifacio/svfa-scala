@@ -27,6 +27,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
   var methodsVisited = new ListBuffer[SootMethod]()
   var numberVisitedMethods = 0
   var printDepthVisitedMethods: Boolean = false
+  var depthLimit = 5
   var methods = 0
   val traversedMethods = scala.collection.mutable.Set.empty[SootMethod]
   val allocationSites = scala.collection.mutable.HashMap.empty[Any, StatementNode]
@@ -211,13 +212,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
 
           val left = unit.asInstanceOf[soot.jimple.AssignStmt].getLeftOp
 
-          val right = unit.asInstanceOf[soot.jimple.AssignStmt].getRightOp
-
-          //Se o right é um field, cria um allocationSite com ele e o statement, simulando points-to
-//          if (right.isInstanceOf[JInstanceFieldRef]) {
-//            allocationSites += (left -> createNode(m, unit))
-//          }
-
           if (left.isInstanceOf[JInstanceFieldRef]) {
             allocationSites += (left.asInstanceOf[JInstanceFieldRef] -> createNode(m, unit))
           }else{
@@ -253,6 +247,9 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       return
     }
 
+    if (methodsVisited.size >= depthLimit){
+      return
+    }
     if (printDepthVisitedMethods){
       println(method.toString+", deep: "+ methodsVisited.size)
     }
@@ -866,6 +863,10 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
 
   def getNumberVisitedMethods(): Int = {
     return numberVisitedMethods
+  }
+
+  def setDepthLimit(depthLimit: Int) {
+    this.depthLimit = depthLimit
   }
 
 }

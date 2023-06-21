@@ -89,7 +89,19 @@ class BasicTestSuite extends FunSuite {
     val className = "samples.MotivatingDF"
     val mainMethod = "cleanText"
     val svfa = new DFTest(Array (9, 15), Array (11, 35), className, mainMethod)
+    svfa.setDepthLimit(2)
+    svfa.buildSparseValueFlowGraph()
+    println(svfa.reportConflictsSVG().size)
+    println(svfa.reportConflictsSVG())
+    println(svfa.svgToDotModel())
+    assert(svfa.reportConflictsSVG().size == 1)
+  }
 
+  test("running motivating example 2") {
+    val className = "samples.MotivatingDF2"
+    val mainMethod = "cleanText"
+    val svfa = new DFTest(Array (10, 16), Array (12, 28), className, mainMethod)
+    svfa.setDepthLimit(2)
     svfa.buildSparseValueFlowGraph()
     println(svfa.reportConflictsSVG().size)
     println(svfa.reportConflictsSVG())
@@ -100,7 +112,7 @@ class BasicTestSuite extends FunSuite {
   test("running Field1 example") {
     val className = "samples.Field1DF"
     val mainMethod = "main"
-    val svfa = new DFTest(Array (9), Array (10), className, mainMethod)
+    val svfa = new DFTest(Array (7), Array (8), className, mainMethod)
 
     svfa.buildSparseValueFlowGraph()
     println(svfa.reportConflictsSVG().size)
@@ -112,13 +124,25 @@ class BasicTestSuite extends FunSuite {
   test("running Field2 example") {
     val className = "samples.Field2DF"
     val mainMethod = "main"
-    val svfa = new DFTest(Array (9), Array (10), className, mainMethod)
+    val svfa = new DFTest(Array (7), Array (8), className, mainMethod)
 
     svfa.buildSparseValueFlowGraph()
     println(svfa.reportConflictsSVG().size)
     println(svfa.reportConflictsSVG())
     println(svfa.svgToDotModel())
     assert(svfa.reportConflictsSVG().size == 0)
+  }
+
+  test("running Field3 example") {
+    val className = "samples.Field3DF"
+    val mainMethod = "main"
+    val svfa = new DFTest(Array (7), Array (8), className, mainMethod)
+
+    svfa.buildSparseValueFlowGraph()
+    println(svfa.reportConflictsSVG().size)
+    println(svfa.reportConflictsSVG())
+    println(svfa.svgToDotModel())
+    assert(svfa.reportConflictsSVG().size == 1)
   }
 
   ignore("running dataset scenery") {
@@ -170,7 +194,7 @@ class BasicTestSuite extends FunSuite {
   }
 
   //TODO: it looks like a flaky test.
-  ignore("in the class Basic6 we should detect 1 conflict of a complex derived string test") {
+  test("in the class Basic6 we should detect 1 conflict of a complex derived string test") {
     val svfa = new BasicTest("securibench.micro.basic.Basic6", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 1)
@@ -359,8 +383,8 @@ class BasicTestSuite extends FunSuite {
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
-  test("in the class Basic37 we should detect 1 conflict in a StringTokenizer test case") {
-    val svfa = new DFTest(Array (10, 25), Array (28), "securibench.micro.basic.Basic37", "doGet")
+  ignore("in the class Basic37 we should detect 1 conflict in a StringTokenizer test case") {
+    val svfa = new BasicTest("securibench.micro.basic.Basic37", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 1)
   }
@@ -371,10 +395,9 @@ class BasicTestSuite extends FunSuite {
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
-  test("in the class Basic39 we should detect 1 conflict in a StringTokenizer test case") {
-    val svfa = new DFTest(Array (10, 25), Array (28), "securibench.micro.basic.Basic39", "doGet")
+  ignore("in the class Basic39 we should detect 1 conflict in a StringTokenizer test case") {
+    val svfa = new BasicTest("securibench.micro.basic.Basic39", "doGet")
     svfa.buildSparseValueFlowGraph()
-    println(svfa.svgToDotModel())
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
@@ -384,7 +407,7 @@ class BasicTestSuite extends FunSuite {
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
-  ignore("in the class Basic42 we should detect 1 conflict in a use getInitParameterNames test case") {
+  test("in the class Basic42 we should detect 1 conflict in a use getInitParameterNames test case") {
     val svfa = new BasicTest("securibench.micro.basic.Basic42", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 1)

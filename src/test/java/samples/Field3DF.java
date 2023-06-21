@@ -1,6 +1,6 @@
 package samples;
 
-public class Field1DF {
+public class Field3DF {
     private Point p;
 
     public void main() {
