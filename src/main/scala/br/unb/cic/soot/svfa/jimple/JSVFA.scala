@@ -28,6 +28,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
   var numberVisitedMethods = 0
   var printDepthVisitedMethods: Boolean = false
   var methods = 0
+  var depthLimit = 5
   val traversedMethods = scala.collection.mutable.Set.empty[SootMethod]
   val allocationSites = scala.collection.mutable.HashMap.empty[Any, StatementNode]
   val arrayStores = scala.collection.mutable.HashMap.empty[Local, List[soot.Unit]]
@@ -281,6 +282,10 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       return
     }
 
+    if (methodsVisited.size >= depthLimit){
+      return
+    }
+
     if (printDepthVisitedMethods){
       println(method.toString+", deep: "+ methodsVisited.size)
     }
@@ -316,7 +321,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       case (p: Local, q: InvokeExpr) => invokeRule(assignStmt, q, method, defs)
       case (p: Local, q: Local) => copyRule(assignStmt.stmt, q, method, defs)
       case (p: Local, _) => copyRuleInvolvingExpressions(assignStmt.stmt, method, defs)
-      case (p: InstanceFieldRef, q: Any) => storeRule(assignStmt.stmt, p, q, method, defs)
+      case (p: InstanceFieldRef, _: Local) => storeRule(assignStmt.stmt, p, method, defs)
       case (p: JArrayRef, _) => storeArrayRule(assignStmt)
       case _ =>
     }
@@ -537,80 +542,37 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
    *
    * (*) p.f = expression
    */
-  private def storeRule(targetStmt: jimple.AssignStmt, fieldRef: InstanceFieldRef, q: Any, method: SootMethod, defs: SimpleLocalDefs) = {
-    if (q.isInstanceOf[Local]){
-      val local = targetStmt.getRightOp.asInstanceOf[Local]
-      if (fieldRef.getBase.isInstanceOf[Local]) {
-        val base = fieldRef.getBase.asInstanceOf[Local]
-        if (fieldRef.getField.getDeclaringClass.getName == "java.lang.String" && fieldRef.getField.getName == "value") {
-          defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
-            val source = createNode(method, sourceStmt)
-            val allocationNodes = findAllocationSites(base)
-            allocationNodes.foreach(targetNode => {
-              updateGraph(source, targetNode)
-            })
+  private def storeRule(targetStmt: jimple.AssignStmt, fieldRef: InstanceFieldRef, method: SootMethod, defs: SimpleLocalDefs) = {
+    val local = targetStmt.getRightOp.asInstanceOf[Local]
+    if (fieldRef.getBase.isInstanceOf[Local]) {
+      val base = fieldRef.getBase.asInstanceOf[Local]
+      if (fieldRef.getField.getDeclaringClass.getName == "java.lang.String" && fieldRef.getField.getName == "value") {
+        defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
+          val source = createNode(method, sourceStmt)
+          val allocationNodes = findAllocationSites(base)
+          allocationNodes.foreach(targetNode => {
+            updateGraph(source, targetNode)
           })
-        }
-        else {
+        })
+      }
+      else {
 
-          //        val allocationNodes = findAllocationSites(base)
+        //        val allocationNodes = findAllocationSites(base)
 
-          //        val allocationNodes = findAllocationSites(base, true, fieldRef.getField)
-          //        if(!allocationNodes.isEmpty) {
-          //          allocationNodes.foreach(targetNode => {
-          defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
-            val source = createNode(method, sourceStmt)
-            val target = createNode(method, targetStmt)
-            updateGraph(source, target)
-          })
-          //          })
-          //        }
+        //        val allocationNodes = findAllocationSites(base, true, fieldRef.getField)
+        //        if(!allocationNodes.isEmpty) {
+        //          allocationNodes.foreach(targetNode => {
+        defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
+          val source = createNode(method, sourceStmt)
+          val target = createNode(method, targetStmt)
+          updateGraph(source, target)
+        })
+        //          })
+        //        }
 
-          val right = targetStmt.asInstanceOf[soot.jimple.AssignStmt].getRightOp
-          val left = targetStmt.asInstanceOf[soot.jimple.AssignStmt].getLeftOp
-
-          //If right is in allocationSites (already had a new), add left as well (propagating the new)
-          if (isAllocationSite(right)){
-            allocationSites += (left -> svg.createNode(method, targetStmt, analyze))
-          }
-
-
-          if (right.isInstanceOf[Local]) {
-            val source = createNode(method, targetStmt)
-            var allocationNodes = findAllocationSites(right.asInstanceOf[Local]) ++ findAllocationSite(right.asInstanceOf[Local])
-
-            allocationNodes.foreach(targetNode => {
-              updateGraph(source, targetNode)
-            })
-
-          }
-
-
-//          If right is in the abstraction, there was propagation. If left is a field, propagate it to left as well.
-//          Therefore, add left.
-//          if (isAllocationSite(right) && left.isInstanceOf[JInstanceFieldRef]){
-//            allocationSites += (left -> svg.createNode(m, unit, analyze))
-//            allocationSites += (left -> svg.createNodeField(m, left.asInstanceOf[JInstanceFieldRef].getField, analyze))
-//          }
-        }
       }
     }
 
-  }
-
-  /*
-   * This rule deals with statements in the form:
-   *
-   * (*) p.f = _
-   */
-  private def storeRuleField(targetStmt: jimple.AssignStmt, fieldRef: InstanceFieldRef, method: SootMethod) = {
-    val allocationNodes = findFieldStores(fieldRef.getField)
-
-    val source = createNode(method, targetStmt)
-    allocationNodes.foreach(target => {
-      updateGraph(source, target)
-      svg.getAdjacentNodes(source).get.foreach(s => updateGraph(s, target))
-    })
   }
 
   def storeArrayRule(assignStmt: AssignStmt) {
@@ -902,6 +864,10 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
 
   def getNumberVisitedMethods(): Int = {
     return numberVisitedMethods
+  }
+
+  def setDepthLimit(depthLimit: Int) {
+    this.depthLimit = depthLimit
   }
 
 }
