@@ -30,7 +30,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
   var methods = 0
   var depthLimit = 5
   val traversedMethods = scala.collection.mutable.Set.empty[SootMethod]
-  val allocationSites = scala.collection.mutable.HashMap.empty[Any, StatementNode]
+  val allocationSites = scala.collection.mutable.HashMap.empty[soot.Value, StatementNode]
   val arrayStores = scala.collection.mutable.HashMap.empty[Local, List[soot.Unit]]
   val languageParser = new LanguageParser(this)
 
@@ -209,32 +209,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         }
       })
     }
-  }
-
-  def isAllocationSite(right: Value) : Boolean  = {
-    var res = false
-    allocationSites.foreach { case (alloc, node) =>
-      alloc match {
-        case alloc: soot.Value =>
-          try{
-            if (node != null && node.value.sootUnit.isInstanceOf[soot.jimple.AssignStmt]){
-              if (right.equals(node.value.sootUnit.asInstanceOf[soot.jimple.AssignStmt].getLeftOp)) {
-                res = true
-              }
-              right.getUseBoxes.forEach(value =>{
-                if (value.getValue.equals(node.value.sootUnit.asInstanceOf[soot.jimple.AssignStmt].getLeftOp)) {
-                  res = true
-                }
-              })
-            }
-          }catch {
-            case e: Exception=>
-              println("An error occurred in node from allocationSites: "+e)
-          }
-        case _ =>
-      }
-    }
-    res
   }
 
   def findAllocationSite(right: Value) : ListBuffer[GraphNode] =  {
@@ -492,6 +466,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         allocationNodes = findFieldStores(base.asInstanceOf[Local], ref.getField)
       }
 
+      //Search the defined allocationSites fields
       if (allocationNodes.isEmpty) {
         allocationNodes = findFieldStores(ref.getField)
       }
@@ -801,7 +776,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     return res
   }
 
-
+//  Search the defined allocationSites fields
   def findFieldStores(field: SootField): ListBuffer[GraphNode] = {
     val res: ListBuffer[GraphNode] = new ListBuffer[GraphNode]()
     allocationSites.foreach { case (fieldStmt, node) =>
