@@ -134,6 +134,30 @@ class BasicTestSuite extends FunSuite {
     assert(svfa.reportConflictsSVG().size == 0)
   }
 
+  test("running AllocationFlowTest1 example") {
+    val className = "samples.AllocationFlowTest1"
+    val mainMethod = "main"
+    val svfa = new DFTest(Array (7), Array (10), className, mainMethod)
+
+    svfa.buildSparseValueFlowGraph()
+    println(svfa.reportConflictsSVG().size)
+    println(svfa.reportConflictsSVG())
+    println(svfa.svgToDotModel())
+    assert(svfa.reportConflictsSVG().size == 0)
+  }
+
+  test("running AllocationFlowTest2 example") {
+    val className = "samples.AllocationFlowTest2"
+    val mainMethod = "main"
+    val svfa = new DFTest(Array (7), Array (9), className, mainMethod)
+
+    svfa.buildSparseValueFlowGraph()
+    println(svfa.reportConflictsSVG().size)
+    println(svfa.reportConflictsSVG())
+    println(svfa.svgToDotModel())
+    assert(svfa.reportConflictsSVG().size == 1)
+  }
+
   ignore("running dataset scenery") {
     val dataset = new DataSetTest()
     dataset.configureSoot()
