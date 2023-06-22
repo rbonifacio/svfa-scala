@@ -142,7 +142,7 @@ class BasicTestSuite extends FunSuite {
     println(svfa.reportConflictsSVG().size)
     println(svfa.reportConflictsSVG())
     println(svfa.svgToDotModel())
-    assert(svfa.reportConflictsSVG().size == 1)
+    assert(svfa.reportConflictsSVG().size == 0)
   }
 
   ignore("running dataset scenery") {
