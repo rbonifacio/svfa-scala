@@ -331,7 +331,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       //       FieldSample test case, instead of two.
     }
 
-    if(analyze(callStmt.base) == SourceNode || analyze(callStmt.base) == SinkNode) {
+    if(analyze(callStmt.base) == SourceNode) {
       val source = createNode(caller, callStmt.base)
       svg.addNode(source)
     }
