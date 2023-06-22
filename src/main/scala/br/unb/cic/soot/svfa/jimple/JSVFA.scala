@@ -183,13 +183,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       updateAllocationSites(m)
 
     }
-
-//    val method = Scene.v().getEntryPoints.get(0)
-//    val sootClass = Scene.v().getSootClass(method.getDeclaringClass.getName)
-//    sootClass.getFields.forEach { field: SootField =>
-//      allocationSites += (field -> svg.createNodeField(method, field, analyze))
-//    }
-
   }
 
   def updateAllocationSites(m: SootMethod): Unit = {
@@ -201,6 +194,11 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
           if (right.isInstanceOf[NewExpr] || right.isInstanceOf[NewArrayExpr] || right.isInstanceOf[StringConstant]) {
             allocationSites += (right -> createNode(m, unit))
           }
+
+          //add in allocationSites when there is an assign statement
+          val left = unit.asInstanceOf[soot.jimple.AssignStmt].getLeftOp
+          allocationSites += (left -> createNode(m, unit))
+
         }
         else if(unit.isInstanceOf[soot.jimple.ReturnStmt]) {
           val exp = unit.asInstanceOf[soot.jimple.ReturnStmt].getOp
@@ -359,6 +357,19 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       svg.addNode(source)
     }
 
+    //Add edge from defs statements to invoke statement use
+    callStmt.base.getUseBoxes.forEach(stmt => {
+      if(stmt.getValue.isInstanceOf[Local]) {
+        val local = stmt.getValue.asInstanceOf[Local]
+
+        defs.getDefsOfAt(local, callStmt.base).forEach(sourceStmt => {
+          val sourceNode = createNode(caller, sourceStmt)
+          val targetNode = createNode(caller, callStmt.base)
+          updateGraph(sourceNode, targetNode)
+        })
+      }
+    })
+
     for(r <- methodRules) {
       if(r.check(callee)) {
         r.apply(caller, callStmt.base.asInstanceOf[jimple.Stmt], defs)
@@ -480,11 +491,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         allocationNodes = findFieldStores(ref.getField)
       }
 
-      //find all allocationSites for field declarations and add them to allocationNodes
-//      for(node <- findFieldStores(ref.getField)) {
-//        allocationNodes += node
-//      }
-
       allocationNodes.foreach(source => {
         val target = createNode(method, stmt)
         updateGraph(source, target)
@@ -589,8 +595,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         }
       }
     }
-
-//    storeRuleField(targetStmt, fieldRef, method)
 
   }
 

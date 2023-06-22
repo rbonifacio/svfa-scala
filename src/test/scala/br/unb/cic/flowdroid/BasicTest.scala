@@ -80,6 +80,9 @@ class DFTest(leftchangedlines: Array[Int], rightchangedlines: Array[Int], classN
     return SimpleNode
   }
 
+  override def getIncludeList(): List[String] = List(
+   )
+
 }
 
 class BasicTestSuite extends FunSuite {
