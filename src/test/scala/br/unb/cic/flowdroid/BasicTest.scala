@@ -91,7 +91,7 @@ class BasicTestSuite extends FunSuite {
     val className = "samples.MotivatingDF"
     val mainMethod = "cleanText"
     val svfa = new DFTest(Array (9, 15), Array (11, 35), className, mainMethod)
-
+    svfa.setEnableAllocationSiteDF(true)
     svfa.buildSparseValueFlowGraph()
     println(svfa.reportConflictsSVG().size)
     println(svfa.reportConflictsSVG())
@@ -102,7 +102,7 @@ class BasicTestSuite extends FunSuite {
     val className = "samples.Field1"
     val mainMethod = "main"
     val svfa = new DFTest(Array (7), Array (8), className, mainMethod)
-
+    svfa.setEnableAllocationSiteDF(true)
     svfa.buildSparseValueFlowGraph()
     println(svfa.reportConflictsSVG().size)
     println(svfa.reportConflictsSVG())
@@ -114,7 +114,7 @@ class BasicTestSuite extends FunSuite {
     val className = "samples.Field2"
     val mainMethod = "main"
     val svfa = new DFTest(Array (7), Array (8), className, mainMethod)
-
+    svfa.setEnableAllocationSiteDF(true)
     svfa.buildSparseValueFlowGraph()
     println(svfa.reportConflictsSVG().size)
     println(svfa.reportConflictsSVG())
@@ -126,7 +126,7 @@ class BasicTestSuite extends FunSuite {
     val className = "samples.Field3"
     val mainMethod = "main"
     val svfa = new DFTest(Array (7), Array (8), className, mainMethod)
-
+    svfa.setEnableAllocationSiteDF(true)
     svfa.buildSparseValueFlowGraph()
     println(svfa.reportConflictsSVG().size)
     println(svfa.reportConflictsSVG())
@@ -138,7 +138,7 @@ class BasicTestSuite extends FunSuite {
     val className = "samples.AllocationFlowTest1"
     val mainMethod = "main"
     val svfa = new DFTest(Array (7), Array (10), className, mainMethod)
-
+    svfa.setEnableAllocationSiteDF(true)
     svfa.buildSparseValueFlowGraph()
     println(svfa.reportConflictsSVG().size)
     println(svfa.reportConflictsSVG())
@@ -150,7 +150,7 @@ class BasicTestSuite extends FunSuite {
     val className = "samples.AllocationFlowTest2"
     val mainMethod = "main"
     val svfa = new DFTest(Array (7), Array (9), className, mainMethod)
-
+    svfa.setEnableAllocationSiteDF(true)
     svfa.buildSparseValueFlowGraph()
     println(svfa.reportConflictsSVG().size)
     println(svfa.reportConflictsSVG())
@@ -350,7 +350,7 @@ class BasicTestSuite extends FunSuite {
   test("in the class Basic29 we should detect 2 conflicts in a recursive data structures test case") {
     val svfa = new BasicTest("securibench.micro.basic.Basic29", "doGet")
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 3)
+    assert(svfa.reportConflictsSVG().size == 2)
   }
 
   test("in the class Basic30 we should detect 1 conflict in a field sensitivity test case") {
@@ -397,6 +397,7 @@ class BasicTestSuite extends FunSuite {
 
   test("in the class Basic37 we should detect 1 conflict in a StringTokenizer test case") {
     val svfa = new BasicTest("securibench.micro.basic.Basic37", "doGet")
+    svfa.setEnableAllocationSiteDF(true)
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 1)
   }
