@@ -180,23 +180,28 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
 
     while(listener.hasNext) {
       val m = listener.next().method()
-      if (m.hasActiveBody) {
-        val body = m.getActiveBody
-        body.getUnits.forEach(unit => {
-          if (unit.isInstanceOf[soot.jimple.AssignStmt]) {
-            val right = unit.asInstanceOf[soot.jimple.AssignStmt].getRightOp
-            if (right.isInstanceOf[NewExpr] || right.isInstanceOf[NewArrayExpr] || right.isInstanceOf[StringConstant]) {
-              allocationSites += (right -> createNode(m, unit))
-            }
+      updateAllocationSites(m)
+    }
+
+  }
+
+  def updateAllocationSites(m: SootMethod): Unit = {
+    if (m.hasActiveBody) {
+      val body = m.getActiveBody
+      body.getUnits.forEach(unit => {
+        if (unit.isInstanceOf[soot.jimple.AssignStmt]) {
+          val right = unit.asInstanceOf[soot.jimple.AssignStmt].getRightOp
+          if (right.isInstanceOf[NewExpr] || right.isInstanceOf[NewArrayExpr] || right.isInstanceOf[StringConstant]) {
+            allocationSites += (right -> createNode(m, unit))
           }
-          else if(unit.isInstanceOf[soot.jimple.ReturnStmt]) {
-            val exp = unit.asInstanceOf[soot.jimple.ReturnStmt].getOp
-            if(exp.isInstanceOf[StringConstant]) {
-              allocationSites += (exp -> createNode(m, unit))
-            }
+        }
+        else if(unit.isInstanceOf[soot.jimple.ReturnStmt]) {
+          val exp = unit.asInstanceOf[soot.jimple.ReturnStmt].getOp
+          if(exp.isInstanceOf[StringConstant]) {
+            allocationSites += (exp -> createNode(m, unit))
           }
-        })
-      }
+        }
+      })
     }
   }
 
@@ -217,6 +222,10 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     }
 
     traversedMethods.add(method)
+
+    //add new allocation sites
+    updateAllocationSites(method)
+
     val body  = method.retrieveActiveBody()
 
     val graph = new ExceptionalUnitGraph(body)
@@ -277,15 +286,28 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
 
     if(analyze(callStmt.base) == SinkNode) {
       defsToCallOfSinkMethod(callStmt, exp, caller, defs)
-      return  // TODO: we are not exploring the body of a sink method.
+//      return  // TODO: we are not exploring the body of a sink method.
       //       For this reason, we only find one path in the
       //       FieldSample test case, instead of two.
     }
 
-    if(analyze(callStmt.base) == SourceNode) {
+    if(analyze(callStmt.base) == SourceNode || analyze(callStmt.base) == SinkNode) {
       val source = createNode(caller, callStmt.base)
       svg.addNode(source)
     }
+
+
+    callStmt.base.getUseBoxes.forEach(stmt => {
+      if(stmt.getValue.isInstanceOf[Local]) {
+        val local = stmt.getValue.asInstanceOf[Local]
+
+        defs.getDefsOfAt(local, callStmt.base).forEach(sourceStmt => {
+          val sourceNode = createNode(caller, sourceStmt)
+          val targetNode = createNode(caller, callStmt.base)
+          updateGraph(sourceNode, targetNode)
+        })
+      }
+    })
 
     for(r <- methodRules) {
       if(r.check(callee)) {

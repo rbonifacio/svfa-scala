@@ -1,6 +1,7 @@
 *.class
 *.log
 *.scala~
+*.gradle/
 
 # sbt specific
 .cache/

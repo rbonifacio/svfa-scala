@@ -1,6 +1,7 @@
 package br.unb.cic.flowdroid
 
 import br.unb.cic.soot.graph.{NodeType, _}
+import br.unb.cic.soot.svfa.jimple.{FieldSensitive, Interprocedural, PropagateTaint}
 import org.scalatest.FunSuite
 import soot.jimple.{AssignStmt, InvokeExpr, InvokeStmt}
 
@@ -36,7 +37,67 @@ class BasicTest(var className: String = "", var mainMethod: String = "") extends
   }
 }
 
+class DataSetTest(var className: String = "", var mainMethod: String = "") extends FlowdroidSpec  with Interprocedural with FieldSensitive with PropagateTaint {
+  def getClassName(): String = "com.metamx.druid.loading.S3SegmentPusher"
+  def getMainMethod(): String = "push"
+
+  override def applicationClassPath(): List[String] = List("/home/galileu/mergedataset/druid/05168808c278c080c59c19e858d9471b316cd1f5/original-without-dependencies/merge/druid-services-0.2.8-SNAPSHOT-selfcontained.jar")
+
+  override def getIncludeList(): List[String] = List()
+
+  override def runInFullSparsenessMode() = false
+
+  override def analyze(unit: soot.Unit): NodeType = {
+    if (unit.getJavaSourceStartLineNumber == 66 || unit.getJavaSourceStartLineNumber == 118 ||
+      unit.getJavaSourceStartLineNumber == 139 || unit.getJavaSourceStartLineNumber == 110) {
+      return SinkNode
+    }
+    if (unit.getJavaSourceStartLineNumber == 105 || unit.getJavaSourceStartLineNumber == 125) {
+      return SourceNode
+    }
+    return SimpleNode
+  }
+}
+
+class DFTest(leftchangedlines: Array[Int], rightchangedlines: Array[Int], className: String, mainMethod: String) extends FlowdroidSpec  with Interprocedural with FieldSensitive with PropagateTaint{
+  override def getClassName(): String = className
+  override def getMainMethod(): String = mainMethod
+
+  def this(){
+    this(Array.empty[Int], Array.empty[Int], "", "")
+  }
+
+  override def analyze(unit: soot.Unit): NodeType = {
+
+    if (!leftchangedlines.isEmpty && !rightchangedlines.isEmpty){
+      if (leftchangedlines.contains(unit.getJavaSourceStartLineNumber)){
+        return SourceNode
+      } else if (rightchangedlines.contains(unit.getJavaSourceStartLineNumber)){
+        return SinkNode
+      }
+    }
+
+    return SimpleNode
+  }
+
+  override def getIncludeList(): List[String] = List(
+  )
+
+}
+
 class BasicTestSuite extends FunSuite {
+
+  test("running motivating example") {
+    val className = "samples.MotivatingDF"
+    val mainMethod = "cleanText"
+    val svfa = new DFTest(Array (7, 13), Array (9, 21), className, mainMethod)
+    svfa.buildSparseValueFlowGraph()
+    println(svfa.reportConflictsSVG().size)
+    println(svfa.reportConflictsSVG())
+    println(svfa.svgToDotModel())
+    assert(svfa.reportConflictsSVG().size == 1)
+  }
+
   test("in the class Basic2 we should detect 1 conflict of a simple XSS test case") {
     val svfa = new BasicTest("securibench.micro.basic.Basic0", "doGet")
     svfa.buildSparseValueFlowGraph()
