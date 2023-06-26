@@ -34,7 +34,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
   val assignStatements = scala.collection.mutable.HashMap.empty[soot.Value, StatementNode]
   val arrayStores = scala.collection.mutable.HashMap.empty[Local, List[soot.Unit]]
   val languageParser = new LanguageParser(this)
-  var enableAssignStatement: Boolean = false
+  var enableAssignStatements: Boolean = false
   val methodRules = languageParser.evaluate(code())
 
   /*
@@ -198,7 +198,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
           }
 
           //add in allocationSites when there is an assign statement
-          if (enableAssignStatement){
+          if (enableAssignStatements){
             val left = unit.asInstanceOf[soot.jimple.AssignStmt].getLeftOp
             assignStatements += (left -> createNode(m, unit))
           }
@@ -470,7 +470,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       }
 
       //Search the defined allocationSites fields
-      if (allocationNodes.isEmpty && enableAssignStatement) {
+      if (allocationNodes.isEmpty && enableAssignStatements) {
         allocationNodes = findFieldStores(ref.getField)
       }
 
@@ -848,8 +848,8 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     this.depthLimit = depthLimit
   }
 
-  def setEnableAssignStatements(enableAllocationSiteDF: Boolean){
-    this.enableAssignStatement = enableAllocationSiteDF
+  def setEnableAssignStatements(enableAssignStatements: Boolean){
+    this.enableAssignStatements = enableAssignStatements
   }
 
 }
