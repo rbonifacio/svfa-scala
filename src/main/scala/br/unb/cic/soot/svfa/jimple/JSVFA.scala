@@ -31,9 +31,10 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
   var depthLimit = 5
   val traversedMethods = scala.collection.mutable.Set.empty[SootMethod]
   val allocationSites = scala.collection.mutable.HashMap.empty[soot.Value, StatementNode]
+  val assignStatements = scala.collection.mutable.HashMap.empty[soot.Value, StatementNode]
   val arrayStores = scala.collection.mutable.HashMap.empty[Local, List[soot.Unit]]
   val languageParser = new LanguageParser(this)
-  var enableAllocationSiteDF: Boolean = false
+  var enableAssignStatement: Boolean = false
   val methodRules = languageParser.evaluate(code())
 
   /*
@@ -197,9 +198,9 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
           }
 
           //add in allocationSites when there is an assign statement
-          if (enableAllocationSiteDF){
+          if (enableAssignStatement){
             val left = unit.asInstanceOf[soot.jimple.AssignStmt].getLeftOp
-            allocationSites += (left -> createNode(m, unit))
+            assignStatements += (left -> createNode(m, unit))
           }
 
         }
@@ -469,7 +470,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       }
 
       //Search the defined allocationSites fields
-      if (allocationNodes.isEmpty && enableAllocationSiteDF) {
+      if (allocationNodes.isEmpty && enableAssignStatement) {
         allocationNodes = findFieldStores(ref.getField)
       }
 
@@ -778,10 +779,10 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     return res
   }
 
-//  Search the defined allocationSites fields
+//  Search the defined assign statements
   def findFieldStores(field: SootField): ListBuffer[GraphNode] = {
     val res: ListBuffer[GraphNode] = new ListBuffer[GraphNode]()
-    allocationSites.foreach { case (fieldStmt, node) =>
+    assignStatements.foreach { case (fieldStmt, node) =>
       fieldStmt match {
         case sootField: JInstanceFieldRef =>
           if (field.getSignature.equals(sootField.getFieldRef.getSignature)) {
@@ -847,8 +848,8 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     this.depthLimit = depthLimit
   }
 
-  def setEnableAllocationSiteDF(enableAllocationSiteDF: Boolean){
-    this.enableAllocationSiteDF = enableAllocationSiteDF
+  def setEnableAssignStatements(enableAllocationSiteDF: Boolean){
+    this.enableAssignStatement = enableAllocationSiteDF
   }
 
 }
