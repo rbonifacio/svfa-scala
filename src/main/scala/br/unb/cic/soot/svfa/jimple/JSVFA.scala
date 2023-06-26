@@ -14,7 +14,7 @@ import soot.jimple.spark.pag.{AllocNode, PAG}
 import soot.jimple.spark.sets.{DoublePointsToSet, HybridPointsToSet, P2SetVisitor}
 import soot.toolkits.graph.ExceptionalUnitGraph
 import soot.toolkits.scalar.SimpleLocalDefs
-import soot.{ArrayType, Local, Scene, SceneTransformer, SootField, SootMethod, Transform, Value, jimple}
+import soot.{ArrayType, Local, PointsToSet, Scene, SceneTransformer, SootField, SootMethod, Transform, Value, jimple}
 
 import scala.collection.mutable.ListBuffer
 
@@ -308,7 +308,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       //       FieldSample test case, instead of two.
     }
 
-    if(analyze(callStmt.base) == SourceNode) {
+    if(analyze(callStmt.base) == SourceNode || analyze(callStmt.base) == SinkNode) {
       val source = createNode(caller, callStmt.base)
       svg.addNode(source)
     }
@@ -742,7 +742,11 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         val assignment = node.unit().asInstanceOf[soot.jimple.AssignStmt]
         if(assignment.getLeftOp.isInstanceOf[InstanceFieldRef]) {
           val base = assignment.getLeftOp.asInstanceOf[InstanceFieldRef].getBase.asInstanceOf[Local]
+          var aux1 = pointsToAnalysis.reachingObjects(base)
+          var aux2 = pointsToAnalysis.reachingObjects(base).hasNonEmptyIntersection(pointsToAnalysis.reachingObjects(local))
+//          Aqui está com erro, base e local ambos são this, não está retornando verdadeiro nessa condiçao
           if(pointsToAnalysis.reachingObjects(base).hasNonEmptyIntersection(pointsToAnalysis.reachingObjects(local))) {
+//          if (base.equals(local)){
             if(field.equals(assignment.getLeftOp.asInstanceOf[InstanceFieldRef].getField)) {
               res += createNode(node.method(), node.unit())
             }
@@ -760,6 +764,10 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       fieldStmt match {
         case sootField: JInstanceFieldRef =>
           if (field.getSignature.equals(sootField.getFieldRef.getSignature)) {
+            res += node
+          }
+        case sootField: soot.SootField =>
+          if (field.equals(sootField)) {
             res += node
           }
         case _ =>

@@ -1,10 +1,10 @@
 package samples;
 
 public class Field1 {
-    private Point p;
-
+//    Integer p = new Integer(1);
     public void main() {
-        p.x = 3; //Left
-        p.x = p.x + 5; //Right
+        Integer x, p;
+        p = new Integer(3); //Left
+        x = new Integer(p); //Right
     }
 }
