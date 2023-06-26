@@ -214,32 +214,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     }
   }
 
-  def findAllocationSite(right: Value) : ListBuffer[GraphNode] =  {
-    val res: ListBuffer[GraphNode] = new ListBuffer[GraphNode]()
-    allocationSites.foreach { case (alloc, node) =>
-      alloc match {
-        case alloc: soot.Value =>
-          try{
-            if (node != null && node.value.sootUnit.isInstanceOf[soot.jimple.AssignStmt]){
-              if (right.equals(node.value.sootUnit.asInstanceOf[soot.jimple.AssignStmt].getLeftOp)) {
-                res += node
-              }
-              right.getUseBoxes.forEach(value =>{
-                if (value.getValue.equals(node.value.sootUnit.asInstanceOf[soot.jimple.AssignStmt].getLeftOp)) {
-                  res += node
-                }
-              })
-            }
-          }catch {
-            case e: Exception=>
-              println("An error occurred in node from allocationSites: "+e)
-          }
-        case _ =>
-      }
-    }
-    res
-  }
-
   class Transformer extends SceneTransformer {
     override def internalTransform(phaseName: String, options: util.Map[String, String]): Unit = {
       pointsToAnalysis = Scene.v().getPointsToAnalysis
