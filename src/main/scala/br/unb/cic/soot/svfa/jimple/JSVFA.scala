@@ -31,10 +31,8 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
   var depthLimit = 5
   val traversedMethods = scala.collection.mutable.Set.empty[SootMethod]
   val allocationSites = scala.collection.mutable.HashMap.empty[soot.Value, StatementNode]
-  val assignStatements = scala.collection.mutable.HashMap.empty[soot.Value, StatementNode]
   val arrayStores = scala.collection.mutable.HashMap.empty[Local, List[soot.Unit]]
   val languageParser = new LanguageParser(this)
-  var enableAssignStatements: Boolean = false
   val methodRules = languageParser.evaluate(code())
 
   /*
@@ -196,13 +194,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
           if (right.isInstanceOf[NewExpr] || right.isInstanceOf[NewArrayExpr] || right.isInstanceOf[StringConstant]) {
             allocationSites += (right -> createNode(m, unit))
           }
-
-          //add in allocationSites when there is an assign statement
-          if (enableAssignStatements){
-            val left = unit.asInstanceOf[soot.jimple.AssignStmt].getLeftOp
-            assignStatements += (left -> createNode(m, unit))
-          }
-
         }
         else if(unit.isInstanceOf[soot.jimple.ReturnStmt]) {
           val exp = unit.asInstanceOf[soot.jimple.ReturnStmt].getOp
@@ -443,11 +434,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         allocationNodes = findFieldStores(base.asInstanceOf[Local], ref.getField)
       }
 
-      //Search the defined allocationSites fields
-      if (allocationNodes.isEmpty && enableAssignStatements) {
-        allocationNodes = findFieldStores(ref.getField)
-      }
-
       allocationNodes.foreach(source => {
         val target = createNode(method, stmt)
         updateGraph(source, target)
@@ -670,7 +656,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     if(pta != null) {
       val reachingObjects = if(field == null) pta.reachingObjects(local.asInstanceOf[Local])
       else pta.reachingObjects(local, field)
-
+      var aux = pta.reachingObjects(local)
       if(!reachingObjects.isEmpty) {
         val allocations = if(oldSet) reachingObjects.asInstanceOf[DoublePointsToSet].getOldSet
         else reachingObjects.asInstanceOf[DoublePointsToSet].getNewSet
@@ -744,9 +730,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
           val base = assignment.getLeftOp.asInstanceOf[InstanceFieldRef].getBase.asInstanceOf[Local]
           var aux1 = pointsToAnalysis.reachingObjects(base)
           var aux2 = pointsToAnalysis.reachingObjects(base).hasNonEmptyIntersection(pointsToAnalysis.reachingObjects(local))
-//          Aqui está com erro, base e local ambos são this, não está retornando verdadeiro nessa condiçao
           if(pointsToAnalysis.reachingObjects(base).hasNonEmptyIntersection(pointsToAnalysis.reachingObjects(local))) {
-//          if (base.equals(local)){
             if(field.equals(assignment.getLeftOp.asInstanceOf[InstanceFieldRef].getField)) {
               res += createNode(node.method(), node.unit())
             }
@@ -755,25 +739,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       }
     }
     return res
-  }
-
-//  Search the defined assign statements
-  def findFieldStores(field: SootField): ListBuffer[GraphNode] = {
-    val res: ListBuffer[GraphNode] = new ListBuffer[GraphNode]()
-    assignStatements.foreach { case (fieldStmt, node) =>
-      fieldStmt match {
-        case sootField: JInstanceFieldRef =>
-          if (field.getSignature.equals(sootField.getFieldRef.getSignature)) {
-            res += node
-          }
-        case sootField: soot.SootField =>
-          if (field.equals(sootField)) {
-            res += node
-          }
-        case _ =>
-      }
-    }
-    res
   }
 
   //  /*
@@ -828,10 +793,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
 
   def setDepthLimit(depthLimit: Int) {
     this.depthLimit = depthLimit
-  }
-
-  def setEnableAssignStatements(enableAssignStatements: Boolean){
-    this.enableAssignStatements = enableAssignStatements
   }
 
 }

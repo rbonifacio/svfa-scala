@@ -2,8 +2,13 @@ package samples;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class MotivatingDF {
+public class MotivatingField {
     public String text;
+
+    public static void main(){
+        MotivatingField inst = new MotivatingField();
+        inst.cleanText();
+    }
 
     public void cleanText(){
         normalizeWhiteSpace(); //Left

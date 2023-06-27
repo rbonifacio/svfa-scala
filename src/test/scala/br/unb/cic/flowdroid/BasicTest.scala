@@ -88,21 +88,9 @@ class DFTest(leftchangedlines: Array[Int], rightchangedlines: Array[Int], classN
 class BasicTestSuite extends FunSuite {
 
   test("running motivating example") {
-    val className = "samples.MotivatingDF"
-    val mainMethod = "cleanText"
-    val svfa = new DFTest(Array (9, 15), Array (11, 35), className, mainMethod)
-    svfa.setEnableAssignStatements(true)
-    svfa.buildSparseValueFlowGraph()
-    println(svfa.reportConflictsSVG().size)
-    println(svfa.reportConflictsSVG())
-    println(svfa.svgToDotModel())
-    assert(svfa.reportConflictsSVG().size == 1)
-  }
-
-  test("running motivating example 2") {
-    val className = "samples.MotivatingDF2"
-    val mainMethod = "cleanText"
-    val svfa = new DFTest(Array (9, 15), Array (11, 23), className, mainMethod)
+    val className = "samples.MotivatingField"
+    val mainMethod = "main"
+    val svfa = new DFTest(Array (14, 20), Array (16, 40), className, mainMethod)
     svfa.buildSparseValueFlowGraph()
     println(svfa.reportConflictsSVG().size)
     println(svfa.reportConflictsSVG())
@@ -114,7 +102,6 @@ class BasicTestSuite extends FunSuite {
     val className = "samples.Field1"
     val mainMethod = "main"
     val svfa = new DFTest(Array (7), Array (8), className, mainMethod)
-//    svfa.setEnableAssignStatements(true)
     svfa.buildSparseValueFlowGraph()
     println(svfa.reportConflictsSVG().size)
     println(svfa.reportConflictsSVG())
@@ -126,7 +113,6 @@ class BasicTestSuite extends FunSuite {
     val className = "samples.Field2"
     val mainMethod = "main"
     val svfa = new DFTest(Array (7), Array (8), className, mainMethod)
-    svfa.setEnableAssignStatements(true)
     svfa.buildSparseValueFlowGraph()
     println(svfa.reportConflictsSVG().size)
     println(svfa.reportConflictsSVG())
@@ -138,7 +124,6 @@ class BasicTestSuite extends FunSuite {
     val className = "samples.Field3"
     val mainMethod = "main"
     val svfa = new DFTest(Array (7), Array (8), className, mainMethod)
-    svfa.setEnableAssignStatements(true)
     svfa.buildSparseValueFlowGraph()
     println(svfa.reportConflictsSVG().size)
     println(svfa.reportConflictsSVG())
@@ -150,7 +135,6 @@ class BasicTestSuite extends FunSuite {
     val className = "samples.AllocationFlowTest1"
     val mainMethod = "main"
     val svfa = new DFTest(Array (7), Array (10), className, mainMethod)
-    svfa.setEnableAssignStatements(true)
     svfa.buildSparseValueFlowGraph()
     println(svfa.reportConflictsSVG().size)
     println(svfa.reportConflictsSVG())
@@ -162,7 +146,6 @@ class BasicTestSuite extends FunSuite {
     val className = "samples.AllocationFlowTest2"
     val mainMethod = "main"
     val svfa = new DFTest(Array (7), Array (9), className, mainMethod)
-    svfa.setEnableAssignStatements(true)
     svfa.buildSparseValueFlowGraph()
     println(svfa.reportConflictsSVG().size)
     println(svfa.reportConflictsSVG())
