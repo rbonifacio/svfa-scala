@@ -98,6 +98,17 @@ class BasicTestSuite extends FunSuite {
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
+  test("running motivating example 2") {
+    val className = "samples.MotivatingField2"
+    val mainMethod = "main"
+    val svfa = new DFTest(Array (14, 20), Array (16, 28), className, mainMethod)
+    svfa.buildSparseValueFlowGraph()
+    println(svfa.reportConflictsSVG().size)
+    println(svfa.reportConflictsSVG())
+    println(svfa.svgToDotModel())
+    assert(svfa.reportConflictsSVG().size == 1)
+  }
+
   test("running Field1 example") {
     val className = "samples.Field1"
     val mainMethod = "main"

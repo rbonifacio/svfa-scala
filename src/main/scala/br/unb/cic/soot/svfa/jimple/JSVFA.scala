@@ -656,7 +656,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     if(pta != null) {
       val reachingObjects = if(field == null) pta.reachingObjects(local.asInstanceOf[Local])
       else pta.reachingObjects(local, field)
-      var aux = pta.reachingObjects(local)
+
       if(!reachingObjects.isEmpty) {
         val allocations = if(oldSet) reachingObjects.asInstanceOf[DoublePointsToSet].getOldSet
         else reachingObjects.asInstanceOf[DoublePointsToSet].getNewSet
@@ -728,8 +728,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         val assignment = node.unit().asInstanceOf[soot.jimple.AssignStmt]
         if(assignment.getLeftOp.isInstanceOf[InstanceFieldRef]) {
           val base = assignment.getLeftOp.asInstanceOf[InstanceFieldRef].getBase.asInstanceOf[Local]
-          var aux1 = pointsToAnalysis.reachingObjects(base)
-          var aux2 = pointsToAnalysis.reachingObjects(base).hasNonEmptyIntersection(pointsToAnalysis.reachingObjects(local))
           if(pointsToAnalysis.reachingObjects(base).hasNonEmptyIntersection(pointsToAnalysis.reachingObjects(local))) {
             if(field.equals(assignment.getLeftOp.asInstanceOf[InstanceFieldRef].getField)) {
               res += createNode(node.method(), node.unit())
