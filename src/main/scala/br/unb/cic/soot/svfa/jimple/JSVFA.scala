@@ -28,7 +28,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
   var numberVisitedMethods = 0
   var printDepthVisitedMethods: Boolean = false
   var methods = 0
-  var depthLimit = 5
+  var depthLimit = 10
   val traversedMethods = scala.collection.mutable.Set.empty[SootMethod]
   val allocationSites = scala.collection.mutable.HashMap.empty[soot.Value, StatementNode]
   val arrayStores = scala.collection.mutable.HashMap.empty[Local, List[soot.Unit]]
