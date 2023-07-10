@@ -22,13 +22,13 @@ import scala.collection.mutable.ListBuffer
  * A Jimple based implementation of
  * SVFA.
  */
-abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with ObjectPropagation with SourceSinkDef with LazyLogging  with DSL {
+abstract class JSVFA extends SVFA with Analysis with AnalysisDepth with FieldSensitiveness with ObjectPropagation with SourceSinkDef with LazyLogging  with DSL {
 
-  var methodsVisited = new ListBuffer[SootMethod]()
+  val methodsVisited = new ListBuffer[SootMethod]()
+  val traversedMethodsAllocationSites = scala.collection.mutable.Set.empty[SootMethod]
   var numberVisitedMethods = 0
   var printDepthVisitedMethods: Boolean = false
   var methods = 0
-  var depthLimit = 10
   val traversedMethods = scala.collection.mutable.Set.empty[SootMethod]
   val allocationSites = scala.collection.mutable.HashMap.empty[soot.Value, StatementNode]
   val arrayStores = scala.collection.mutable.HashMap.empty[Local, List[soot.Unit]]
@@ -186,6 +186,13 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
   }
 
   def updateAllocationSites(m: SootMethod): Unit = {
+
+    if(traversedMethodsAllocationSites.contains(m)) {
+      return
+    }
+
+    traversedMethodsAllocationSites.add(m)
+
     if (m.hasActiveBody) {
       val body = m.getActiveBody
       body.getUnits.forEach(unit => {
@@ -201,6 +208,12 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
             allocationSites += (exp -> createNode(m, unit))
           }
         }
+
+        if (unit.isInstanceOf[soot.jimple.InvokeStmt]){
+          val method = unit.asInstanceOf[soot.jimple.InvokeStmt]
+          updateAllocationSites(method.getInvokeExpr.getMethod)
+        }
+
       })
     }
   }
@@ -224,7 +237,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       return
     }
 
-    if (methodsVisited.size >= depthLimit){
+    if (isLimited() && methodsVisited.size >= maxDepth()){
       return
     }
 
@@ -232,10 +245,8 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       println(method.toString+", deep: "+ methodsVisited.size)
     }
 
-    //add new allocation sites
-    updateAllocationSites(method)
-
     traversedMethods.add(method)
+
     val body  = method.retrieveActiveBody()
     val graph = new ExceptionalUnitGraph(body)
     val defs  = new SimpleLocalDefs(graph)
@@ -294,9 +305,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
 
     if(analyze(callStmt.base) == SinkNode) {
       defsToCallOfSinkMethod(callStmt, exp, caller, defs)
-//      return  // TODO: we are not exploring the body of a sink method.
-      //       For this reason, we only find one path in the
-      //       FieldSample test case, instead of two.
     }
 
     if(analyze(callStmt.base) == SourceNode || analyze(callStmt.base) == SinkNode) {
@@ -787,10 +795,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
 
   def getNumberVisitedMethods(): Int = {
     return numberVisitedMethods
-  }
-
-  def setDepthLimit(depthLimit: Int) {
-    this.depthLimit = depthLimit
   }
 
 }

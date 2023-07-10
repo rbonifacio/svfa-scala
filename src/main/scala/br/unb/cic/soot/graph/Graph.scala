@@ -53,16 +53,13 @@ case class StatementNode(value: Statement, nodeType: NodeType) extends GraphNode
   type T = Statement
 
   override def show(): String = "(" ++ value.method + ": " + value.stmt + " - " + value.line + " <" + nodeType.toString + ">)"
-//  override def show(): String = value.stmt
 
   override def toString: String =
     "Node(" + value.method + "," + value.stmt + "," + value.line+ "," + nodeType.toString + ")"
 
   override def equals(o: Any): Boolean = {
     o match {
-      //      case stmt: StatementNode => stmt.value.toString == value.toString
-      //      case stmt: StatementNode => stmt.value == value && stmt.nodeType == nodeType
-      case stmt: StatementNode => stmt.value.className.equals(value.className) &&
+       case stmt: StatementNode => stmt.value.className.equals(value.className) &&
         stmt.value.method.equals(value.method) &&
         stmt.value.stmt.equals(value.stmt) &&
         stmt.value.line.equals(value.line) &&
@@ -467,10 +464,7 @@ class Graph() {
       sourceNodes.foreach(source => {
         sinkNodes.foreach(sink => {
           val paths = findPath(source, sink)
-          val pathsHaveSameSourceAndSinkRootTraversedLine: Boolean = conflicts.exists(c => paths.exists(p => c.head.line() == p.head.line() && c.last.line() == p.last.line()))
-          if (!pathsHaveSameSourceAndSinkRootTraversedLine){
-            conflicts = conflicts ++ paths
-          }
+          conflicts = conflicts ++ paths
         })
       })
       conflicts.filter(p => p.nonEmpty).toSet
