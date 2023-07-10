@@ -24,8 +24,8 @@ import scala.collection.mutable.ListBuffer
  */
 abstract class JSVFA extends SVFA with Analysis with AnalysisDepth with FieldSensitiveness with ObjectPropagation with SourceSinkDef with LazyLogging  with DSL {
 
-  val methodsVisited = new ListBuffer[SootMethod]()
-  val traversedMethodsAllocationSites = scala.collection.mutable.Set.empty[SootMethod]
+  val visitedMethodsDepth = new ListBuffer[SootMethod]()
+  val visitedMethodsAllocationSites = scala.collection.mutable.Set.empty[SootMethod]
   var numberVisitedMethods = 0
   var printDepthVisitedMethods: Boolean = false
   var methods = 0
@@ -187,11 +187,11 @@ abstract class JSVFA extends SVFA with Analysis with AnalysisDepth with FieldSen
 
   def updateAllocationSites(m: SootMethod): Unit = {
 
-    if(traversedMethodsAllocationSites.contains(m)) {
+    if(visitedMethodsAllocationSites.contains(m)) {
       return
     }
 
-    traversedMethodsAllocationSites.add(m)
+    visitedMethodsAllocationSites.add(m)
 
     if (m.hasActiveBody) {
       val body = m.getActiveBody
@@ -237,12 +237,12 @@ abstract class JSVFA extends SVFA with Analysis with AnalysisDepth with FieldSen
       return
     }
 
-    if (isLimited() && methodsVisited.size >= maxDepth()){
+    if (isLimited() && visitedMethodsDepth.size >= maxDepth()){
       return
     }
 
     if (printDepthVisitedMethods){
-      println(method.toString+", deep: "+ methodsVisited.size)
+      println(method.toString+", deep: "+ visitedMethodsDepth.size)
     }
 
     traversedMethods.add(method)
@@ -354,13 +354,13 @@ abstract class JSVFA extends SVFA with Analysis with AnalysisDepth with FieldSen
         stringToCallSite(caller, callee, callStmt.base, s)
       }
     })
-    methodsVisited += callee.retrieveActiveBody().getMethod
+    visitedMethodsDepth += callee.retrieveActiveBody().getMethod
 
     numberVisitedMethods += 1
 
     traverse(callee)
 
-    methodsVisited -= callee.retrieveActiveBody().getMethod
+    visitedMethodsDepth -= callee.retrieveActiveBody().getMethod
 
   }
 
