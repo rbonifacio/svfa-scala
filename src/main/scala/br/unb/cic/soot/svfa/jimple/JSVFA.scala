@@ -198,6 +198,10 @@ abstract class JSVFA extends SVFA with Analysis with AnalysisDepth with FieldSen
       body.getUnits.forEach(unit => {
         if (unit.isInstanceOf[soot.jimple.AssignStmt]) {
           val right = unit.asInstanceOf[soot.jimple.AssignStmt].getRightOp
+          if (right.isInstanceOf[soot.jimple.InstanceInvokeExpr]){
+            val method = right.asInstanceOf[soot.jimple.InstanceInvokeExpr]
+            updateAllocationSites(method.getMethod)
+          }
           if (right.isInstanceOf[NewExpr] || right.isInstanceOf[NewArrayExpr] || right.isInstanceOf[StringConstant]) {
             allocationSites += (right -> createNode(m, unit))
           }
