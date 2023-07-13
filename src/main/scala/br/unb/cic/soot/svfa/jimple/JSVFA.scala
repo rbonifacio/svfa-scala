@@ -187,21 +187,21 @@ abstract class JSVFA extends SVFA with Analysis with AnalysisDepth with FieldSen
 
   def updateAllocationSites(m: SootMethod): Unit = {
 
-    if(visitedMethodsAllocationSites.contains(m)) {
-      return
-    }
-
-    visitedMethodsAllocationSites.add(m)
+//    if(visitedMethodsAllocationSites.contains(m)) {
+//      return
+//    }
+//
+//    visitedMethodsAllocationSites.add(m)
 
     if (m.hasActiveBody) {
       val body = m.getActiveBody
       body.getUnits.forEach(unit => {
         if (unit.isInstanceOf[soot.jimple.AssignStmt]) {
           val right = unit.asInstanceOf[soot.jimple.AssignStmt].getRightOp
-          if (right.isInstanceOf[soot.jimple.InstanceInvokeExpr]){
-            val method = right.asInstanceOf[soot.jimple.InstanceInvokeExpr]
-            updateAllocationSites(method.getMethod)
-          }
+//          if (right.isInstanceOf[soot.jimple.InstanceInvokeExpr]){
+//            val method = right.asInstanceOf[soot.jimple.InstanceInvokeExpr]
+//            updateAllocationSites(method.getMethod)
+//          }
           if (right.isInstanceOf[NewExpr] || right.isInstanceOf[NewArrayExpr] || right.isInstanceOf[StringConstant]) {
             allocationSites += (right -> createNode(m, unit))
           }
@@ -213,10 +213,10 @@ abstract class JSVFA extends SVFA with Analysis with AnalysisDepth with FieldSen
           }
         }
 
-        if (unit.isInstanceOf[soot.jimple.InvokeStmt]){
-          val method = unit.asInstanceOf[soot.jimple.InvokeStmt]
-          updateAllocationSites(method.getInvokeExpr.getMethod)
-        }
+//        if (unit.isInstanceOf[soot.jimple.InvokeStmt]){
+//          val method = unit.asInstanceOf[soot.jimple.InvokeStmt]
+//          updateAllocationSites(method.getInvokeExpr.getMethod)
+//        }
 
       })
     }
@@ -245,9 +245,13 @@ abstract class JSVFA extends SVFA with Analysis with AnalysisDepth with FieldSen
       return
     }
 
+    numberVisitedMethods += 1
+
     if (printDepthVisitedMethods){
       println(method.toString+", deep: "+ visitedMethodsDepth.size)
     }
+
+    updateAllocationSites(method)
 
     traversedMethods.add(method)
 
@@ -359,8 +363,6 @@ abstract class JSVFA extends SVFA with Analysis with AnalysisDepth with FieldSen
       }
     })
     visitedMethodsDepth += callee.retrieveActiveBody().getMethod
-
-    numberVisitedMethods += 1
 
     traverse(callee)
 
