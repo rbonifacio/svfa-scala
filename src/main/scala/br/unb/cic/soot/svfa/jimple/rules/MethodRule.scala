@@ -1,8 +1,11 @@
 package br.unb.cic.soot.svfa.jimple.rules
 
+import br.unb.cic.soot.graph.VisitedMethods
 import soot.SootMethod
 import soot.jimple.Stmt
 import soot.toolkits.scalar.SimpleLocalDefs
+
+import scala.collection.mutable.ListBuffer
 
 
 /**
@@ -11,7 +14,7 @@ import soot.toolkits.scalar.SimpleLocalDefs
  * apply that takes a soot method, an statement (with an
  * invoke expression), and a list of local definitions.
  */
-trait RuleAction extends ((SootMethod, Stmt, SimpleLocalDefs) => Unit)
+trait RuleAction extends ((SootMethod, Stmt, SimpleLocalDefs, ListBuffer[VisitedMethods]) => Unit)
 
 /**
  * A list composition of rule actions.
@@ -19,8 +22,8 @@ trait RuleAction extends ((SootMethod, Stmt, SimpleLocalDefs) => Unit)
 trait ComposedRuleAction extends RuleAction {
   def actions: List[RuleAction]
 
-  override def apply(sootMethod: SootMethod, stmt: Stmt, localDefs: SimpleLocalDefs): Unit = {
-    actions.foreach(action => action.apply(sootMethod, stmt, localDefs))
+  override def apply(sootMethod: SootMethod, stmt: Stmt, localDefs: SimpleLocalDefs, visitedMethods: ListBuffer[VisitedMethods]): Unit = {
+    actions.foreach(action => action.apply(sootMethod, stmt, localDefs, visitedMethods))
   }
 }
 
@@ -34,9 +37,9 @@ trait ComposedRuleAction extends RuleAction {
 abstract class MethodRule extends RuleAction  {
   def check(sootMethod: SootMethod) : Boolean
 
-  def run(sootMethod: SootMethod, invokeStmt: Stmt, localDefs: SimpleLocalDefs): Unit = {
+  def run(sootMethod: SootMethod, invokeStmt: Stmt, localDefs: SimpleLocalDefs, visitedMethods: ListBuffer[VisitedMethods]): Unit = {
     if(check(invokeStmt.getInvokeExpr.getMethod)) {
-      apply(sootMethod, invokeStmt, localDefs)
+      apply(sootMethod, invokeStmt, localDefs, visitedMethods)
     }
   }
 }
@@ -69,5 +72,5 @@ abstract class MissingActiveBodyRule() extends MethodRule {
  * An action that does not execute anything
  */
 trait DoNothing extends RuleAction {
-  def apply(sootMethod: SootMethod, invokeStmt: Stmt, localDefs: SimpleLocalDefs) = { }
+  def apply(sootMethod: SootMethod, invokeStmt: Stmt, localDefs: SimpleLocalDefs, visitedMethods: ListBuffer[VisitedMethods]) = { }
 }

@@ -4,6 +4,7 @@ import scalax.collection.edge.LkDiEdge
 import soot.SootMethod
 
 import scala.collection.immutable.HashSet
+import scala.collection.mutable.ListBuffer
 
 /*
   * This trait define the base type for node classifications.
@@ -45,17 +46,28 @@ trait LambdaNode extends scala.AnyRef {
   */
 case class Statement(className: String, method: String, stmt: String, line: Int, sootUnit: soot.Unit = null, sootMethod: soot.SootMethod = null)
 
+case class VisitedMethods(sootMethod: soot.SootMethod = null, sootUnit: soot.Unit = null, line: Int) {
+  override def toString: String = s"($sootMethod, $sootUnit, $line)"
+}
+
 /*
  * A graph node defined using the GraphNode abstraction specific for statements.
  * Use this class as example to define your own custom nodes.
  */
-case class StatementNode(value: Statement, nodeType: NodeType) extends GraphNode {
+case class StatementNode(value: Statement, nodeType: NodeType, pathVisitedMethods: ListBuffer[VisitedMethods]) extends GraphNode {
   type T = Statement
+
+  def getPathVisitedMethods() = pathVisitedMethods
+
+  def pathVisitedMethodsToString(): String = {
+    val methodsString = pathVisitedMethods.map(_. toString).mkString(" => ")
+    s"path: $methodsString"
+  }
 
   override def show(): String = "(" ++ value.method + ": " + value.stmt + " - " + value.line + " <" + nodeType.toString + ">)"
 
   override def toString: String =
-    "Node(" + value.method + "," + value.stmt + "," + value.line+ "," + nodeType.toString + ")"
+    "Node(" + value.method + "," + value.stmt + "," + value.line+ "," + nodeType.toString + ", "+pathVisitedMethodsToString+")"
 
   override def equals(o: Any): Boolean = {
     o match {
@@ -445,9 +457,9 @@ class Graph() {
   /*
  * creates a graph node from a sootMethod / sootUnit
  */
-  def createNode(method: SootMethod, stmt: soot.Unit, f: (soot.Unit) => NodeType): StatementNode =
+  def createNode(method: SootMethod, stmt: soot.Unit, f: (soot.Unit) => NodeType, pathVisitedMethods: ListBuffer[VisitedMethods]): StatementNode =
     StatementNode(br.unb.cic.soot.graph.Statement(method.getDeclaringClass.toString, method.getSignature, stmt.toString,
-      stmt.getJavaSourceStartLineNumber, stmt, method), f(stmt))
+      stmt.getJavaSourceStartLineNumber, stmt, method), f(stmt), pathVisitedMethods)
 
   def reportConflicts(): scala.collection.Set[String] =
     findConflictingPaths().map(p => p.toString)
@@ -464,7 +476,10 @@ class Graph() {
       sourceNodes.foreach(source => {
         sinkNodes.foreach(sink => {
           val paths = findPath(source, sink)
-          conflicts = conflicts ++ paths
+          val pathsHaveSameSourceAndSinkRootTraversedLine: Boolean = conflicts.exists(c => paths.exists(p => c.head.line() == p.head.line() && c.last.line() == p.last.line()))
+          if (!pathsHaveSameSourceAndSinkRootTraversedLine){
+            conflicts = conflicts ++ paths
+          }
         })
       })
       conflicts.filter(p => p.nonEmpty).toSet
