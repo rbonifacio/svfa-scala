@@ -69,11 +69,12 @@ class BasicTestSuite extends FunSuite {
     val className = "samples.MotivatingField"
     val mainMethod = "main"
     val svfa = new DFTest(Array (14, 20), Array (16, 40), className, mainMethod)
-    svfa.setPrintDepthVisitedMethods(true)
+//    svfa.setPrintDepthVisitedMethods(true)
     svfa.buildSparseValueFlowGraph()
     println(svfa.reportConflictsSVG().size)
-    println(svfa.reportConflictsSVG())
-    println(svfa.svgToDotModel())
+    svfa.svg.reportConflitcsMessage
+
+//    println(svfa.svgToDotModel())
 //    assert(svfa.reportConflictsSVG().size == 2)
   }
 

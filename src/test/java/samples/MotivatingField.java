@@ -17,7 +17,7 @@ public class MotivatingField {
     }
 
     private void normalizeWhiteSpace(){
-        text = text;
+        this.text = text;
     }
 
     private void removeComments(){
@@ -33,11 +33,11 @@ public class MotivatingField {
 //            }
 //        }
 //        matcher.appendTail(buffer);
-        text = 1;
+        this.text = 1;
     }
 
     private void removeDuplicateWords(){
-        Integer words = text;
+        Integer words = this.text;
 //        StringBuilder result = new StringBuilder(words[0]);
 //        for (int i = 1; i < words.length; i++) {
 //            if (!words[i].equals(words[i - 1])) {

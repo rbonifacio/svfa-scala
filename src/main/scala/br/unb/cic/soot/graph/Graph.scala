@@ -29,6 +29,15 @@ trait GraphNode {
   def method(): soot.SootMethod
   def show(): String
   def line(): Int
+  def pathVisitedMethods: ListBuffer[VisitedMethods]
+  def pathVisitedMethodsToString(): String = {
+    var methodsString = ""
+
+    if (!pathVisitedMethods.isEmpty){
+      methodsString = pathVisitedMethods.map(_. toString).mkString(" => ")
+    }
+    s"path: $methodsString"
+  }
 }
 
 trait LambdaNode extends scala.AnyRef {
@@ -48,6 +57,9 @@ case class Statement(className: String, method: String, stmt: String, line: Int,
 
 case class VisitedMethods(sootMethod: soot.SootMethod = null, sootUnit: soot.Unit = null, line: Int) {
   override def toString: String = s"($sootMethod, $sootUnit, $line)"
+  def getMethod = sootMethod
+  def getUnit = sootUnit
+  def getLine = line
 }
 
 /*
@@ -59,8 +71,12 @@ case class StatementNode(value: Statement, nodeType: NodeType, pathVisitedMethod
 
   def getPathVisitedMethods() = pathVisitedMethods
 
-  def pathVisitedMethodsToString(): String = {
-    val methodsString = pathVisitedMethods.map(_. toString).mkString(" => ")
+  override def pathVisitedMethodsToString(): String = {
+    var methodsString = ""
+
+    if (!pathVisitedMethods.isEmpty){
+      methodsString = pathVisitedMethods.map(_. toString).mkString(" => ")
+    }
     s"path: $methodsString"
   }
 
@@ -175,6 +191,7 @@ class Graph() {
   def enableReturnEdge(): Unit = {
     permitedReturnEdge = true
   }
+
 
   def gNode(outerNode: GraphNode): graph.NodeT = graph.get(outerNode)
   def gEdge(outerEdge: LkDiEdge[GraphNode]): graph.EdgeT = graph.get(outerEdge)
@@ -463,6 +480,20 @@ class Graph() {
 
   def reportConflicts(): scala.collection.Set[String] =
     findConflictingPaths().map(p => p.toString)
+
+  def reportConflitcsMessage() = {
+    val conflicts = findConflictingPaths()
+    conflicts.foreach( conflict =>{
+      val h = conflict.head
+      val l = conflict.last
+      val p1 = conflict.head
+      val p2 = conflict.last
+      println("DF interference in class "+p1.method().getDeclaringClass+", method "+ p1.pathVisitedMethods.head.sootMethod.getName)
+      println("Execution of line "+p1.pathVisitedMethods.head.line+" to "+p2.pathVisitedMethods.head.line+" defined in "+h.unit()+" and propagated in "+l.unit())
+      println("Caused by line "+p1.pathVisitedMethods.head.line+ " flow: "+p1.pathVisitedMethodsToString())
+      println("Caused by line "+p2.pathVisitedMethods.head.line+ " flow: "+p2.pathVisitedMethodsToString())
+    })
+  }
 
   def findConflictingPaths(): scala.collection.Set[List[GraphNode]] = {
     if (fullGraph) {
