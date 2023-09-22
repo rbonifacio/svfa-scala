@@ -33,7 +33,7 @@ trait GraphNode {
   def pathVisitedMethodsToString(): String = {
     var methodsString = ""
 
-    if (!pathVisitedMethods.isEmpty){
+    if (pathVisitedMethods != null){
       methodsString = pathVisitedMethods.map(_. toString).mkString(" => ")
     }
     s"path: $methodsString"
@@ -74,7 +74,7 @@ case class StatementNode(value: Statement, nodeType: NodeType, pathVisitedMethod
   override def pathVisitedMethodsToString(): String = {
     var methodsString = ""
 
-    if (!pathVisitedMethods.isEmpty){
+    if (pathVisitedMethods != null){
       methodsString = pathVisitedMethods.map(_. toString).mkString(" => ")
     }
     s"path: $methodsString"

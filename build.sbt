@@ -3,7 +3,7 @@ scalaVersion := "2.12.8"
 name := "svfa-scala"
 organization := "br.unb.cic"
 
-version := "0.5.2"
+version := "0.5.3"
 
 githubOwner := "galilasmb"
 githubRepository := "svfa-scala"
