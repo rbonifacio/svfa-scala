@@ -293,6 +293,7 @@ abstract class JSVFA extends SVFA with Analysis with AnalysisDepth with FieldSen
       case (p: Local, q: Local) => copyRule(assignStmt.stmt, q, method, defs, visitedMethods)
       case (p: Local, _) => copyRuleInvolvingExpressions(assignStmt.stmt, method, defs, visitedMethods)
       case (p: InstanceFieldRef, _: Local) => storeRule(assignStmt.stmt, p, method, defs, visitedMethods)
+      case (p: InstanceFieldRef, _) => statementUseField(assignStmt, method, defs, visitedMethods)
       case (p: JArrayRef, _) => storeArrayRule(assignStmt)
       case _ =>
     }
@@ -317,6 +318,21 @@ abstract class JSVFA extends SVFA with Analysis with AnalysisDepth with FieldSen
     })
   }
 
+  private def statementUseField(stmtField: Statement, method: SootMethod, defs: SimpleLocalDefs, visitedMethods: ListBuffer[VisitedMethods]): Unit = {
+
+    //Add edge from defs statements to statement use
+    stmtField.base.getUseBoxes.forEach(stmt => {
+      if (stmt.getValue.isInstanceOf[Local]) {
+        val local = stmt.getValue.asInstanceOf[Local]
+
+        defs.getDefsOfAt(local, stmtField.base).forEach(sourceStmt => {
+          val sourceNode = createNode(method, sourceStmt, visitedMethods)
+          val targetNode = createNode(method, stmtField.base, visitedMethods)
+          updateGraph(sourceNode, targetNode)
+        })
+      }
+    })
+  }
 
   private def invokeRule(callStmt: Statement, exp: InvokeExpr, caller: SootMethod, defs: SimpleLocalDefs, visitedMethods: ListBuffer[VisitedMethods]): Unit = {
     val callee = exp.getMethod
