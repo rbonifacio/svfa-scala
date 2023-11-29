@@ -247,7 +247,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       case (p: Local, q: InvokeExpr) => invokeRule(assignStmt, q, method, defs)
       case (p: Local, q: Local) => copyRule(assignStmt.stmt, q, method, defs)
       case (p: Local, _) => copyRuleInvolvingExpressions(assignStmt.stmt, method, defs)
-      case (p: InstanceFieldRef, _: Local) => storeRule(assignStmt.stmt, p, method, defs)
+      case (p: InstanceFieldRef, q: Object) => storeRule(assignStmt.stmt, q, p, method, defs)
       case (p: JArrayRef, _) => storeArrayRule(assignStmt)
       case _ =>
     }
@@ -454,34 +454,55 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
    *
    * (*) p.f = expression
    */
-  private def storeRule(targetStmt: jimple.AssignStmt, fieldRef: InstanceFieldRef, method: SootMethod, defs: SimpleLocalDefs) = {
-    val local = targetStmt.getRightOp.asInstanceOf[Local]
-    if (fieldRef.getBase.isInstanceOf[Local]) {
-      val base = fieldRef.getBase.asInstanceOf[Local]
-      if (fieldRef.getField.getDeclaringClass.getName == "java.lang.String" && fieldRef.getField.getName == "value") {
-        defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
-          val source = createNode(method, sourceStmt)
-          val allocationNodes = findAllocationSites(base)
-          allocationNodes.foreach(targetNode => {
-            updateGraph(source, targetNode)
+  private def storeRule(targetStmt: jimple.AssignStmt, q: Object, fieldRef: InstanceFieldRef, method: SootMethod, defs: SimpleLocalDefs) = {
+    if (q.isInstanceOf[Local]) {
+      val local = targetStmt.getRightOp.asInstanceOf[Local]
+      if (fieldRef.getBase.isInstanceOf[Local]) {
+        val base = fieldRef.getBase.asInstanceOf[Local]
+        if (fieldRef.getField.getDeclaringClass.getName == "java.lang.String" && fieldRef.getField.getName == "value") {
+          defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
+            val source = createNode(method, sourceStmt)
+            val allocationNodes = findAllocationSites(base)
+            allocationNodes.foreach(targetNode => {
+              updateGraph(source, targetNode)
+            })
           })
-        })
-      }
-      else {
-        //        val allocationNodes = findAllocationSites(base)
+        }
+        else {
+          //        val allocationNodes = findAllocationSites(base)
 
-        //        val allocationNodes = findAllocationSites(base, true, fieldRef.getField)
-        //        if(!allocationNodes.isEmpty) {
-        //          allocationNodes.foreach(targetNode => {
-        defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
-          val source = createNode(method, sourceStmt)
-          val target = createNode(method, targetStmt)
-          updateGraph(source, target)
-        })
-        //          })
-        //        }
+          //        val allocationNodes = findAllocationSites(base, true, fieldRef.getField)
+          //        if(!allocationNodes.isEmpty) {
+          //          allocationNodes.foreach(targetNode => {
+          defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
+            val source = createNode(method, sourceStmt)
+            val target = createNode(method, targetStmt)
+            updateGraph(source, target)
+          })
+          //          })
+          //        }
+        }
       }
     }
+
+    statementUseField(targetStmt, method, defs)
+
+  }
+
+  private def statementUseField(stmtField: jimple.AssignStmt, method: SootMethod, defs: SimpleLocalDefs): Unit = {
+
+    //Add edge from defs statements fields to statement use
+    stmtField.getLeftOp.getUseBoxes.forEach(stmt => {
+      if (stmt.getValue.isInstanceOf[Local]) {
+        val local = stmt.getValue.asInstanceOf[Local]
+
+        defs.getDefsOfAt(local, stmtField).forEach(sourceStmt => {
+          val sourceNode = createNode(method, sourceStmt)
+          val targetNode = createNode(method, stmtField)
+          updateGraph(sourceNode, targetNode)
+        })
+      }
+    })
   }
 
   def storeArrayRule(assignStmt: AssignStmt) {
