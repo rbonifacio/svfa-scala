@@ -292,8 +292,7 @@ abstract class JSVFA extends SVFA with Analysis with AnalysisDepth with FieldSen
       case (p: Local, q: InvokeExpr) => invokeRule(assignStmt, q, method, defs, visitedMethods)
       case (p: Local, q: Local) => copyRule(assignStmt.stmt, q, method, defs, visitedMethods)
       case (p: Local, _) => copyRuleInvolvingExpressions(assignStmt.stmt, method, defs, visitedMethods)
-      case (p: InstanceFieldRef, _: Local) => storeRule(assignStmt.stmt, p, method, defs, visitedMethods)
-      case (p: InstanceFieldRef, _) => statementUseField(assignStmt, method, defs, visitedMethods)
+      case (p: InstanceFieldRef, q: Object) => storeRule(assignStmt.stmt, q, p, method, defs, visitedMethods)
       case (p: JArrayRef, _) => storeArrayRule(assignStmt)
       case _ =>
     }
@@ -318,16 +317,16 @@ abstract class JSVFA extends SVFA with Analysis with AnalysisDepth with FieldSen
     })
   }
 
-  private def statementUseField(stmtField: Statement, method: SootMethod, defs: SimpleLocalDefs, visitedMethods: ListBuffer[VisitedMethods]): Unit = {
+  private def statementUseField(stmtField: jimple.AssignStmt, method: SootMethod, defs: SimpleLocalDefs, visitedMethods: ListBuffer[VisitedMethods]): Unit = {
 
-    //Add edge from defs statements to statement use
-    stmtField.base.getUseBoxes.forEach(stmt => {
+    //Add edge from defs statements fields to statement use
+    stmtField.getLeftOp.getUseBoxes.forEach(stmt => {
       if (stmt.getValue.isInstanceOf[Local]) {
         val local = stmt.getValue.asInstanceOf[Local]
 
-        defs.getDefsOfAt(local, stmtField.base).forEach(sourceStmt => {
+        defs.getDefsOfAt(local, stmtField).forEach(sourceStmt => {
           val sourceNode = createNode(method, sourceStmt, visitedMethods)
-          val targetNode = createNode(method, stmtField.base, visitedMethods)
+          val targetNode = createNode(method, stmtField, visitedMethods)
           updateGraph(sourceNode, targetNode)
         })
       }
@@ -519,36 +518,41 @@ abstract class JSVFA extends SVFA with Analysis with AnalysisDepth with FieldSen
    *
    * (*) p.f = expression
    */
-  private def storeRule(targetStmt: jimple.AssignStmt, fieldRef: InstanceFieldRef, method: SootMethod, defs: SimpleLocalDefs, visitedMethods: ListBuffer[VisitedMethods]) = {
-    val local = targetStmt.getRightOp.asInstanceOf[Local]
-    if (fieldRef.getBase.isInstanceOf[Local]) {
-      val base = fieldRef.getBase.asInstanceOf[Local]
-      if (fieldRef.getField.getDeclaringClass.getName == "java.lang.String" && fieldRef.getField.getName == "value") {
-        defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
-          val source = createNode(method, sourceStmt, visitedMethods)
-          val allocationNodes = findAllocationSites(base)
-          allocationNodes.foreach(targetNode => {
-            updateGraph(source, targetNode)
+  private def storeRule(targetStmt: jimple.AssignStmt, q: Object, fieldRef: InstanceFieldRef, method: SootMethod, defs: SimpleLocalDefs, visitedMethods: ListBuffer[VisitedMethods]) = {
+    if (q.isInstanceOf[Local]){
+      val local = targetStmt.getRightOp.asInstanceOf[Local]
+      if (fieldRef.getBase.isInstanceOf[Local]) {
+        val base = fieldRef.getBase.asInstanceOf[Local]
+        if (fieldRef.getField.getDeclaringClass.getName == "java.lang.String" && fieldRef.getField.getName == "value") {
+          defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
+            val source = createNode(method, sourceStmt, visitedMethods)
+            val allocationNodes = findAllocationSites(base)
+            allocationNodes.foreach(targetNode => {
+              updateGraph(source, targetNode)
+            })
           })
-        })
+        }
+        else {
+
+          //        val allocationNodes = findAllocationSites(base)
+
+          //        val allocationNodes = findAllocationSites(base, true, fieldRef.getField)
+          //        if(!allocationNodes.isEmpty) {
+          //          allocationNodes.foreach(targetNode => {
+          defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
+            val source = createNode(method, sourceStmt, visitedMethods)
+            val target = createNode(method, targetStmt, visitedMethods)
+            updateGraph(source, target)
+          })
+          //          })
+          //        }
+
+        }
       }
-      else {
 
-        //        val allocationNodes = findAllocationSites(base)
-
-        //        val allocationNodes = findAllocationSites(base, true, fieldRef.getField)
-        //        if(!allocationNodes.isEmpty) {
-        //          allocationNodes.foreach(targetNode => {
-        defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
-          val source = createNode(method, sourceStmt, visitedMethods)
-          val target = createNode(method, targetStmt, visitedMethods)
-          updateGraph(source, target)
-        })
-        //          })
-        //        }
-
-      }
     }
+
+    statementUseField(targetStmt, method, defs, visitedMethods)
 
   }
 
