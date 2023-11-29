@@ -36,7 +36,44 @@ class BasicTest(var className: String = "", var mainMethod: String = "") extends
   }
 }
 
+class LineTagTest(leftchangedlines: Array[Int], rightchangedlines: Array[Int], className: String, mainMethod: String) extends FlowdroidSpec {
+  override def getClassName(): String = className
+  override def getMainMethod(): String = mainMethod
+
+  def this(){
+    this(Array.empty[Int], Array.empty[Int], "", "")
+  }
+
+  override def analyze(unit: soot.Unit): NodeType = {
+
+    if (!leftchangedlines.isEmpty && !rightchangedlines.isEmpty){
+      if (leftchangedlines.contains(unit.getJavaSourceStartLineNumber)){
+        return SourceNode
+      } else if (rightchangedlines.contains(unit.getJavaSourceStartLineNumber)){
+        return SinkNode
+      }
+    }
+
+    return SimpleNode
+  }
+
+  override def getIncludeList(): List[String] = List(
+  )
+
+}
+
 class BasicTestSuite extends FunSuite {
+
+  test("running use field example") {
+    val className = "samples.UseField"
+    val mainMethod = "main"
+    val svfa = new LineTagTest(Array (6), Array (8), className, mainMethod)
+    svfa.buildSparseValueFlowGraph()
+    println(svfa.reportConflictsSVG().size)
+    println(svfa.svgToDotModel())
+    assert(svfa.reportConflictsSVG().size == 2)
+  }
+
   test("in the class Basic2 we should detect 1 conflict of a simple XSS test case") {
     val svfa = new BasicTest("securibench.micro.basic.Basic0", "doGet")
     svfa.buildSparseValueFlowGraph()
@@ -211,7 +248,7 @@ class BasicTestSuite extends FunSuite {
   test("in the class Basic28 we should detect 2 conflicts in a complicated control flow test case") {
     val svfa = new BasicTest("securibench.micro.basic.Basic28", "doGet")
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 1)
+    assert(svfa.reportConflictsSVG().size == 2)
   }
 
   test("in the class Basic29 we should detect 2 conflicts in a recursive data structures test case") {

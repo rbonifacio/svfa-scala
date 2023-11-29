@@ -55,7 +55,7 @@ case class StatementNode(value: Statement, nodeType: NodeType) extends GraphNode
   override def show(): String = value.stmt
 
   override def toString: String =
-    "Node(" + value.method + "," + value.stmt + "," + "," + nodeType.toString + ")"
+    "Node(" + value.method + "," + value.stmt + "," + value.line+ "," + nodeType.toString + ")"
 
   override def equals(o: Any): Boolean = {
     o match {
