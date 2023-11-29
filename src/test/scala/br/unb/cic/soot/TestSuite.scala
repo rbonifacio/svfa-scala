@@ -128,11 +128,10 @@ class TestSuite extends FunSuite with BeforeAndAfter {
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
-  test("we should find exactly one conflict in the FieldSample analysis") {
+  test("we should find exactly two conflicts in the FieldSample analysis") {
     val svfa = new FieldTest()
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 2)   // NOTE: We are not traversing the body of
-                                               //       a method associated to a SinkNode. 
+    assert(svfa.reportConflictsSVG().size == 4)   // NOTE: We are traversing the body of a method associated to a SinkNode.
   }
 
   // This is the case with fields that the source method

@@ -3,9 +3,9 @@ scalaVersion := "2.12.8"
 name := "svfa-scala"
 organization := "br.unb.cic"
 
-version := "0.2.1-SNAPSHOT"
+version := "0.5.8"
 
-githubOwner := "rbonifacio"
+githubOwner := "galilasmb"
 githubRepository := "svfa-scala"
 githubTokenSource := TokenSource.GitConfig("github.token")
 

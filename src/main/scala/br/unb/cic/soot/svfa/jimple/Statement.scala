@@ -12,6 +12,7 @@ case class AssignStmt(b: Unit) extends Statement(b) {
 case class InvokeStmt(b: Unit) extends Statement(b) {
   val stmt = base.asInstanceOf[soot.jimple.InvokeStmt]
 }
+
 case class InvalidStmt(b: Unit) extends Statement(b)
 
 object Statement {
