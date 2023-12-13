@@ -36,31 +36,28 @@ This is a scala implementation of a framework that builds a sparse-value flow gr
 
 This project use some of the [FlowDroid](https://github.com/secure-software-engineering/FlowDroid) test cases. The FlowDroid test cases in `src/test/java/securibench` are under [LGPL-2.1](https://github.com/secure-software-engineering/FlowDroid/blob/develop/LICENSE) license.
 
+## Benchmark
 
-## Installation
+Tests failed: 68, passed: 9, ignored: 31 of 108 test
 
-- Install Scala Plugin in IntelliJ IDEA
-- Install Java 8 (Java JDK Path `/usr/lib/jvm/java-8-openjdk-amd64`)
-```{bash}
-  sudo apt install openjdk-8-jre-headless
-  sudo apt install openjdk-8-jdk
-```
-- Clone the project:
-```{bash}
-    git clone https://github.com/rbonifacio/svfa-scala
-```
-- Add dependency: 
-     - Download [servlet-api-2.5.jar](https://repo1.maven.org/maven2/javax/servlet/servlet-api/2.5/servlet-api-2.5.jar) and move to `.m2/repository/javax/servlet/servlet-api/2.5/`
-- Add GitHub token in `~/.gitconfig`
-- IDE
-  - Reload `sbt` 
-  - Set Project's settings to work with Java 8
-  - Build Project
-  - Run test
+Tests failed: 0, passed: 0, ignored: 0 of 0 test
+### DSL
+Tests failed: 0, passed: 3, ignored: 0 of 3 test
 
 
 ### Flowdroid
+Tests failed: 42, passed: 0, ignored: 9 of 51 test
+
+
 #### AliasingTest
-Tests failed: 0, passed: 5, ignored: 4 of 9 test
+Tests failed: 5, passed: 0, ignored: 4 of 9 test
 #### BasicTest
-Tests failed: 0, passed: 37, ignored: 5 of 42 test
+Tests failed: 37, passed: 0, ignored: 5 of 42 test
+
+
+### Graph
+Tests failed: 0, passed: 6, ignored: 1 of 51 test
+
+
+### Soot
+Tests failed: 26, passed: 0, ignored: 21 of 47 test
