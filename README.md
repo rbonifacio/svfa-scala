@@ -35,3 +35,29 @@ This is a scala implementation of a framework that builds a sparse-value flow gr
 ## Dependencies
 
 This project use some of the [FlowDroid](https://github.com/secure-software-engineering/FlowDroid) test cases. The FlowDroid test cases in `src/test/java/securibench` are under [LGPL-2.1](https://github.com/secure-software-engineering/FlowDroid/blob/develop/LICENSE) license.
+
+## Benchmark
+
+Tests failed: 68, passed: 9, ignored: 31 of 108 test
+
+Tests failed: 0, passed: 0, ignored: 0 of 0 test
+### DSL
+Tests failed: 0, passed: 3, ignored: 0 of 3 test
+
+
+### Flowdroid
+Tests failed: 42, passed: 0, ignored: 9 of 51 test
+
+
+#### AliasingTest
+Tests failed: 5, passed: 0, ignored: 4 of 9 test
+#### BasicTest
+Tests failed: 37, passed: 0, ignored: 5 of 42 test
+
+
+### Graph
+Tests failed: 0, passed: 6, ignored: 1 of 51 test
+
+
+### Soot
+Tests failed: 26, passed: 0, ignored: 21 of 47 test
