@@ -140,7 +140,7 @@ class TestSuite extends FunSuite with BeforeAndAfter {
   ignore("we should find exactly one conflict in the MethodFieldTest analysis") {
     val svfa = new MethodFieldTest()
     svfa.buildSparseValueFlowGraph()
-    System.out.println(svfa.svgToDotModel())
+    // System.out.println(svfa.svgToDotModel())
     assert(svfa.reportConflictsSVG().size >= 1)
   }
 
@@ -149,7 +149,7 @@ class TestSuite extends FunSuite with BeforeAndAfter {
   ignore("we should find exactly one conflict in the InvokeInstanceMethodOnFieldTest analysis") {
     val svfa = new InvokeInstanceMethodOnFieldTest()
     svfa.buildSparseValueFlowGraph()
-    System.out.println(svfa.svgToDotModel())
+    // System.out.println(svfa.svgToDotModel())
     assert(svfa.reportConflictsSVG().size >= 1)
   }
 
@@ -159,7 +159,7 @@ class TestSuite extends FunSuite with BeforeAndAfter {
   ignore("we should find exactly one conflict in the HashmapTest analysis") {
     val svfa = new HashmapTest()
     svfa.buildSparseValueFlowGraph()
-    System.out.println(svfa.svgToDotModel())
+    // System.out.println(svfa.svgToDotModel())
     assert(svfa.reportConflictsSVG().size >= 1)
   }
 
@@ -184,14 +184,14 @@ class TestSuite extends FunSuite with BeforeAndAfter {
   test("[Confluence03] We should find exactly one conflict") {
     val svfa = new ConfluenceTest03()
     svfa.buildSparseValueFlowGraph()
-    println(svfa.svgToDotModel())
+    // println(svfa.svgToDotModel())
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
   test("[Confluence04] We should find exactly one conflict") {
     val svfa = new ConfluenceTest04()
     svfa.buildSparseValueFlowGraph()
-    println(svfa.svgToDotModel())
+    // println(svfa.svgToDotModel())
     assert(svfa.reportConflictsSVG().size > 0)
   }
 }
