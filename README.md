@@ -40,15 +40,12 @@ This project use some of the [FlowDroid](https://github.com/secure-software-engi
 
 Tests failed: 68, passed: 9, ignored: 31 of 108 test
 
-Tests failed: 0, passed: 0, ignored: 0 of 0 test
 ### DSL
 Tests failed: 0, passed: 3, ignored: 0 of 3 test
 
 
 ### Flowdroid
 Tests failed: 42, passed: 0, ignored: 9 of 51 test
-
-
 #### AliasingTest
 Tests failed: 5, passed: 0, ignored: 4 of 9 test
 #### BasicTest
