@@ -47,18 +47,17 @@ This project use some of the [FlowDroid](https://github.com/secure-software-engi
 
 ## Benchmark
 
-Tests failed: 68, passed: 9, ignored: 31 of 108 test
+Tests failed: 0, passed: 77, ignored: 31 of 108 test
 
 ### DSL
 Tests failed: 0, passed: 3, ignored: 0 of 3 test
 
 
 ### Flowdroid
-Tests failed: 42, passed: 0, ignored: 9 of 51 test
 #### AliasingTest
-Tests failed: 5, passed: 0, ignored: 4 of 9 test
+Tests failed: 0, passed: 5, ignored: 4 of 9 test
 #### BasicTest
-Tests failed: 37, passed: 0, ignored: 5 of 42 test
+Tests failed: 0, passed: 37, ignored: 5 of 42 test
 
 
 ### Graph
@@ -66,4 +65,4 @@ Tests failed: 0, passed: 6, ignored: 1 of 51 test
 
 
 ### Soot
-Tests failed: 26, passed: 0, ignored: 21 of 47 test
+Tests failed: 0, passed: 26, ignored: 21 of 47 test
