@@ -36,6 +36,15 @@ This is a scala implementation of a framework that builds a sparse-value flow gr
 
 This project use some of the [FlowDroid](https://github.com/secure-software-engineering/FlowDroid) test cases. The FlowDroid test cases in `src/test/java/securibench` are under [LGPL-2.1](https://github.com/secure-software-engineering/FlowDroid/blob/develop/LICENSE) license.
 
+
+## Installation
+
+- Clone the project: https://github.com/rbonifacio/svfa-scala
+- Add dependency: 
+     - Download [servlet-api-2.5.jar](https://repo1.maven.org/maven2/javax/servlet/servlet-api/2.5/servlet-api-2.5.jar) and move to `.m2/repository/javax/servlet/servlet-api/2.5/`
+
+
+
 ## Benchmark
 
 Tests failed: 68, passed: 9, ignored: 31 of 108 test
