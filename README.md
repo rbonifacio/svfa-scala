@@ -35,3 +35,32 @@ This is a scala implementation of a framework that builds a sparse-value flow gr
 ## Dependencies
 
 This project use some of the [FlowDroid](https://github.com/secure-software-engineering/FlowDroid) test cases. The FlowDroid test cases in `src/test/java/securibench` are under [LGPL-2.1](https://github.com/secure-software-engineering/FlowDroid/blob/develop/LICENSE) license.
+
+
+## Installation
+
+- Install Scala Plugin in IntelliJ IDEA
+- Install Java 8 (Java JDK Path `/usr/lib/jvm/java-8-openjdk-amd64`)
+```{bash}
+  sudo apt install openjdk-8-jre-headless
+  sudo apt install openjdk-8-jdk
+```
+- Clone the project:
+```{bash}
+    git clone https://github.com/rbonifacio/svfa-scala
+```
+- Add dependency: 
+     - Download [servlet-api-2.5.jar](https://repo1.maven.org/maven2/javax/servlet/servlet-api/2.5/servlet-api-2.5.jar) and move to `.m2/repository/javax/servlet/servlet-api/2.5/`
+- Add GitHub token in `~/.gitconfig`
+- IDE
+  - Reload `sbt` 
+  - Set Project's settings to work with Java 8
+  - Build Project
+  - Run test
+
+
+### Flowdroid
+#### AliasingTest
+Tests failed: 0, passed: 5, ignored: 4 of 9 test
+#### BasicTest
+Tests failed: 0, passed: 37, ignored: 5 of 42 test
