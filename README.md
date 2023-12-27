@@ -60,7 +60,24 @@ This project use some of the [FlowDroid](https://github.com/secure-software-engi
 
 
 ### Flowdroid
+Tests failed: 45, passed: 73, ignored: 9 of 127 test
 #### AliasingTest
 Tests failed: 0, passed: 5, ignored: 4 of 9 test
+#### ArraysTest
+Tests failed: 9, passed: 1, ignored: 0 of 10 test
 #### BasicTest
 Tests failed: 0, passed: 37, ignored: 5 of 42 test
+#### FactoryTest
+Tests failed: 1, passed: 2, ignored: 0 of 3 test
+#### InterTest
+Tests failed: 7, passed: 7, ignored: 0 of 14 test
+#### PredTest
+Tests failed: 3, passed: 6, ignored: 0 of 9 test
+#### ReflectionTest
+Tests failed: 4, passed: 0, ignored: 0 of 4 test
+#### SanitizerTest
+Tests failed: 2, passed: 4, ignored: 0 of 6 test
+#### SessionTest
+Tests failed: 3, passed: 0, ignored: 0 of 3 test
+#### StrongUpdateTest
+Tests failed: 1, passed: 4, ignored: 0 of 5 test
