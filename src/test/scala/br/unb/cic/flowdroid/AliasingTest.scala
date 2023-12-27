@@ -3,7 +3,7 @@ package br.unb.cic.flowdroid
 import br.unb.cic.soot.graph.NodeType
 import br.unb.cic.soot.graph._
 import org.scalatest.FunSuite
-import soot.jimple.{AssignStmt, InvokeExpr, InvokeStmt, JimpleBody}
+import soot.jimple.{AssignStmt, InvokeExpr, InvokeStmt}
 
 class AliasingTest(var className: String = "", var mainMethod: String = "") extends FlowdroidSpec {
   override def getClassName(): String = className
@@ -27,11 +27,11 @@ class AliasingTest(var className: String = "", var mainMethod: String = "") exte
 
   def analyzeInvokeExpr(exp: InvokeExpr): NodeType = {
     if (sourceList.contains(exp.getMethod.getSignature)) {
-      return SourceNode;
+      return SourceNode
     } else if (sinkList.contains(exp.getMethod.getSignature)) {
-      return SinkNode;
+      return SinkNode
     }
-    SimpleNode;
+    SimpleNode
   }
 }
 
@@ -45,13 +45,13 @@ class AliasingTestSuite extends FunSuite {
   test("in the class Aliasing2 we should not detect any conflict in this false positive test case") {
     val svfa = new AliasingTest("securibench.micro.aliasing.Aliasing2", "doGet")
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 0)
+    assert(svfa.reportConflictsSVG().isEmpty)
  }
 
   test("in the class Aliasing3 we should not detect any conflict, but in Flowdroid this test case was not conclusive") {
     val svfa = new AliasingTest("securibench.micro.aliasing.Aliasing3", "doGet")
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 0)
+    assert(svfa.reportConflictsSVG().isEmpty)
   }
 
   test("in the class Aliasing4 we should detect 2 conflict") {
