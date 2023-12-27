@@ -14,25 +14,25 @@ class BasicTest(var className: String = "", var mainMethod: String = "") extends
   override def analyze(unit: soot.Unit): NodeType = {
     unit match {
       case invokeStmt: InvokeStmt =>
-        return analyzeInvokeStmt(invokeStmt.getInvokeExpr)
+        analyzeInvokeStmt(invokeStmt.getInvokeExpr)
       case assignStmt: AssignStmt =>
         assignStmt.getRightOp match {
           case invokeStmt: InvokeExpr =>
-            return analyzeInvokeStmt(invokeStmt)
+            analyzeInvokeStmt(invokeStmt)
           case _ =>
-            return SimpleNode
+            SimpleNode
         }
-      case _ => return SimpleNode
+      case _ => SimpleNode
     }
   }
 
   def analyzeInvokeStmt(exp: InvokeExpr): NodeType = {
     if (sourceList.contains(exp.getMethod.getSignature)) {
-      return SourceNode;
+      return SourceNode
     } else if (sinkList.contains(exp.getMethod.getSignature)) {
-      return SinkNode;
+      return SinkNode
     }
-    return SimpleNode;
+    SimpleNode
   }
 }
 
@@ -145,7 +145,7 @@ class BasicTestSuite extends FunSuite {
     val svfa = new BasicTest("securibench.micro.basic.Basic17", "doGet")
     svfa.buildSparseValueFlowGraph()
     // println(svfa.svgToDotModel())
-    assert(svfa.reportConflictsSVG().size == 1) // the seach should be context sensitive
+    assert(svfa.reportConflictsSVG().size == 1) // the search should be context sensitive
   }
 
   test("in the class Basic18 we should detect 1 conflict of a simple loop unrolling test case") {
