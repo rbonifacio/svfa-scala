@@ -60,24 +60,41 @@ This project use some of the [FlowDroid](https://github.com/secure-software-engi
 
 
 ### Flowdroid
-Tests failed: 45, passed: 73, ignored: 9 of 127 test
+~~TTests failed: 34, passed: 64, ignored: 6 of 104 test~~T
+
+Tests failed: 40, passed: 64, ignored: 0 of 104 test
+Tests failed: 33, passed: 71, ignored: 0 of 104 test (original)
+
+Tests failed: +17.5%, passed: +9.86, ignored: 0 of 104 test (original)
+
 #### AliasingTest
-Tests failed: 0, passed: 5, ignored: 4 of 9 test
+Tests failed: 0, passed: 5, ignored: 1 of 6 test
 #### ArraysTest
 Tests failed: 9, passed: 1, ignored: 0 of 10 test
 #### BasicTest
 Tests failed: 0, passed: 37, ignored: 5 of 42 test
-#### FactoryTest
+
+Fails:
+17
+36 (same)
+38
+42
+
+#### CollectionTest 
+Tests failed: 14, passed: 1, ignored: 0 of 15 test
+#### DataStructureTest &#9745;
+Tests failed: 1, passed: 5, ignored: 0 of 6 test
+#### FactoryTest &#9745;
 Tests failed: 1, passed: 2, ignored: 0 of 3 test
 #### InterTest
 Tests failed: 7, passed: 7, ignored: 0 of 14 test
-#### PredTest
-Tests failed: 3, passed: 6, ignored: 0 of 9 test
-#### ReflectionTest
-Tests failed: 4, passed: 0, ignored: 0 of 4 test
-#### SanitizerTest
-Tests failed: 2, passed: 4, ignored: 0 of 6 test
-#### SessionTest
+~~#### PredTest~~
+~~Tests failed: 3, passed: 6, ignored: 0 of 9 test~~
+~~#### ReflectionTest~~
+~~Tests failed: 4, passed: 0, ignored: 0 of 4 test~~
+~~#### SanitizerTest~~
+~~Tests failed: 2, passed: 4, ignored: 0 of 6 test~~
+#### SessionTest &#9745;
 Tests failed: 3, passed: 0, ignored: 0 of 3 test
-#### StrongUpdateTest
-Tests failed: 1, passed: 4, ignored: 0 of 5 test
+#### StrongUpdateTest &#9745;
+Tests failed: 1, passed: 4, ignored: 0 of 5 test 
