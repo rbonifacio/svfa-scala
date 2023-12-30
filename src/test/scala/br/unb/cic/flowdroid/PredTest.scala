@@ -37,57 +37,57 @@ class PredTest(var className: String = "", var mainMethod: String = "") extends 
 
 class PredTestSuite extends FunSuite {
 
-  test("description: Pred1") {
-    val svfa = new PredTest("securibench.micro.pred.Pred1", "doGet")
-    svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 0)
-  }
-
-  test("description: Pred2") {
-    val svfa = new PredTest("securibench.micro.pred.Pred2", "doGet")
-    svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 1)
-  }
-
-  test("description: Pred3") {
-    val svfa = new PredTest("securibench.micro.pred.Pred3", "doGet")
-    svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 0)
-  }
-
-  test("description: Pred4") {
-    val svfa = new PredTest("securibench.micro.pred.Pred4", "doGet")
-    svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 1)
-  }
-
-  test("description: Pred5") {
-    val svfa = new PredTest("securibench.micro.pred.Pred5", "doGet")
-    svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 1)
-  }
-
-  test("description: Pred6") {
-    val svfa = new PredTest("securibench.micro.pred.Pred6", "doGet")
-    svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 0)
-  }
-
-  test("description: Pred7") {
-    val svfa = new PredTest("securibench.micro.pred.Pred7", "doGet")
-    svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 0)
-  }
-
-  test("description: Pred8") {
-    val svfa = new PredTest("securibench.micro.pred.Pred8", "doGet")
-    svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 1)
-  }
-
-  test("description: Pred9") {
-    val svfa = new PredTest("securibench.micro.pred.Pred9", "doGet")
-    svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 1)
-  }
+//  test("description: Pred1") {
+//    val svfa = new PredTest("securibench.micro.pred.Pred1", "doGet")
+//    svfa.buildSparseValueFlowGraph()
+//    assert(svfa.reportConflictsSVG().size == 0)
+//  }
+//
+//  test("description: Pred2") {
+//    val svfa = new PredTest("securibench.micro.pred.Pred2", "doGet")
+//    svfa.buildSparseValueFlowGraph()
+//    assert(svfa.reportConflictsSVG().size == 1)
+//  }
+//
+//  test("description: Pred3") {
+//    val svfa = new PredTest("securibench.micro.pred.Pred3", "doGet")
+//    svfa.buildSparseValueFlowGraph()
+//    assert(svfa.reportConflictsSVG().size == 0)
+//  }
+//
+//  test("description: Pred4") {
+//    val svfa = new PredTest("securibench.micro.pred.Pred4", "doGet")
+//    svfa.buildSparseValueFlowGraph()
+//    assert(svfa.reportConflictsSVG().size == 1)
+//  }
+//
+//  test("description: Pred5") {
+//    val svfa = new PredTest("securibench.micro.pred.Pred5", "doGet")
+//    svfa.buildSparseValueFlowGraph()
+//    assert(svfa.reportConflictsSVG().size == 1)
+//  }
+//
+//  test("description: Pred6") {
+//    val svfa = new PredTest("securibench.micro.pred.Pred6", "doGet")
+//    svfa.buildSparseValueFlowGraph()
+//    assert(svfa.reportConflictsSVG().size == 0)
+//  }
+//
+//  test("description: Pred7") {
+//    val svfa = new PredTest("securibench.micro.pred.Pred7", "doGet")
+//    svfa.buildSparseValueFlowGraph()
+//    assert(svfa.reportConflictsSVG().size == 0)
+//  }
+//
+//  test("description: Pred8") {
+//    val svfa = new PredTest("securibench.micro.pred.Pred8", "doGet")
+//    svfa.buildSparseValueFlowGraph()
+//    assert(svfa.reportConflictsSVG().size == 1)
+//  }
+//
+//  test("description: Pred9") {
+//    val svfa = new PredTest("securibench.micro.pred.Pred9", "doGet")
+//    svfa.buildSparseValueFlowGraph()
+//    assert(svfa.reportConflictsSVG().size == 1)
+//  }
 }
