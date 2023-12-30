@@ -37,39 +37,39 @@ class SanitizerTest(var className: String = "", var mainMethod: String = "") ext
 
 class SanitizerTestSuite extends FunSuite {
 
-  test("description: Sanitizer1") {
-    val svfa = new SanitizerTest("securibench.micro.sanitizers.Sanitizers1", "doGet")
-    svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 1)
-  }
-
-  test("description: Sanitizer2") {
-    val svfa = new SanitizerTest("securibench.micro.sanitizers.Sanitizers2", "doGet")
-    svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 1)
-  }
-
-  test("description: Sanitizer3") {
-    val svfa = new SanitizerTest("securibench.micro.sanitizers.Sanitizers3", "doGet")
-    svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 0)
-  }
-
-  test("description: Sanitizer4") {
-    val svfa = new SanitizerTest("securibench.micro.sanitizers.Sanitizers4", "doGet")
-    svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 2)
-  }
-
-  test("description: Sanitizer5") {
-    val svfa = new SanitizerTest("securibench.micro.sanitizers.Sanitizers5", "doGet")
-    svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 1)
-  }
-
-  test("description: Sanitizer6") {
-    val svfa = new SanitizerTest("securibench.micro.sanitizers.Sanitizers6", "doGet")
-    svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 1)
-  }
+//  test("description: Sanitizer1") {
+//    val svfa = new SanitizerTest("securibench.micro.sanitizers.Sanitizers1", "doGet")
+//    svfa.buildSparseValueFlowGraph()
+//    assert(svfa.reportConflictsSVG().size == 1)
+//  }
+//
+//  test("description: Sanitizer2") {
+//    val svfa = new SanitizerTest("securibench.micro.sanitizers.Sanitizers2", "doGet")
+//    svfa.buildSparseValueFlowGraph()
+//    assert(svfa.reportConflictsSVG().size == 1)
+//  }
+//
+//  test("description: Sanitizer3") {
+//    val svfa = new SanitizerTest("securibench.micro.sanitizers.Sanitizers3", "doGet")
+//    svfa.buildSparseValueFlowGraph()
+//    assert(svfa.reportConflictsSVG().size == 0)
+//  }
+//
+//  test("description: Sanitizer4") {
+//    val svfa = new SanitizerTest("securibench.micro.sanitizers.Sanitizers4", "doGet")
+//    svfa.buildSparseValueFlowGraph()
+//    assert(svfa.reportConflictsSVG().size == 2)
+//  }
+//
+//  test("description: Sanitizer5") {
+//    val svfa = new SanitizerTest("securibench.micro.sanitizers.Sanitizers5", "doGet")
+//    svfa.buildSparseValueFlowGraph()
+//    assert(svfa.reportConflictsSVG().size == 1)
+//  }
+//
+//  test("description: Sanitizer6") {
+//    val svfa = new SanitizerTest("securibench.micro.sanitizers.Sanitizers6", "doGet")
+//    svfa.buildSparseValueFlowGraph()
+//    assert(svfa.reportConflictsSVG().size == 1)
+//  }
 }

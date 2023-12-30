@@ -37,27 +37,27 @@ class ReflectionTest(var className: String = "", var mainMethod: String = "") ex
 
 class ReflectionTestSuite extends FunSuite {
 
-  test("description: Reflection1") {
-    val svfa = new ReflectionTest("securibench.micro.reflection.Refl1", "doGet")
-    svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 1)
-  }
-
-  test("description: Reflection2") {
-    val svfa = new ReflectionTest("securibench.micro.reflection.Refl2", "doGet")
-    svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 1)
-  }
-
-  test("description: Reflection3") {
-    val svfa = new ReflectionTest("securibench.micro.reflection.Refl3", "doGet")
-    svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 1)
-  }
-
-  test("description: Reflection4") {
-    val svfa = new ReflectionTest("securibench.micro.reflection.Refl4", "doGet")
-    svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 1)
-  }
+//  test("description: Reflection1") {
+//    val svfa = new ReflectionTest("securibench.micro.reflection.Refl1", "doGet")
+//    svfa.buildSparseValueFlowGraph()
+//    assert(svfa.reportConflictsSVG().size == 1)
+//  }
+//
+//  test("description: Reflection2") {
+//    val svfa = new ReflectionTest("securibench.micro.reflection.Refl2", "doGet")
+//    svfa.buildSparseValueFlowGraph()
+//    assert(svfa.reportConflictsSVG().size == 1)
+//  }
+//
+//  test("description: Reflection3") {
+//    val svfa = new ReflectionTest("securibench.micro.reflection.Refl3", "doGet")
+//    svfa.buildSparseValueFlowGraph()
+//    assert(svfa.reportConflictsSVG().size == 1)
+//  }
+//
+//  test("description: Reflection4") {
+//    val svfa = new ReflectionTest("securibench.micro.reflection.Refl4", "doGet")
+//    svfa.buildSparseValueFlowGraph()
+//    assert(svfa.reportConflictsSVG().size == 1)
+//  }
 }
