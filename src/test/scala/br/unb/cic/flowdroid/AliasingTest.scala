@@ -60,7 +60,7 @@ class AliasingTestSuite extends FunSuite {
     assert(svfa.reportConflictsSVG().size == 2)
   }
 
-  ignore("in the class Aliasing5 we should detect 1 conflict") {
+  test("in the class Aliasing5 we should detect 1 conflict") {
     val svfa = new AliasingTest("securibench.micro.aliasing.Aliasing5", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 1)
@@ -72,21 +72,21 @@ class AliasingTestSuite extends FunSuite {
     assert(svfa.reportConflictsSVG().size == 7)
   }
 
-  ignore("in the class Aliasing7 we should detect 7 conflicts") {
-    val svfa = new AliasingTest("securibench.micro.aliasing.Aliasing7", "doGet")
-    svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 7)
-  }
-
-  ignore("in the class Aliasing8 we should detect 8 conflicts") {
-    val svfa = new AliasingTest("securibench.micro.aliasing.Aliasing8", "doGet")
-    svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 8)
-  }
-
-  ignore("in the class Aliasing9 we should detect 1 conflicts") {
-    val svfa = new AliasingTest("securibench.micro.aliasing.Aliasing9", "doGet")
-    svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 2)
-  }
+//  ignore("in the class Aliasing7 we should detect 7 conflicts") {
+//    val svfa = new AliasingTest("securibench.micro.aliasing.Aliasing7", "doGet")
+//    svfa.buildSparseValueFlowGraph()
+//    assert(svfa.reportConflictsSVG().size == 7)
+//  }
+//
+//  ignore("in the class Aliasing8 we should detect 8 conflicts") {
+//    val svfa = new AliasingTest("securibench.micro.aliasing.Aliasing8", "doGet")
+//    svfa.buildSparseValueFlowGraph()
+//    assert(svfa.reportConflictsSVG().size == 8)
+//  }
+//
+//  ignore("in the class Aliasing9 we should detect 1 conflicts") {
+//    val svfa = new AliasingTest("securibench.micro.aliasing.Aliasing9", "doGet")
+//    svfa.buildSparseValueFlowGraph()
+//    assert(svfa.reportConflictsSVG().size == 2)
+//  }
 }
