@@ -116,10 +116,14 @@ case class CallSiteLabel(csRegion: ContextSensitiveRegion, labelType: CallSiteLa
   def matchCallStatement(otherLabel: Any): Boolean = {
     otherLabel match {
       case defaultCSLabel: CallSiteLabel =>
-        val csLabel = defaultCSLabel.value
+        val csLabelStmt = defaultCSLabel.value.statement
+        val thisStmt = value.statement
         // Match close with open OR open with close
         if (labelType != defaultCSLabel.labelType) {
-          return value.statement == csLabel.statement
+          thisStmt.className == csLabelStmt.className &&
+          thisStmt.method == csLabelStmt.method &&
+          thisStmt.stmt == csLabelStmt.stmt &&
+          thisStmt.line == csLabelStmt.line
         } else {
           false
         }
