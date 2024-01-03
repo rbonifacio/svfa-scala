@@ -220,7 +220,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     traversedMethods.add(method)
 
     val body  = method.retrieveActiveBody()
-
+//    println(body)
     val graph = new ExceptionalUnitGraph(body)
     val defs  = new SimpleLocalDefs(graph)
 
@@ -309,10 +309,10 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     val calleeDefs = new SimpleLocalDefs(g)
 
     body.getUnits.forEach(s => {
-      if(isThisInitStmt(exp, s)) {
-        defsToThisObject(callStmt, caller, defs, s, exp, callee)
-      }
-      else if(isParameterInitStmt(exp, pmtCount, s)) {
+//      if(isThisInitStmt(exp, s)) {
+//        defsToThisObject(callStmt, caller, defs, s, exp, callee)
+//      }
+      if(isParameterInitStmt(exp, pmtCount, s)) {
         defsToFormalArgs(callStmt, caller, defs, s, exp, callee, pmtCount)
         pmtCount = pmtCount + 1
       }
@@ -408,7 +408,12 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       allocationNodes.foreach(source => {
         val target = createNode(method, stmt)
         updateGraph(source, target)
-        svg.getAdjacentNodes(source).get.foreach(s => updateGraph(s, target))
+
+        svg.getAdjacentNodes(source).get.foreach(s =>
+//          if (s.nodeType != SourceNode) {
+            updateGraph(s, target)
+//          }
+        )
       })
 
       // create an edge from the base defs to target
@@ -496,6 +501,46 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       val csCloseLabel = createCSCloseLabel(caller, callStmt, callee)
       svg.addEdge(source, target, csCloseLabel)
 
+      /**
+       * TO DO
+       */
+      if (false) {
+//      if (sourceStmt.isInstanceOf[JAssignStmt]) {
+          val sourceStmtLeft = sourceStmt.asInstanceOf[JAssignStmt].getRightOp
+          if (sourceStmtLeft.isInstanceOf[InstanceFieldRef]) {
+            //      if (false) {
+
+            val ref = sourceStmt.asInstanceOf[JAssignStmt].getRightOp.asInstanceOf[InstanceFieldRef]
+            val base = ref.getBase
+            var allocationNodes = findAllocationSites(base.asInstanceOf[Local], false, ref.getField)
+
+            if (allocationNodes.isEmpty) {
+              allocationNodes = findAllocationSites(base.asInstanceOf[Local], true, ref.getField)
+            }
+
+            if (allocationNodes.isEmpty) {
+              allocationNodes = findFieldStores(base.asInstanceOf[Local], ref.getField)
+            }
+
+            allocationNodes.foreach(source => {
+              println(source.show())
+              if (svg.getAdjacentNodes(source).size > 0) {
+                svg.getAdjacentNodes(source).get.foreach(s =>
+                  if (s.nodeType == SourceNode) {
+                    //              println(s)
+                    val source = createNode(s.method(), s.unit())
+                    val target = createNode(callee, sourceStmt)
+
+                    val csOpenLabel = createCSOpenLabel(s.method(), callStmt, callee)
+                    //                println(callStmt)
+                    svg.addEdge(source, target, csOpenLabel)
+                  }
+                )
+              }
+
+            })
+          }
+      }
 
       if(local.getType.isInstanceOf[ArrayType]) {
         val stores = arrayStores.getOrElseUpdate(local, List())
