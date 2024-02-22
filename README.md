@@ -62,10 +62,10 @@ This project use some of the [FlowDroid](https://github.com/secure-software-engi
 ### Flowdroid
 ~~TTests failed: 34, passed: 64, ignored: 6 of 104 test~~T
 
-Tests failed: 40, passed: 64, ignored: 0 of 104 test
-Tests failed: 33, passed: 71, ignored: 0 of 104 test (original)
+###### Tests failed: 40, passed: 64, ignored: 0 of 104 test
+###### Tests failed: 33, passed: 71, ignored: 0 of 104 test (original)
 
-Tests failed: +17.5%, passed: +9.86, ignored: 0 of 104 test (original)
+###### Tests failed: +17.5%, passed: +9.86, ignored: 0 of 104 test (original)
 
 #### AliasingTest
 Tests failed: 0, passed: 5, ignored: 1 of 6 test
