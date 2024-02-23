@@ -3,9 +3,8 @@ package br.unb.cic.soot
 import br.unb.cic.soot.graph.{NodeType, SimpleNode, SinkNode, SourceNode}
 import soot.jimple.{AssignStmt, InvokeExpr, InvokeStmt}
 
-class CallSingleMethodTest extends JSVFATest {
-
-  override def getClassName(): String = "samples.CallSingleMethod"
+class CallMethodOnceTest extends JSVFATest {
+  override def getClassName(): String = "samples.CallMethodOnce"
   override def getMainMethod(): String = "main"
 
   override def analyze(unit: soot.Unit): NodeType = {
@@ -30,5 +29,3 @@ class CallSingleMethodTest extends JSVFATest {
       case _        => SimpleNode
     }
 }
-
-

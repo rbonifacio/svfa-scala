@@ -7,7 +7,7 @@ import org.scalatest.{BeforeAndAfter, FunSuite}
 class TestCSSuite extends FunSuite with BeforeAndAfter {
 
   test("[Basic ?] Call Single Method") {
-    val svfa = new CallSingleMethodTest()
+    val svfa = new CallMethodOnceTest()
     svfa.buildSparseValueFlowGraph()
     //    println(svfa.svgToDotModel())
     assert(svfa.reportConflictsSVG().size == 1)
