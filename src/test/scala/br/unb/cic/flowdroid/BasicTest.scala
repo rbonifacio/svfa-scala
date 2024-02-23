@@ -37,7 +37,7 @@ class BasicTest(var className: String = "", var mainMethod: String = "") extends
 }
 
 class BasicTestSuite extends FunSuite {
-  test("Basic0") {
+  test("in the class Basic2 we should detect 1 conflict of a simple XSS test case") {
     val svfa = new BasicTest("securibench.micro.basic.Basic0", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 1)
