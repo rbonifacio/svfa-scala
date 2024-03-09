@@ -21,6 +21,13 @@ class TestCSSuite extends FunSuite with BeforeAndAfter {
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
+  test("[Basic ?] Call Class Method One Lite") {
+    val svfa = new CallClassMethodOnceLiteTest()
+    svfa.buildSparseValueFlowGraph()
+    println(svfa.svgToDotModel())
+    assert(svfa.reportConflictsSVG().size == 1)
+  }
+
   test("[Basic ?] Call Class Method Many") {
     val svfa = new CallClassMethodManyTest()
     svfa.buildSparseValueFlowGraph()
