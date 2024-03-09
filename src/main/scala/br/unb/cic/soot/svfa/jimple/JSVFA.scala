@@ -592,7 +592,23 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     defs.getDefsOfAt(local, stmt.base).forEach(sourceStmt => {
       val source = createNode(caller, sourceStmt)
       val csOpenLabel = createCSOpenLabel(caller, stmt.base, callee) //
-      svg.addEdge(source, target, csOpenLabel) // creates an 'edge' FROM stmt where the variable is defined TO stmt where the variable is loaded
+      //svg.addEdge(source, target, csOpenLabel) // creates an 'edge' FROM stmt where the variable is defined TO stmt where the variable is loaded
+
+      if (exp.isInstanceOf[VirtualInvokeExpr]) {
+        val invokeExpr = exp.asInstanceOf[VirtualInvokeExpr]
+        if (invokeExpr.getBase.isInstanceOf[Local]) {
+
+          val base = invokeExpr.getBase.asInstanceOf[Local]
+
+          defs.getDefsOfAt(base, stmt.base).forEach(ss => {
+            val obj = createNode(caller, ss)
+            svg.addEdge(source, obj) // create an 'edge' FROM "stmt where the variable is define" TO "stmt where the object that calls the current stmt is instanced"
+            svg.addEdge(obj, target) // create an 'edge' FROM "stmt where the object that calls the current stmt is instanced" TO "stmt where the variable is loaded"
+          })
+        }
+      } else {
+        svg.addEdge(source, target, csOpenLabel) // creates an edge' FROM "stmt where the variable is defined" TO "stmt where the variable is loaded"
+      }
     })
   }
 
