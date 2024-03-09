@@ -402,7 +402,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         val target = createNode(method, stmt)
         updateGraph(source, target) // update 'edge' FROM allocationNode? stmt TO load rule stmt (current stmt)
         svg.getAdjacentNodes(source).get.foreach(s => {
-            updateGraph(s, target) // update 'edge' FROM adjacent node of allocationNode? stmt TO load rule stmt (current stmt)
+//            updateGraph(s, target) // update 'edge' FROM adjacent node of allocationNode? stmt TO load rule stmt (current stmt)
         }) // add comment
       })
 
