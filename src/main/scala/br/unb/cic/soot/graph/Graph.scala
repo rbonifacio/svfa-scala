@@ -493,8 +493,10 @@ class Graph() {
       var l = e.label
       val label: String = e.label match {
         case c: CallSiteLabel =>  {
-          if (c.labelType == CallSiteOpenLabel) { "[label=\"cs(\"]" }
-          else { "[label=\"cs)\"]" }
+//          if (c.labelType == CallSiteOpenLabel) { "[label=\"cs(\"]" }
+//          else { "[label=\"cs)\"]" }
+          if (c.labelType == CallSiteOpenLabel) { "[label=\"cs(:" + c.value.statement.stmt + "\"]" }
+          else { "[label=\"cs):" + c.value.statement.stmt + "\"]" }
         }
         case c: TrueLabelType =>{ "[penwidth=3][label=\"T\"]" }
         case c: FalseLabelType => { "[penwidth=3][label=\"F\"]" }
