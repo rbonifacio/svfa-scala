@@ -202,6 +202,14 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
   class Transformer extends SceneTransformer {
     override def internalTransform(phaseName: String, options: util.Map[String, String]): Unit = {
       pointsToAnalysis = Scene.v().getPointsToAnalysis
+
+      // reset global variables
+      methods = 0
+      traversedMethods.clear()
+      allocationSites.clear()
+      arrayStores.clear()
+      svg.graph.clear()
+
       initAllocationSites()
       Scene.v().getEntryPoints.forEach(method => {
         traverse(method)
