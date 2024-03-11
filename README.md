@@ -98,3 +98,57 @@ Tests failed: 7, passed: 7, ignored: 0 of 14 test
 Tests failed: 3, passed: 0, ignored: 0 of 3 test
 #### StrongUpdateTest &#9745;
 Tests failed: 1, passed: 4, ignored: 0 of 5 test 
+
+## Failing tests
+
+- AliasingTest 
+  - [5]
+- ArraysTest 
+  - [1]
+  - [2]
+  - [3] 
+  - [4]
+  - [6]
+  - [7] 
+  - [8]
+  - [9]
+  - [10]
+- BasicTest 
+  - [6]
+  - [17]
+  - [36]
+  - [38]
+  - [42]
+- CollectionTest 
+  - [2]
+  - [3]
+  - [4]
+  - [5]
+  - [6]
+  - [7]
+  - [8]
+  - [9] 
+  - [10]
+  - [11]
+  - [11b]
+  - [12]
+  - [13]
+  - [14]
+- DataStructureTest 
+  - [2]
+- FactoryTest 
+  - [3]
+- InterTest 
+  - [4]
+  - [5]
+  - [6]
+  - [7]
+  - [11] unstable
+  - [12]
+- SessionTest 
+  - [1]
+  - [2]
+  - [3]
+- StrongUpdateTest 
+  - [4]
+
