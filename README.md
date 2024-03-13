@@ -60,95 +60,91 @@ This project use some of the [FlowDroid](https://github.com/secure-software-engi
 
 
 ### Flowdroid
-~~TTests failed: 34, passed: 64, ignored: 6 of 104 test~~T
+TTests failed: 34, passed: 64, ignored: 6 of 104 test
+
+<!-- ~~Tests failed: 40, passed: 64, ignored: 0 of 104 test~~
 
 ###### Tests failed: 40, passed: 64, ignored: 0 of 104 test
 ###### Tests failed: 33, passed: 71, ignored: 0 of 104 test (original)
 
 ###### Tests failed: +17.5%, passed: +9.86, ignored: 0 of 104 test (original)
+Tests failed: 33, passed: 71, ignored: 0 of 104 test (original) -->
+
+<!-- ##### [SUMMARY] Tests failed: +17.5%, passed: +9.86, ignored: 0 of 104 test (original) -->
 
 #### AliasingTest
 Tests failed: 0, passed: 5, ignored: 1 of 6 test
+- [5]
+
 #### ArraysTest
 Tests failed: 9, passed: 1, ignored: 0 of 10 test
+- [1]
+- [2]
+- [3]
+- [4]
+- [6]
+- [7]
+- [8]
+- [9]
+- [10]
+
 #### BasicTest
 Tests failed: 0, passed: 37, ignored: 5 of 42 test
-
-Fails:
-17
-36 (same)
-38
-42
+- [6]
+- [17]
+- [36]
+- [38]
+- [42]
 
 #### CollectionTest 
 Tests failed: 14, passed: 1, ignored: 0 of 15 test
-#### DataStructureTest &#9745;
+- [2]
+- [3]
+- [4]
+- [5]
+- [6]
+- [7]
+- [8]
+- [9]
+- [10]
+- [11]
+- [11b]
+- [12]
+- [13]
+- [14]
+
+#### DataStructureTest
 Tests failed: 1, passed: 5, ignored: 0 of 6 test
-#### FactoryTest &#9745;
+- [2]
+
+#### FactoryTest
 Tests failed: 1, passed: 2, ignored: 0 of 3 test
+- [3]
+
 #### InterTest
 Tests failed: 7, passed: 7, ignored: 0 of 14 test
+- [4]
+- [5]
+- [6]
+- [7]
+- [11] unstable
+- [12]
+
 ~~#### PredTest~~
 ~~Tests failed: 3, passed: 6, ignored: 0 of 9 test~~
 ~~#### ReflectionTest~~
 ~~Tests failed: 4, passed: 0, ignored: 0 of 4 test~~
 ~~#### SanitizerTest~~
 ~~Tests failed: 2, passed: 4, ignored: 0 of 6 test~~
-#### SessionTest &#9745;
+
+#### SessionTest
 Tests failed: 3, passed: 0, ignored: 0 of 3 test
-#### StrongUpdateTest &#9745;
-Tests failed: 1, passed: 4, ignored: 0 of 5 test 
+- [1]
+- [2]
+- [3]
 
-## Failing tests
+#### StrongUpdateTest
+Tests failed: 1, passed: 4, ignored: 0 of 5 test
+- [4]
 
-- AliasingTest 
-  - [5]
-- ArraysTest 
-  - [1]
-  - [2]
-  - [3] 
-  - [4]
-  - [6]
-  - [7] 
-  - [8]
-  - [9]
-  - [10]
-- BasicTest 
-  - [6]
-  - [17]
-  - [36]
-  - [38]
-  - [42]
-- CollectionTest 
-  - [2]
-  - [3]
-  - [4]
-  - [5]
-  - [6]
-  - [7]
-  - [8]
-  - [9] 
-  - [10]
-  - [11]
-  - [11b]
-  - [12]
-  - [13]
-  - [14]
-- DataStructureTest 
-  - [2]
-- FactoryTest 
-  - [3]
-- InterTest 
-  - [4]
-  - [5]
-  - [6]
-  - [7]
-  - [11] unstable
-  - [12]
-- SessionTest 
-  - [1]
-  - [2]
-  - [3]
-- StrongUpdateTest 
-  - [4]
 
