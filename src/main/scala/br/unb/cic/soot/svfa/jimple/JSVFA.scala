@@ -219,7 +219,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
 
     val body  = method.retrieveActiveBody()
 
-//    println(body)
+    println(body)
 
     val graph = new ExceptionalUnitGraph(body)
     val defs  = new SimpleLocalDefs(graph)
@@ -248,7 +248,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       case (p: Local, q: Local) => copyRule(assignStmt.stmt, q, method, defs)
       case (p: Local, _) => copyRuleInvolvingExpressions(assignStmt.stmt, method, defs)
       case (p: InstanceFieldRef, _: Local) => storeRule(assignStmt.stmt, p, method, defs) // update 'edge' FROM stmt where right value was instanced TO current stmt
-      case (p: JArrayRef, _) => storeArrayRule(assignStmt)
+      case (p: JArrayRef, _) => storeArrayRule(assignStmt, method, defs)
       case _ =>
     }
   }
@@ -487,10 +487,19 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     }
   }
 
-  def storeArrayRule(assignStmt: AssignStmt) {
+  def storeArrayRule(assignStmt: AssignStmt, method: SootMethod, defs: SimpleLocalDefs) {
     val l = assignStmt.stmt.getLeftOp.asInstanceOf[JArrayRef].getBase.asInstanceOf[Local]
     val stores = assignStmt.stmt :: arrayStores.getOrElseUpdate(l, List())
     arrayStores.put(l, stores)
+
+    if (assignStmt.stmt.getRightOp.isInstanceOf[Local]) {
+      val r = assignStmt.stmt.getRightOp.asInstanceOf[Local]
+      defs.getDefsOfAt(r, assignStmt.stmt). forEach(sourceStmt => {
+        val source = createNode(method, sourceStmt)
+        val target = createNode(method, assignStmt.stmt)
+        svg.addEdge(source, target) // add comment
+      })
+    }
   }
 
   /**
