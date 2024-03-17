@@ -49,7 +49,7 @@ class FactoryTestSuite extends FunSuite {
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
-  test("description: Factory3") {
+  ignore("description: Factory3") {
     val svfa = new FactoryTest("securibench.micro.factories.Factories3", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 1)

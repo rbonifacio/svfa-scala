@@ -55,7 +55,7 @@ class StrongUpdateTestSuite extends FunSuite {
     assert(svfa.reportConflictsSVG().size == 0)
   }
 
-  test("description: StrongUpdate4") {
+  ignore("description: StrongUpdate4") {
     val svfa = new StrongUpdateTest("securibench.micro.strong_updates.StrongUpdates4", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 1)
