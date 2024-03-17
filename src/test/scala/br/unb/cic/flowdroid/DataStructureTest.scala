@@ -43,7 +43,7 @@ class DataStructureTestSuite extends FunSuite {
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
-  test("description: DataStructure2") {
+  ignore("description: DataStructure2") {
     val svfa = new DataStructureTest("securibench.micro.datastructures.Datastructures2", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 1)

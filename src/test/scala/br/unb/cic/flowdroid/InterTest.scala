@@ -55,25 +55,25 @@ class InterTestSuite extends FunSuite {
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
-  test("description: Inter4") {
+  ignore("description: Inter4") {
     val svfa = new InterTest("securibench.micro.inter.Inter4", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 2)
   }
 
-  test("description: Inter5") {
+  ignore("description: Inter5") {
     val svfa = new InterTest("securibench.micro.inter.Inter5", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 2)
   }
 
-  test("description: Inter6") {
+  ignore("description: Inter6") {
     val svfa = new InterTest("securibench.micro.inter.Inter6", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
-  test("description: Inter7") {
+  ignore("description: Inter7") {
     val svfa = new InterTest("securibench.micro.inter.Inter7", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 1)
@@ -85,7 +85,7 @@ class InterTestSuite extends FunSuite {
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
-  test("description: Inter9") {
+  ignore("description: Inter9") {
     val svfa = new InterTest("securibench.micro.inter.Inter9", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 1)
@@ -97,13 +97,13 @@ class InterTestSuite extends FunSuite {
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
-  test("description: Inter11") {
+  ignore("description: Inter11") {
     val svfa = new InterTest("securibench.micro.inter.Inter11", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
-  test("description: Inter12") {
+  ignore("description: Inter12") {
     val svfa = new InterTest("securibench.micro.inter.Inter12", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 1)

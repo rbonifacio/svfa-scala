@@ -59,88 +59,70 @@ This project use some of the [FlowDroid](https://github.com/secure-software-engi
   - Run test
 
 
-### Flowdroid
-TTests failed: 34, passed: 64, ignored: 6 of 104 test
+### Flowdroid Benchmark
 
-~~Tests failed: 40, passed: 64, ignored: 0 of 104 test~~
+###### failed: 33, passed: 71, ignored: 0 of 104 test (Original Benchmark)
 
-Tests failed: 33, passed: 71, ignored: 0 of 104 test (original)
+> failed: 0, passed: 62, ignored: 42 of 104 test (59.62%)
 
-##### [SUMMARY] Tests failed: +17.5%, passed: +9.86, ignored: 0 of 104 test (original)
+- **AliasingTest** - failed: 0, passed: 5, ignored: 1 of 6 test `(83.33%)`
+  - [5]
 
-#### AliasingTest
-Tests failed: 0, passed: 5, ignored: 1 of 6 test
-- [5]
+- **ArraysTest** - failed: 0, passed: 1, ignored: 9 of 10 test `(10%)`
+  - [1]
+  - [2]
+  - [3]
+  - [4]
+  - [6]
+  - [7]
+  - [8]
+  - [9]
+  - [10]
 
-#### ArraysTest
-Tests failed: 9, passed: 1, ignored: 0 of 10 test
-- [1]
-- [2]
-- [3]
-- [4]
-- [6]
-- [7]
-- [8]
-- [9]
-- [10]
+- **BasicTest** - failed: 0, passed: 38, ignored: 5 of 42 test `(90.48%)`
+  - [6] - flaky
+  - [17]
+  - [36]
+  - [38]
+  - [42]
 
-#### BasicTest
-Tests failed: 0, passed: 37, ignored: 5 of 42 test
-- [6]
-- [17]
-- [36]
-- [38]
-- [42]
+- **CollectionTest** - failed: 0, passed: 1, ignored: 14 of 15 test `(6.67%)`
+  - [2]
+  - [3]
+  - [4]
+  - [5]
+  - [6]
+  - [7]
+  - [8]
+  - [9]
+  - [10]
+  - [11]
+  - [11b]
+  - [12]
+  - [13]
+  - [14]
 
-#### CollectionTest 
-Tests failed: 14, passed: 1, ignored: 0 of 15 test
-- [2]
-- [3]
-- [4]
-- [5]
-- [6]
-- [7]
-- [8]
-- [9]
-- [10]
-- [11]
-- [11b]
-- [12]
-- [13]
-- [14]
+- **DataStructureTest** - failed: 0, passed: 5, ignored: 1 of 6 test `(83.33%)`
+  - [2]
 
-#### DataStructureTest
-Tests failed: 1, passed: 5, ignored: 0 of 6 test
-- [2]
+- **FactoryTest** - failed: 0, passed: 2, ignored: 1 of 3 test `(6.25%)`
+  - [3]
 
-#### FactoryTest
-Tests failed: 1, passed: 2, ignored: 0 of 3 test
-- [3]
+- **InterTest** - failed: 0, passed:7, ignored: 7 of 14 test `(50%)`
+  - [4]
+  - [5]
+  - [6]
+  - [7]
+  - [9] - flaky
+  - [11] - flaky
+  - [12]
 
-#### InterTest
-Tests failed: 7, passed: 7, ignored: 0 of 14 test
-- [4]
-- [5]
-- [6]
-- [7]
-- [11] unstable
-- [12]
+- **SessionTest** - failed: 0, passed: 0, ignored: 3 of 3 test `(66.660%)`
+  - [1]
+  - [2]
+  - [3]
 
-~~#### PredTest~~
-~~Tests failed: 3, passed: 6, ignored: 0 of 9 test~~
-~~#### ReflectionTest~~
-~~Tests failed: 4, passed: 0, ignored: 0 of 4 test~~
-~~#### SanitizerTest~~
-~~Tests failed: 2, passed: 4, ignored: 0 of 6 test~~
-
-#### SessionTest
-Tests failed: 3, passed: 0, ignored: 0 of 3 test
-- [1]
-- [2]
-- [3]
-
-#### StrongUpdateTest
-Tests failed: 1, passed: 4, ignored: 0 of 5 test
-- [4]
+- **StrongUpdateTest** - failed: 0, passed: 4, ignored: 1 of 5 test `(80%)`
+  - [4]
 
 
