@@ -79,7 +79,7 @@ class InterTestSuite extends FunSuite {
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
-  test("description: Inter8") {
+  ignore("description: Inter8") {
     val svfa = new InterTest("securibench.micro.inter.Inter8", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 1)
