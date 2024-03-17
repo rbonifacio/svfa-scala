@@ -470,10 +470,10 @@ class Graph() {
         sinkNodes.foreach(sink => {
           val paths = findPath(source, sink)
           // show paths
-          paths.foreach(path => {
-            println("[path]")
-            path.foreach(println(_))
-          })
+//          paths.foreach(path => {
+//            println("[path]")
+//            path.foreach(println(_))
+//          })
           conflicts = conflicts ++ paths
         })
       })
