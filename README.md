@@ -103,26 +103,26 @@ This project use some of the [FlowDroid](https://github.com/secure-software-engi
   - [14]
 
 - **DataStructureTest** - failed: 0, passed: 5, ignored: 1 of 6 test `(83.33%)`
-- [2]
+  - [2]
 
 - **FactoryTest** - failed: 0, passed: 2, ignored: 1 of 3 test `(6.25%)`
-- [3]
+  - [3]
 
 - **InterTest** - failed: 0, passed:7, ignored: 7 of 14 test `(50%)`
-- [4]
-- [5]
-- [6]
-- [7]
-- [9] - flaky
-- [11] - flaky
-- [12]
+  - [4]
+  - [5]
+  - [6]
+  - [7]
+  - [9] - flaky
+  - [11] - flaky
+  - [12]
 
 - **SessionTest** - failed: 0, passed: 0, ignored: 3 of 3 test `(100%)`
-- [1]
-- [2]
-- [3]
+  - [1]
+  - [2]
+  - [3]
 
 - **StrongUpdateTest** - failed: 0, passed: 4, ignored: 1 of 5 test `(80%)`
-- [4]
+  - [4]
 
 
