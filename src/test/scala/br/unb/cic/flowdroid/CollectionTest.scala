@@ -49,19 +49,19 @@ class CollectionSuite extends FunSuite {
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
-  ignore("description: Collection3") {
+  test("description: Collection3") {
     val svfa = new CollectionTest("securibench.micro.collections.Collections3", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 2)
   }
 
-  ignore("description: Collection4") {
+  test("description: Collection4") {
     val svfa = new CollectionTest("securibench.micro.collections.Collections4", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
-  ignore("description: Collection5") {
+  test("description: Collection5") {
     val svfa = new CollectionTest("securibench.micro.collections.Collections5", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 1)
@@ -79,25 +79,25 @@ class CollectionSuite extends FunSuite {
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
-  ignore("description: Collection8") {
+  test("description: Collection8") {
     val svfa = new CollectionTest("securibench.micro.collections.Collections8", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
-  ignore("description: Collection9") {
+  test("description: Collection9") {
     val svfa = new CollectionTest("securibench.micro.collections.Collections9", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
-  ignore("description: Collection10") {
+  test("description: Collection10") {
     val svfa = new CollectionTest("securibench.micro.collections.Collections10", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
-  ignore("description: Collection11") {
+  test("description: Collection11") {
     val svfa = new CollectionTest("securibench.micro.collections.Collections11", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 1)
@@ -109,7 +109,7 @@ class CollectionSuite extends FunSuite {
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
-  ignore("description: Collection12") {
+  test("description: Collection12") {
     val svfa = new CollectionTest("securibench.micro.collections.Collections12", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 1)
@@ -121,7 +121,7 @@ class CollectionSuite extends FunSuite {
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
-  ignore("description: Collection14") {
+  test("description: Collection14") {
     val svfa = new CollectionTest("securibench.micro.collections.Collections14", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 1)
