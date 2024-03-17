@@ -63,7 +63,7 @@ This project use some of the [FlowDroid](https://github.com/secure-software-engi
 
 ###### failed: 33, passed: 71, ignored: 0 of 104 test (Original Benchmark)
 
-> failed: 0, passed: 62, ignored: 42 of 104 test (59.62%)
+> failed: 0, passed: 70, ignored: 34 of 104 test (67.3%)
 
 - **AliasingTest** - failed: 0, passed: 5, ignored: 1 of 6 test `(83.33%)`
   - [5]
@@ -81,29 +81,20 @@ This project use some of the [FlowDroid](https://github.com/secure-software-engi
 
 - **BasicTest** - failed: 0, passed: 38, ignored: 5 of 42 test `(90.48%)`
   - [6] - flaky
-  - [17]
+  - [17] - flaky
   - [36]
   - [38]
-  - [42]
 
 - **CollectionTest** - failed: 0, passed: 1, ignored: 14 of 15 test `(6.67%)`
   - [2]
-  - [3]
-  - [4]
-  - [5]
   - [6]
   - [7]
-  - [8]
-  - [9]
-  - [10]
-  - [11]
   - [11b]
-  - [12]
   - [13]
-  - [14]
 
 - **DataStructureTest** - failed: 0, passed: 5, ignored: 1 of 6 test `(83.33%)`
-  - [2]
+  - [1]
+  - [2] - flaky
 
 - **FactoryTest** - failed: 0, passed: 2, ignored: 1 of 3 test `(6.25%)`
   - [3]
@@ -113,6 +104,7 @@ This project use some of the [FlowDroid](https://github.com/secure-software-engi
   - [5]
   - [6]
   - [7]
+  - [8] - flaky
   - [9] - flaky
   - [11] - flaky
   - [12]

@@ -202,6 +202,14 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
   class Transformer extends SceneTransformer {
     override def internalTransform(phaseName: String, options: util.Map[String, String]): Unit = {
       pointsToAnalysis = Scene.v().getPointsToAnalysis
+
+      // reset global variables
+      methods = 0
+      traversedMethods.clear()
+      allocationSites.clear()
+      arrayStores.clear()
+      svg.graph.clear()
+
       initAllocationSites()
       Scene.v().getEntryPoints.forEach(method => {
         traverse(method)
@@ -516,8 +524,43 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     calleeDefs.getDefsOfAt(local, retStmt).forEach(sourceStmt => {
       val source = createNode(callee, sourceStmt)
       val csCloseLabel = createCSCloseLabel(caller, callStmt, callee)
-      svg.addEdge(source, target, csCloseLabel) // create an EDGE FROM "definition stmt from return variable " TO "call site stmt"
-      
+//      svg.addEdge(source, target, csCloseLabel) // create an EDGE FROM "definition stmt from return variable " TO "call site stmt"
+
+      val assignment = callStmt.asInstanceOf[soot.jimple.AssignStmt]
+      if (assignment.getRightOp.isInstanceOf[InvokeExpr]) {
+        val ss = assignment.getRightOp.asInstanceOf[InvokeExpr]
+        val invokeExpr = ss match {
+          case e: VirtualInvokeExpr => e
+          case e: SpecialInvokeExpr => e
+          case e: InterfaceInvokeExpr => e
+          case _ => null //TODO: not sure if the other cases
+          // are also relevant here. Otherwise,
+          // we can just match with InstanceInvokeExpr
+        }
+
+        if (invokeExpr != null) {
+          if (invokeExpr.getBase.isInstanceOf[Local]) {
+
+            val base = invokeExpr.getBase.asInstanceOf[Local]
+            val body = caller.retrieveActiveBody()
+            val g = new ExceptionalUnitGraph(body)
+            val calleeDefs = new SimpleLocalDefs(g)
+
+            calleeDefs.getDefsOfAt(base, callStmt).forEach(allocationStmt => {
+              val allocationNode = createNode(caller, allocationStmt)
+              svg.addEdge(source, allocationNode) // add comment
+              svg.addEdge(allocationNode, target, csCloseLabel) // add comment
+            })
+          } else {
+            svg.addEdge(source, target, csCloseLabel)
+          }
+        } else {
+          svg.addEdge(source, target, csCloseLabel)
+        }
+      } else {
+        svg.addEdge(source, target, csCloseLabel)
+      }
+
       // CASE 2
       if(local.getType.isInstanceOf[ArrayType]) {
         val stores = arrayStores.getOrElseUpdate(local, List())
@@ -592,7 +635,24 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     defs.getDefsOfAt(local, stmt.base).forEach(sourceStmt => {
       val source = createNode(caller, sourceStmt)
       val csOpenLabel = createCSOpenLabel(caller, stmt.base, callee) //
-      svg.addEdge(source, target, csOpenLabel) // creates an 'edge' FROM stmt where the variable is defined TO stmt where the variable is loaded
+      //svg.addEdge(source, target, csOpenLabel) // creates an 'edge' FROM stmt where the variable is defined TO stmt where the variable is loaded
+
+      if (exp.isInstanceOf[VirtualInvokeExpr]) {
+        val invokeExpr = exp.asInstanceOf[VirtualInvokeExpr]
+        if (invokeExpr.getBase.isInstanceOf[Local]) {
+          val base = invokeExpr.getBase.asInstanceOf[Local]
+
+          defs.getDefsOfAt(base, stmt.base).forEach(allocationStmt => {
+            val allocationNode = createNode(caller, allocationStmt)
+            svg.addEdge(source, allocationNode) // create an 'edge' FROM "stmt where the variable is define" TO "stmt where the object that calls the current stmt is instanced"
+            svg.addEdge(allocationNode, target, csOpenLabel) // create an 'edge' FROM "stmt where the object that calls the current stmt is instanced" TO "stmt where the variable is loaded"
+          })
+        } else {
+          svg.addEdge(source, target, csOpenLabel) // creates an edge' FROM "stmt where the variable is defined" TO "stmt where the variable is loaded"
+        }
+      } else {
+        svg.addEdge(source, target, csOpenLabel) // creates an edge' FROM "stmt where the variable is defined" TO "stmt where the variable is loaded"
+      }
     })
   }
 
