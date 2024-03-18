@@ -1,4 +1,4 @@
-package br.unb.cic.flowdroid2
+package br.unb.cic.flowdroid
 
 import br.unb.cic.soot.graph._
 import org.scalatest.FunSuite
