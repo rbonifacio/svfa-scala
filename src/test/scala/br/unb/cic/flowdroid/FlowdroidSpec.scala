@@ -1,14 +1,9 @@
 package br.unb.cic.flowdroid
 
 import br.unb.cic.soot.JSVFATest
-import br.unb.cic.soot.graph.{SinkNode, SourceNode}
-import soot.{G, Scene}
-import soot.options.Options
-
-import scala.collection.JavaConverters._
 
 abstract class FlowdroidSpec extends JSVFATest {
-  val sinkList = List(
+  val sinkList: Seq[String] = List(
     "<java.io.PrintWriter: void println(java.lang.String)>",
     "<java.io.PrintWriter: void println(java.lang.Object)>",
     "<java.sql.Connection: java.sql.PreparedStatement prepareStatement(java.lang.String)>",
@@ -24,7 +19,7 @@ abstract class FlowdroidSpec extends JSVFATest {
     "<securibench.micro.aliasing.Aliasing8: void sink(java.lang.String[])>"
   )
 
-  val sourceList = List(
+  val sourceList: Seq[String] = List(
     "<javax.servlet.ServletRequest: java.lang.String getParameter(java.lang.String)>",
     "<javax.servlet.http.mock.HttpServletRequest: java.lang.String getParameter(java.lang.String)>",
     "<javax.servlet.http.HttpServletRequest: java.lang.String getParameter(java.lang.String)>",

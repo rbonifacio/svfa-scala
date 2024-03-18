@@ -70,7 +70,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
             val sourceNode = createNode(sootMethod, sourceStmt)
             localDefs.getDefsOfAt(localBase, invokeStmt).forEach(targetStmt =>{
               val targetNode = createNode(sootMethod, targetStmt)
-              updateGraph(sourceNode, targetNode)
+              updateGraph(sourceNode, targetNode) // add comment
             })
           })
         }
@@ -112,7 +112,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
           localDefs.getDefsOfAt(localBase, invokeStmt).forEach(source => {
             val sourceNode = createNode(sootMethod, source)
             val targetNode = createNode(sootMethod, invokeStmt)
-            updateGraph(sourceNode, targetNode)
+            updateGraph(sourceNode, targetNode) // add comment
           })
         }
       }
@@ -136,7 +136,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         localDefs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
           val source = createNode(sootMethod, sourceStmt)
           val target = createNode(sootMethod, targetStmt)
-          updateGraph(source, target)
+          updateGraph(source, target) // add comment
         })
       }
     }
@@ -164,7 +164,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
           val sourceNode = createNode(sootMethod, sourceStmt)
           localDefs.getDefsOfAt(destArg.asInstanceOf[Local], invokeStmt).forEach(targetStmt => {
             val targetNode = createNode(sootMethod, targetStmt)
-            updateGraph(sourceNode, targetNode)
+            updateGraph(sourceNode, targetNode) // add comment
           })
         })
       }
@@ -219,6 +219,8 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
 
     val body  = method.retrieveActiveBody()
 
+//    println(body)
+
     val graph = new ExceptionalUnitGraph(body)
     val defs  = new SimpleLocalDefs(graph)
 
@@ -242,10 +244,10 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     (left, right) match {
       case (p: Local, q: InstanceFieldRef) => loadRule(assignStmt.stmt, q, method, defs)
       case (p: Local, q: ArrayRef) => loadArrayRule(assignStmt.stmt, q, method, defs)
-      case (p: Local, q: InvokeExpr) => invokeRule(assignStmt, q, method, defs)
+      case (p: Local, q: InvokeExpr) => invokeRule(assignStmt, q, method, defs) // call a method
       case (p: Local, q: Local) => copyRule(assignStmt.stmt, q, method, defs)
       case (p: Local, _) => copyRuleInvolvingExpressions(assignStmt.stmt, method, defs)
-      case (p: InstanceFieldRef, _: Local) => storeRule(assignStmt.stmt, p, method, defs)
+      case (p: InstanceFieldRef, _: Local) => storeRule(assignStmt.stmt, p, method, defs) // update 'edge' FROM stmt where right value was instanced TO current stmt
       case (p: JArrayRef, _) => storeArrayRule(assignStmt)
       case _ =>
     }
@@ -274,14 +276,14 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     val callee = exp.getMethod
 
     if(analyze(callStmt.base) == SinkNode) {
-      defsToCallOfSinkMethod(callStmt, exp, caller, defs)
+      defsToCallOfSinkMethod(callStmt, exp, caller, defs) // update 'edge(s)' FROM "declaration stmt(s) for args" TO "call-site stmt" (current stmt)
       return  // TODO: we are not exploring the body of a sink method.
       //       For this reason, we only find one path in the
       //       FieldSample test case, instead of two.
     }
 
     if(analyze(callStmt.base) == SourceNode) {
-      val source = createNode(caller, callStmt.base)
+      val source = createNode(caller, callStmt.base) // create a 'node' from stmt that calls the source method (call-site stmt)
       svg.addNode(source)
     }
 
@@ -300,18 +302,18 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     val calleeDefs = new SimpleLocalDefs(g)
 
     body.getUnits.forEach(s => {
-      if(isThisInitStmt(exp, s)) {
-        defsToThisObject(callStmt, caller, defs, s, exp, callee)
+      if(isThisInitStmt(exp, s)) { // this := @this: className
+        defsToThisObject(callStmt, caller, defs, s, exp, callee) // create 'Edge' FROM the stmt where the object that calls the method was instanced TO the this definition in callee method
       }
-      else if(isParameterInitStmt(exp, pmtCount, s)) {
-        defsToFormalArgs(callStmt, caller, defs, s, exp, callee, pmtCount)
+      else if(isParameterInitStmt(exp, pmtCount, s)) {  // <variable> := @parameter#: <variable-type>
+        defsToFormalArgs(callStmt, caller, defs, s, exp, callee, pmtCount) // create an 'edge' FROM stmt(s) where the variable is defined TO stmt where the variable is loaded
         pmtCount = pmtCount + 1
       }
-      else if(isAssignReturnLocalStmt(callStmt.base, s)) {
-        defsToCallSite(caller, callee, calleeDefs, callStmt.base, s)
+      else if(isAssignReturnLocalStmt(callStmt.base, s)) { // return "<variable>"
+        defsToCallSite(caller, callee, calleeDefs, callStmt.base, s) // create an 'edge' FROM the stmt where the return variable is defined TO "call site stmt"
       }
-      else if(isReturnStringStmt(callStmt.base, s)) {
-        stringToCallSite(caller, callee, callStmt.base, s)
+      else if(isReturnStringStmt(callStmt.base, s)) { // return "<string>"
+        stringToCallSite(caller, callee, callStmt.base, s) // create an 'edge' FROM "return string stmt" TO "call site stmt"
       }
     })
 
@@ -326,7 +328,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         val sourceNode = createNode(caller, srcArgDefStmt)
         val allocationNodes = findAllocationSites(destArg.asInstanceOf[Local])
         allocationNodes.foreach(targetNode => {
-          updateGraph(sourceNode, targetNode)
+          updateGraph(sourceNode, targetNode) // add comment
         })
       })
     }
@@ -344,7 +346,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
       val source = createNode(method, sourceStmt)
       val target = createNode(method, targetStmt)
-      updateGraph(source, target)
+      updateGraph(source, target) // add comment
     })
   }
 
@@ -379,7 +381,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         defs.getDefsOfAt(base.asInstanceOf[Local], stmt).forEach(source => {
           val sourceNode = createNode(method, source)
           val targetNode = createNode(method, stmt)
-          updateGraph(sourceNode, targetNode)
+//          updateGraph(sourceNode, targetNode) // add comment
         })
       }
       return;
@@ -398,8 +400,10 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
 
       allocationNodes.foreach(source => {
         val target = createNode(method, stmt)
-        updateGraph(source, target)
-        svg.getAdjacentNodes(source).get.foreach(s => updateGraph(s, target))
+        updateGraph(source, target) // update 'edge' FROM allocationNode? stmt TO load rule stmt (current stmt)
+        svg.getAdjacentNodes(source).get.foreach(s => {
+            updateGraph(s, target) // update 'edge' FROM adjacent node of allocationNode? stmt TO load rule stmt (current stmt)
+        }) // add comment
       })
 
       // create an edge from the base defs to target
@@ -410,7 +414,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         defs.getDefsOfAt(base.asInstanceOf[Local], stmt).forEach(source => {
           val sourceNode = createNode(method, source)
           val targetNode = createNode(method, stmt)
-          updateGraph(sourceNode, targetNode)
+          updateGraph(sourceNode, targetNode) // update 'edge' FROM stmt where object (that calls load attribute) is instanced TO load rule stmt (current stmt)
         })
       }
     }
@@ -425,14 +429,14 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
         val source = createNode(method, sourceStmt)
         val target = createNode(method, targetStmt)
-        updateGraph(source, target)
+        updateGraph(source, target) // add comment
       })
 
       val stores = arrayStores.getOrElseUpdate(local, List())
       stores.foreach(sourceStmt => {
         val source = createNode(method, sourceStmt)
         val target = createNode(method, targetStmt)
-        updateGraph(source, target)
+        updateGraph(source, target) // add comment
       })
     }
   }
@@ -441,6 +445,16 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
    * This rule deals with statements in the form:
    *
    * (*) p.f = expression
+   */
+
+  /**
+   * CASE 1
+   * ??
+   *
+   * CASE 2
+   * CREATE EDGE(S)
+   * FROM stmt(s) where right value was instanced
+   * TO: stmt load store stmt (current stmt)
    */
   private def storeRule(targetStmt: jimple.AssignStmt, fieldRef: InstanceFieldRef, method: SootMethod, defs: SimpleLocalDefs) = {
     val local = targetStmt.getRightOp.asInstanceOf[Local]
@@ -451,11 +465,12 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
           val source = createNode(method, sourceStmt)
           val allocationNodes = findAllocationSites(base)
           allocationNodes.foreach(targetNode => {
-            updateGraph(source, targetNode)
+            updateGraph(source, targetNode) // add comment
           })
         })
       }
       else {
+        // CASE 2
         //        val allocationNodes = findAllocationSites(base)
 
         //        val allocationNodes = findAllocationSites(base, true, fieldRef.getField)
@@ -464,7 +479,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
           val source = createNode(method, sourceStmt)
           val target = createNode(method, targetStmt)
-          updateGraph(source, target)
+          updateGraph(source, target) // update 'edge' FROM stmt where right value was instanced TO current stmt
         })
         //          })
         //        }
@@ -478,34 +493,64 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     arrayStores.put(l, stores)
   }
 
+  /**
+   * CASE 1
+   *
+   * Create EDGE(S)
+   * "FROM" each stmt where the variable returned is defined.
+   * "TO" call site stmt.
+   *
+   * An CS for "close" is added
+   *  - Caller method
+   *  - stmt from the callee method is called (stmt is in caller method)
+   *  - Callee method
+   *
+   * CASE 2
+   * ??
+   */
   private def defsToCallSite(caller: SootMethod, callee: SootMethod, calleeDefs: SimpleLocalDefs, callStmt: soot.Unit, retStmt: soot.Unit) = {
-    val target = createNode(caller, callStmt)
 
+    // CASE 1
+    val target = createNode(caller, callStmt)
     val local = retStmt.asInstanceOf[ReturnStmt].getOp.asInstanceOf[Local]
     calleeDefs.getDefsOfAt(local, retStmt).forEach(sourceStmt => {
       val source = createNode(callee, sourceStmt)
       val csCloseLabel = createCSCloseLabel(caller, callStmt, callee)
-      svg.addEdge(source, target, csCloseLabel)
-
-
+      svg.addEdge(source, target, csCloseLabel) // create an EDGE FROM "definition stmt from return variable " TO "call site stmt"
+      
+      // CASE 2
       if(local.getType.isInstanceOf[ArrayType]) {
         val stores = arrayStores.getOrElseUpdate(local, List())
         stores.foreach(sourceStmt => {
           val source = createNode(callee, sourceStmt)
           val csCloseLabel = createCSCloseLabel(caller, callStmt, callee)
-          svg.addEdge(source, target, csCloseLabel)
+          svg.addEdge(source, target, csCloseLabel) // add comment
         })
       }
     })
   }
 
+  /**
+   * CREATE EDGE
+   * FROM: return stmt.
+   * TO: call site stmt.
+   */
   private def stringToCallSite(caller: SootMethod, callee: SootMethod, callStmt: soot.Unit, retStmt: soot.Unit): Unit = {
     val target = createNode(caller, callStmt)
     val source = createNode(callee, retStmt)
-    svg.addEdge(source, target)
+    svg.addEdge(source, target) // create an 'edge' FROM "return stmt " TO "call site stmt"
   }
 
+  /**
+   * CREATE EDGE(s)
+   * FROM: stmt where the object that calls the method was instanced
+   * TO: the 'this' definition in constructor (init) from callee method
+   *
+   * OPEN CS:
+   */
   private def defsToThisObject(callStatement: Statement, caller: SootMethod, calleeDefs: SimpleLocalDefs, targetStmt: soot.Unit, expr: InvokeExpr, callee: SootMethod) : Unit = {
+
+    // Check if the current expression belong to invokeExpr
     val invokeExpr = expr match {
       case e: VirtualInvokeExpr => e
       case e: SpecialInvokeExpr => e
@@ -524,43 +569,69 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         calleeDefs.getDefsOfAt(base, callStatement.base).forEach(sourceStmt => {
           val source = createNode(caller, sourceStmt)
           val csOpenLabel = createCSOpenLabel(caller, callStatement.base, callee)
-          svg.addEdge(source, target, csOpenLabel)
+          svg.addEdge(source, target, csOpenLabel) // create 'Edge' FROM the stmt where the object that calls the method was instanced TO the this definition in callee method
         })
       }
     }
   }
 
+  /**
+   * Create EDGE(S)
+   * "FROM" each stmt where the variable, passed as a parameter, is defined.
+   * "TO" stmt where the variable is loaded inside the method.
+   *
+   * An "open" CS is added
+   *  - Caller method
+   *  - stmt where the callee method is called (it is in caller method)
+   *  - Callee method
+   */
   private def defsToFormalArgs(stmt: Statement, caller: SootMethod, defs: SimpleLocalDefs, assignStmt: soot.Unit, exp: InvokeExpr, callee: SootMethod, pmtCount: Int) = {
     val target = createNode(callee, assignStmt)
 
     val local = exp.getArg(pmtCount).asInstanceOf[Local]
     defs.getDefsOfAt(local, stmt.base).forEach(sourceStmt => {
       val source = createNode(caller, sourceStmt)
-      val csOpenLabel = createCSOpenLabel(caller, stmt.base, callee)
-      svg.addEdge(source, target, csOpenLabel)
+      val csOpenLabel = createCSOpenLabel(caller, stmt.base, callee) //
+      svg.addEdge(source, target, csOpenLabel) // creates an 'edge' FROM stmt where the variable is defined TO stmt where the variable is loaded
     })
   }
 
+  /**
+   * CASE 1:
+   * UPDATE EDGE(S)
+   * "FROM" each stmt where the variable, passed as an argument, is defined.
+   * "TO" stmt where the method is called (call-site stmt).
+   *
+   * CASE 2:
+   * ???
+   *
+   * CASE 2:
+   * ???
+   */
   private def defsToCallOfSinkMethod(stmt: Statement, exp: InvokeExpr, caller: SootMethod, defs: SimpleLocalDefs) = {
-    // edges from definitions to args
+
+    // CASE 1
     exp.getArgs.stream().filter(a => a.isInstanceOf[Local]).forEach(a => {
       val local = a.asInstanceOf[Local]
       val targetStmt = stmt.base
       defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
         val source = createNode(caller, sourceStmt)
         val target = createNode(caller, targetStmt)
-        updateGraph(source, target)
+        updateGraph(source, target) // update 'edge(s)' FROM "declaration stmt(s) for args" TO "call-site stmt" (current stmt)
       })
 
+      //CASE 2
       if(local.getType.isInstanceOf[ArrayType]) {
         val stores = arrayStores.getOrElseUpdate(local, List())
         stores.foreach(sourceStmt => {
           val source = createNode(caller, sourceStmt)
           val target = createNode(caller, targetStmt)
-          updateGraph(source, target)
+          updateGraph(source, target) // add comment
         })
       }
     })
+
+    // CASE 3
     // edges from definition to base object of an invoke expression
     if(isFieldSensitiveAnalysis() && exp.isInstanceOf[InstanceInvokeExpr]) {
       if(exp.asInstanceOf[InstanceInvokeExpr].getBase.isInstanceOf[Local]) {
@@ -569,7 +640,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
           val source = createNode(caller, sourceStmt)
           val target = createNode(caller, targetStmt)
-          updateGraph(source, target)
+          updateGraph(source, target) // add comment
         })
       }
     }
