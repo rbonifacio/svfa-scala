@@ -515,15 +515,20 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     val target = createNode(caller, callStmt)
     val local = retStmt.asInstanceOf[ReturnStmt].getOp.asInstanceOf[Local]
 
-    val allocationSites = getAllocationSites(stmt, exp, defs)
+    val allocationSites = getAllocationSites(exp)
 
     calleeDefs.getDefsOfAt(local, retStmt).forEach(sourceStmt => {
       val source = createNode(callee, sourceStmt)
 
-      allocationSites.foreach(al => {
-        val csCloseLabel = createCSCloseLabel(caller, callStmt, callee, Set(al))
-        svg.addEdge(source, target, csCloseLabel) // create an EDGE FROM "definition stmt from return variable " TO "call site stmt"
-      })
+      if (allocationSites.nonEmpty) {
+        allocationSites.foreach(al => {
+          val csCloseLabel = createCSCloseLabel(caller, callStmt, callee, Set(al.show()))
+          svg.addEdge(source, target, csCloseLabel) // create an EDGE FROM "definition stmt from return variable " TO "call site stmt"
+        })
+      } else {
+          val csCloseLabel = createCSCloseLabel(caller, callStmt, callee, Set())
+          svg.addEdge(source, target, csCloseLabel) // create an EDGE FROM "definition stmt from return variable " TO "call site stmt"
+      }
 
       // CASE 2
       if(local.getType.isInstanceOf[ArrayType]) {
@@ -574,11 +579,11 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
 
         val base = invokeExpr.getBase.asInstanceOf[Local]
 
-        val al = getAllocationSites(callStatement, expr, calleeDefs)
+//        val al = getAllocationSites(callStatement, expr, calleeDefs)
 
         calleeDefs.getDefsOfAt(base, callStatement.base).forEach(sourceStmt => {
           val source = createNode(caller, sourceStmt)
-          val csOpenLabel = createCSOpenLabel(caller, callStatement.base, callee, al)
+          val csOpenLabel = createCSOpenLabel(caller, callStatement.base, callee, Set())
           svg.addEdge(source, target, csOpenLabel) // create 'Edge' FROM the stmt where the object that calls the method was instanced TO the this definition in callee method
         })
       }
@@ -600,38 +605,48 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
 
     val local = exp.getArg(pmtCount).asInstanceOf[Local]
 
-    val allocationSites = getAllocationSites(stmt, exp, defs)
+    val allocationSites = getAllocationSites(exp)
 
     defs.getDefsOfAt(local, stmt.base).forEach(sourceStmt => {
       val source = createNode(caller, sourceStmt)
 
-      allocationSites.foreach(al => {
-        val csOpenLabel = createCSOpenLabel(caller, stmt.base, callee, Set(al)) //
+      if (allocationSites.nonEmpty) {
+        allocationSites.foreach(al => {
+          val csOpenLabel = createCSOpenLabel(caller, stmt.base, callee, Set(al.show())) //
+          svg.addEdge(source, target, csOpenLabel) // creates an 'edge' FROM stmt where the variable is defined TO stmt where the variable is loaded
+        })
+      } else {
+        val csOpenLabel = createCSOpenLabel(caller, stmt.base, callee, Set()) //
         svg.addEdge(source, target, csOpenLabel) // creates an 'edge' FROM stmt where the variable is defined TO stmt where the variable is loaded
-      })
+      }
     })
   }
 
-  private def getAllocationSites(stmt: Statement, exp: InvokeExpr, defs: SimpleLocalDefs): Set[String] = {
+  private def getAllocationSites(exp: InvokeExpr): ListBuffer[GraphNode] = {
 
-    var AL: Set[String] = Set()
+    var allocationNodes = new ListBuffer[GraphNode]()
 
     if (exp.isInstanceOf[VirtualInvokeExpr]) {
-
       val invokeExpr = exp.asInstanceOf[VirtualInvokeExpr]
+
       if (invokeExpr.getBase.isInstanceOf[Local]) {
         val base = invokeExpr.getBase.asInstanceOf[Local]
-
-        defs.getDefsOfAt(base, stmt.base).forEach(allocationStmt => {
-          AL = AL + (allocationStmt.toString)
-        })
+        allocationNodes = findAllAllocationsSites(base)
       }
     }
+    allocationNodes
+  }
 
-    if (AL.isEmpty) {
-      AL = AL + "this"
+  def findAllAllocationsSites(base: Local): ListBuffer[GraphNode] = {
+    var allocationNodes = new ListBuffer[GraphNode]()
+
+    allocationNodes = findAllocationSites(base, false)
+
+    if (allocationNodes.isEmpty) {
+      allocationNodes = findAllocationSites(base)
     }
-    AL
+
+    allocationNodes
   }
 
   /**
