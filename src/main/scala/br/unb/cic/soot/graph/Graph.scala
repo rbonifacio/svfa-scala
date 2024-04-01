@@ -107,7 +107,7 @@ case class StringLabel(label: String) extends EdgeLabel {
   override val labelType: LabelType = SimpleLabel
 }
 
-case class ContextSensitiveRegion(statement: Statement, calleeMethod: String)
+case class ContextSensitiveRegion(statement: Statement, calleeMethod: String, context: Set[String])
 
 case class CallSiteLabel(csRegion: ContextSensitiveRegion, labelType: CallSiteLabelType) extends EdgeLabel {
   override type T = ContextSensitiveRegion
@@ -424,9 +424,26 @@ class Graph() {
       })
     })
 
+//    if (! isValidContext(csOpen, csClose)) {
+//        return false
+//    }
     val validCS = unopenedCS.isEmpty || unclosedCS.isEmpty || matchedUnopenedUnclosedCSCalleeMethod.isEmpty
 
     return validCS
+  }
+
+  def isValidContext(csOpen: List[CallSiteLabel], csClose: List[CallSiteLabel]): Boolean = {
+    var cs: Set[String] = Set()
+
+    csOpen.foreach(open => {
+      cs = cs + open.value.context.head
+    })
+
+    csClose.foreach(open => {
+      cs = cs + open.value.context.head
+    })
+    println(s"size ${cs}")
+    cs.size <= 1
   }
 
   def nodes(): scala.collection.Set[GraphNode] = graph.nodes.map(node => node.toOuter).toSet
@@ -498,10 +515,10 @@ class Graph() {
       var l = e.label
       val label: String = e.label match {
         case c: CallSiteLabel =>  {
-//          if (c.labelType == CallSiteOpenLabel) { "[label=\"cs(\"]" }
-//          else { "[label=\"cs)\"]" }
-          if (c.labelType == CallSiteOpenLabel) { "[label=\"cs(:" + c.value.statement.stmt + "\"]" }
-          else { "[label=\"cs):" + c.value.statement.stmt + "\"]" }
+          if (c.labelType == CallSiteOpenLabel) { s"""[label="CS([${c.value.context.head}]"]""" }
+          else { s"""[label="CS)[${c.value.context.head}]"]""" }
+//          if (c.labelType == CallSiteOpenLabel) { s"""[label="CS(${c.value.statement.stmt} [${c.value.context.head}]"]""" }
+//          else { s"""[label="CS)${c.value.statement.stmt} [${c.value.context.head}]"]""" }
         }
         case c: TrueLabelType =>{ "[penwidth=3][label=\"T\"]" }
         case c: FalseLabelType => { "[penwidth=3][label=\"F\"]" }
