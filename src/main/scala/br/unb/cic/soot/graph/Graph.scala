@@ -411,6 +411,11 @@ class Graph() {
       }
     })
 
+    // check if there path has only one context
+    if (! isValidContext(csOpen, csClose)) {
+        return false
+    }
+
     // Get all the cs) without a (cs
     val unopenedCS = getUnmatchedCallSites(csClose, csOpen)
     // Get all the cs) without a (cs
@@ -424,9 +429,6 @@ class Graph() {
       })
     })
 
-//    if (! isValidContext(csOpen, csClose)) {
-//        return false
-//    }
     val validCS = unopenedCS.isEmpty || unclosedCS.isEmpty || matchedUnopenedUnclosedCSCalleeMethod.isEmpty
 
     return validCS
@@ -436,13 +438,17 @@ class Graph() {
     var cs: Set[String] = Set()
 
     csOpen.foreach(open => {
-      cs = cs + open.value.context.head
+      if (open.value.context.nonEmpty) {
+        cs = cs + open.value.context.head
+      }
     })
 
     csClose.foreach(open => {
-      cs = cs + open.value.context.head
+      if (open.value.context.nonEmpty) {
+        cs = cs + open.value.context.head
+      }
     })
-    println(s"size ${cs}")
+//    println(s"size ${cs}")
     cs.size <= 1
   }
 
