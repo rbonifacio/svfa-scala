@@ -437,18 +437,14 @@ class Graph() {
   def isValidContext(csOpen: List[CallSiteLabel], csClose: List[CallSiteLabel]): Boolean = {
     var cs: Set[String] = Set()
 
-    csOpen.foreach(open => {
+    val csOpenAndClose = csOpen ++ csClose
+
+    csOpenAndClose.foreach(open => {
       if (open.value.context.nonEmpty) {
         cs = cs + open.value.context.head
       }
     })
 
-    csClose.foreach(open => {
-      if (open.value.context.nonEmpty) {
-        cs = cs + open.value.context.head
-      }
-    })
-//    println(s"size ${cs}")
     cs.size <= 1
   }
 
