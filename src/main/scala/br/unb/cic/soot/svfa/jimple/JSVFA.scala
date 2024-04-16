@@ -624,13 +624,13 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
 
   private def getAllocationSites(invokeExpr: InvokeExpr): ListBuffer[GraphNode] = invokeExpr match {
     case exp: VirtualInvokeExpr => exp.getBase match {
-      case base: Local => findAllAllocationsSites(base)
+      case base: Local => getAllocationSites(base)
       case _ => ListBuffer[GraphNode]()
     }
     case _ => ListBuffer[GraphNode]()
   }
 
-  private def findAllAllocationsSites(base: Local): ListBuffer[GraphNode] = findAllocationSites(base, false) match {
+  private def getAllocationSites(base: Local): ListBuffer[GraphNode] = findAllocationSites(base, false) match {
     case v if v.isEmpty => findAllocationSites(base)
     case v => v
   }
