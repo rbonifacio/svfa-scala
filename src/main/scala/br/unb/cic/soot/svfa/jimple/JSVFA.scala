@@ -637,16 +637,9 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     allocationNodes
   }
 
-  def findAllAllocationsSites(base: Local): ListBuffer[GraphNode] = {
-    var allocationNodes = new ListBuffer[GraphNode]()
-
-    allocationNodes = findAllocationSites(base, false)
-
-    if (allocationNodes.isEmpty) {
-      allocationNodes = findAllocationSites(base)
-    }
-
-    allocationNodes
+  private def findAllAllocationsSites(base: Local): ListBuffer[GraphNode] = findAllocationSites(base, false) match {
+    case v if v.isEmpty => findAllocationSites(base)
+    case v => v
   }
 
   /**
