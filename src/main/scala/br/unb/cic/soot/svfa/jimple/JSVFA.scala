@@ -7,7 +7,7 @@ import br.unb.cic.soot.svfa.jimple.dsl.{DSL, LanguageParser}
 import br.unb.cic.soot.svfa.{SVFA, SourceSinkDef}
 import com.typesafe.scalalogging.LazyLogging
 import soot.jimple._
-import soot.jimple.internal.{JArrayRef, JAssignStmt}
+import soot.jimple.internal.{AbstractInvokeExpr, JArrayRef, JAssignStmt}
 import soot.jimple.spark.ondemand.DemandCSPointsTo
 import soot.jimple.spark.pag
 import soot.jimple.spark.pag.{AllocNode, PAG}
@@ -622,19 +622,12 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     })
   }
 
-  private def getAllocationSites(exp: InvokeExpr): ListBuffer[GraphNode] = {
-
-    var allocationNodes = new ListBuffer[GraphNode]()
-
-    if (exp.isInstanceOf[VirtualInvokeExpr]) {
-      val invokeExpr = exp.asInstanceOf[VirtualInvokeExpr]
-
-      if (invokeExpr.getBase.isInstanceOf[Local]) {
-        val base = invokeExpr.getBase.asInstanceOf[Local]
-        allocationNodes = findAllAllocationsSites(base)
-      }
+  private def getAllocationSites(invokeExpr: InvokeExpr): ListBuffer[GraphNode] = invokeExpr match {
+    case exp: VirtualInvokeExpr => exp.getBase match {
+      case base: Local => findAllAllocationsSites(base)
+      case _ => ListBuffer[GraphNode]()
     }
-    allocationNodes
+    case _ => ListBuffer[GraphNode]()
   }
 
   private def findAllAllocationsSites(base: Local): ListBuffer[GraphNode] = findAllocationSites(base, false) match {
