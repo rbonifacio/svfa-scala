@@ -79,7 +79,7 @@ This project use some of the [FlowDroid](https://github.com/secure-software-engi
   - [9]
   - [10]
 
-- **BasicTest** - failed: 0, passed: 38, ignored: 5 of 42 test `(90.48%)`
+- **BasicTest** - failed: 0, passed: 38, ignored: 4 of 42 test `(90.48%)`
   - [17]
   - [36]
   - [38]
