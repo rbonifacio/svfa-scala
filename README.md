@@ -115,7 +115,7 @@ This project use some of the [FlowDroid](https://github.com/secure-software-engi
   - [11] - flaky
   - [12]
 
-- **SessionTest** - failed: 0, passed: 0, ignored: 3 of 3 test `(66.660%)`
+- **SessionTest** - failed: 0, passed: 0, ignored: 3 of 3 test `(0%)`
   - [1]
   - [2]
   - [3]
