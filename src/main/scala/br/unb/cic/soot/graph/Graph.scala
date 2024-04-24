@@ -517,8 +517,8 @@ class Graph() {
       var l = e.label
       val label: String = e.label match {
         case c: CallSiteLabel =>  {
-          if (c.labelType == CallSiteOpenLabel) { s"""[label="CS([${c.value.context.head}]"]""" }
-          else { s"""[label="CS)[${c.value.context.head}]"]""" }
+          if (c.labelType == CallSiteOpenLabel) { s"""[label="CS([${ if (c.value.context.nonEmpty) c.value.context.head }]"]""" }
+          else { s"""[label="CS)[${ if (c.value.context.nonEmpty) c.value.context.head }]"]""" }
 //          if (c.labelType == CallSiteOpenLabel) { s"""[label="CS(${c.value.statement.stmt} [${c.value.context.head}]"]""" }
 //          else { s"""[label="CS)${c.value.statement.stmt} [${c.value.context.head}]"]""" }
         }
