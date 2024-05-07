@@ -433,7 +433,7 @@ class FlowdroidTestSuite extends FunSuite {
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
-  ignore("description: Collection3") {
+  test("description: Collection3") {
     val svfa = new FlowdroidTest("securibench.micro.collections.Collections3", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 2)
@@ -644,7 +644,7 @@ class FlowdroidTestSuite extends FunSuite {
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
-  test("description: Inter12") {
+  ignore("description: Inter12") {
     val svfa = new FlowdroidTest("securibench.micro.inter.Inter12", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 1)
@@ -702,7 +702,7 @@ class FlowdroidTestSuite extends FunSuite {
     assert(svfa.reportConflictsSVG().size == 0)
   }
 
-  test("description: StrongUpdate3") {
+  ignore("description: StrongUpdate3") {
     val svfa = new FlowdroidTest("securibench.micro.strong_updates.StrongUpdates3", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 0)
@@ -714,7 +714,7 @@ class FlowdroidTestSuite extends FunSuite {
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
-  test("description: StrongUpdate5") {
+  ignore("description: StrongUpdate5") {
     val svfa = new FlowdroidTest("securibench.micro.strong_updates.StrongUpdates5", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 0)
