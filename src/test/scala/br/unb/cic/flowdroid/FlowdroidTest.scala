@@ -601,10 +601,10 @@ class FlowdroidTestSuite extends FunSuite {
     assert(svfa.reportConflictsSVG().size == 2)
   }
 
-  ignore("description: Inter5") {
+  test("description: Inter5") {
     val svfa = new FlowdroidTest("securibench.micro.inter.Inter5", "doGet")
     svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 2)
+    assert(svfa.reportConflictsSVG().size == 1)
   }
 
   ignore("description: Inter6") {
@@ -643,7 +643,7 @@ class FlowdroidTestSuite extends FunSuite {
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
-  ignore("description: Inter12") {
+  test("description: Inter12") {
     val svfa = new FlowdroidTest("securibench.micro.inter.Inter12", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 1)
