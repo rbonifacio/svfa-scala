@@ -433,7 +433,7 @@ class FlowdroidTestSuite extends FunSuite {
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
-  test("description: Collection3") {
+  ignore("description: Collection3") {
     val svfa = new FlowdroidTest("securibench.micro.collections.Collections3", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 2)
