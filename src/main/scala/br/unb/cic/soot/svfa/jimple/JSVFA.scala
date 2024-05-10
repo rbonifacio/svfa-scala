@@ -249,7 +249,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       case (p: Local, q: Local) => copyRule(assignStmt.stmt, q, method, defs)
       case (p: Local, _) => copyRuleInvolvingExpressions(assignStmt.stmt, method, defs)
       case (p: InstanceFieldRef, _: Local) => storeRule(assignStmt.stmt, p, method, defs) // update 'edge' FROM stmt where right value was instanced TO current stmt
-      case (p: JArrayRef, _) => storeArrayRule(assignStmt)
+      case (p: JArrayRef, _) => storeArrayRule(assignStmt, method, defs) // create 'edge(s)' FROM the stmt where the variable on the right was defined TO the current stmt
       case _ =>
     }
   }
@@ -488,10 +488,37 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     }
   }
 
-  def storeArrayRule(assignStmt: AssignStmt) {
-    val l = assignStmt.stmt.getLeftOp.asInstanceOf[JArrayRef].getBase.asInstanceOf[Local]
-    val stores = assignStmt.stmt :: arrayStores.getOrElseUpdate(l, List())
-    arrayStores.put(l, stores)
+  /**
+   * array[0] = <variable>
+   *
+   * CASE 1
+   *
+   * Store
+   *
+   * CASE 2
+   *
+   * Create EDGE(S)
+   * "FROM" each stmt where the variables on the right are defined.
+   * "TO" current stmt.
+   *
+   */
+  def storeArrayRule(assignStmt: AssignStmt, method: SootMethod, defs: SimpleLocalDefs) {
+    val left = assignStmt.stmt.getLeftOp
+    val right = assignStmt.stmt.getRightOp
+
+    // stores all the place where the array was assigned
+    val local = left.asInstanceOf[JArrayRef].getBase.asInstanceOf[Local]
+    val stores = assignStmt.stmt :: arrayStores.getOrElseUpdate(local, List())
+    arrayStores.put(local, stores)
+
+    if (right.isInstanceOf[Local]) {
+      val rightLocal = right.asInstanceOf[Local]
+      defs.getDefsOfAt(rightLocal, assignStmt.stmt). forEach(sourceStmt => {
+        val source = createNode(method, sourceStmt)
+        val target = createNode(method, assignStmt.stmt)
+        svg.addEdge(source, target) // create 'Edge' FROM the stmt where the variable on the right was defined TO the current stmt
+      })
+    }
   }
 
   /**
