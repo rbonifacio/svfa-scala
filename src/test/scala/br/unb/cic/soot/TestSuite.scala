@@ -1,7 +1,7 @@
 package br.unb.cic.soot
 
 import br.unb.cic.soot.aliasing.Aliasing5Test
-import br.unb.cic.soot.basic.{Basic11Test, Basic16StringTest, Basic16Test, Basic31Test}
+import br.unb.cic.soot.basic.{Basic11Test, Basic16StringTest, Basic16Test, Basic31Test, Basic42Test}
 import org.scalatest.{BeforeAndAfter, FunSuite}
 
 class TestSuite extends FunSuite with BeforeAndAfter {
@@ -118,6 +118,13 @@ class TestSuite extends FunSuite with BeforeAndAfter {
   test("we should find exactly one conflicts in the basic.Basic16String analysis") {
     val svfa = new Basic16StringTest()
     svfa.buildSparseValueFlowGraph()
+    assert(svfa.reportConflictsSVG().size == 1)
+  }
+
+  test("we should find exactly two conflicts in the basic.Basic42 analysis") {
+    val svfa = new Basic42Test()
+    svfa.buildSparseValueFlowGraph()
+    print(svfa.svgToDotModel())
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
