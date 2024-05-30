@@ -43,12 +43,19 @@ abstract class SootConfiguration {
     Options.v().set_allow_phantom_refs(true)
     Options.v().set_include(getIncludeList().asJava);
     Options.v().set_output_format(Options.output_format_none)
+
+    if (getJavaVersion < 9) {
+      Options.v.set_prepend_classpath(true)
+      Options.v().set_soot_classpath(sootClassPath() + File.pathSeparator + pathToJCE() + File.pathSeparator + pathToRT())
+    }
+    else if (getJavaVersion >= 9) {
+      Options.v.set_soot_classpath(sootClassPath())
+    }
+
     Options.v().set_whole_program(true)
-    Options.v().set_soot_classpath(sootClassPath() + File.pathSeparator + pathToJCE() + File.pathSeparator + pathToRT())
     Options.v().set_process_dir(applicationClassPath().asJava)
     Options.v().set_full_resolver(true)
     Options.v().set_keep_line_number(true)
-    Options.v().set_prepend_classpath(true)
     Options.v().setPhaseOption("jb", "use-original-names:true")
     Options.v().set_ignore_resolution_errors(true);
     configureCallGraphPhase()
@@ -78,4 +85,13 @@ abstract class SootConfiguration {
   def pathToRT(): String =
     System.getProperty("java.home") + File.separator + "lib" + File.separator + "rt.jar"
 
+  private def getJavaVersion = {
+    var version = System.getProperty("java.version")
+    if (version.startsWith("1.")) version = version.substring(2, 3)
+    else {
+      val dot = version.indexOf(".")
+      if (dot != -1) version = version.substring(0, dot)
+    }
+    version.toInt
+  }
 }
