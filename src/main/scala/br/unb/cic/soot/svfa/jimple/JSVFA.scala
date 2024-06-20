@@ -388,14 +388,14 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     }
     // default case
     if(base.isInstanceOf[Local]) {
-      var allocationNodes = findAllocationSites(base.asInstanceOf[Local], false, ref.getField)
+      var allocationNodes = findFieldStores(base.asInstanceOf[Local], ref.getField)
 
       if (allocationNodes.isEmpty) {
-        allocationNodes = findAllocationSites(base.asInstanceOf[Local], true, ref.getField)
+        allocationNodes = findAllocationSites(base.asInstanceOf[Local], false, ref.getField)
       }
 
       if (allocationNodes.isEmpty) {
-        allocationNodes = findFieldStores(base.asInstanceOf[Local], ref.getField)
+        allocationNodes = findAllocationSites(base.asInstanceOf[Local], true, ref.getField)
       }
 
       allocationNodes.foreach(source => {
@@ -759,7 +759,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         val assignment = node.unit().asInstanceOf[soot.jimple.AssignStmt]
         if(assignment.getLeftOp.isInstanceOf[InstanceFieldRef]) {
           val base = assignment.getLeftOp.asInstanceOf[InstanceFieldRef].getBase.asInstanceOf[Local]
-          if(pointsToAnalysis.reachingObjects(base).hasNonEmptyIntersection(pointsToAnalysis.reachingObjects(local))) {
+          if(pointsToAnalysis.reachingObjects(base).hasNonEmptyIntersection(pointsToAnalysis.reachingObjects(local)) || areThisFromSameClass(base, local)) {
             if(field.equals(assignment.getLeftOp.asInstanceOf[InstanceFieldRef].getField)) {
               res += createNode(node.method(), node.unit())
             }
@@ -768,6 +768,10 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       }
     }
     return res
+  }
+
+  private def areThisFromSameClass(base: Local, local: Local): Boolean = {
+    base.getName == local.getName && base.getType == local.getType && base.getName.equals("this")
   }
 
   //  /*
