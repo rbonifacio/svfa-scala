@@ -68,10 +68,9 @@ This project use some of the [FlowDroid](https://github.com/secure-software-engi
 - **AliasingTest** - failed: 0, passed: 5, ignored: 1 of 6 test `(83.33%)`
   - [5]
 
-- **ArraysTest** - failed: 0, passed: 4, ignored: 6 of 10 test `(40%)`
+- **ArraysTest** - failed: 0, passed: 5, ignored: 5 of 10 test `(50%)`
   - [2]
-  - [5] 
-  - [7]
+  - [5]
   - [8]
   - [9]
   - [10]

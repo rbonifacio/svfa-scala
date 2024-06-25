@@ -435,6 +435,23 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         val source = createNode(method, sourceStmt)
         val target = createNode(method, targetStmt)
         updateGraph(source, target) // add comment
+
+        // create edges FROM arrays indexes assignments TO where the array is accessed
+        val stmt = Statement.convert(sourceStmt)
+        stmt match {
+          case AssignStmt(base) => {
+            val rightOp = AssignStmt(base).stmt.getRightOp
+            if (rightOp.isInstanceOf[Local]) {
+              arrayStores.getOrElseUpdate(rightOp.asInstanceOf[Local], List()).foreach(storeStmt => {
+                val source = createNode(method, storeStmt)
+                val target = createNode(method, sourceStmt)
+                updateGraph(source, target) // add comment
+              })
+            }
+          }
+          case _ =>
+        }
+
       })
 
       val stores = arrayStores.getOrElseUpdate(local, List())
@@ -512,8 +529,11 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
 
     // stores all the place where the array was assigned
     val local = left.asInstanceOf[JArrayRef].getBase.asInstanceOf[Local]
+
     val stores = assignStmt.stmt :: arrayStores.getOrElseUpdate(local, List())
     arrayStores.put(local, stores)
+
+//    println(arrayStores)
 
     if (right.isInstanceOf[Local]) {
       val rightLocal = right.asInstanceOf[Local]
