@@ -98,7 +98,7 @@ This project use some of the [FlowDroid](https://github.com/secure-software-engi
 - **DataStructureTest** - failed: 0, passed: 5, ignored: 1 of 6 test `(83.33%)`
   - [5]
 
-- **FactoryTest** - failed: 0, passed: 2, ignored: 1 of 3 test `(66.66%)`
+- **FactoryTest** - failed: 0, passed: 2, ignored: 1 of 3 test `(66.67%)`
   - [3]
 
 - **InterTest** - failed: 0, passed:10, ignored: 4 of 14 test `(71.42%)`
