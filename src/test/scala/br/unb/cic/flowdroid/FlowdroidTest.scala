@@ -708,7 +708,7 @@ class FlowdroidTestSuite extends FunSuite {
     assert(svfa.reportConflictsSVG().size == 0)
   }
 
-  ignore("description: StrongUpdate4") {
+  test("description: StrongUpdate4") {
     val svfa = new FlowdroidTest("securibench.micro.strong_updates.StrongUpdates4", "doGet")
     svfa.buildSparseValueFlowGraph()
     assert(svfa.reportConflictsSVG().size == 1)
