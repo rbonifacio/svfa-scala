@@ -243,11 +243,13 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
 
     (left, right) match {
       case (p: Local, q: InstanceFieldRef) => loadRule(assignStmt.stmt, q, method, defs)
+      case (p: Local, q: StaticFieldRef) => loadRule(assignStmt.stmt, q, method)
       case (p: Local, q: ArrayRef) => loadArrayRule(assignStmt.stmt, q, method, defs)
       case (p: Local, q: InvokeExpr) => invokeRule(assignStmt, q, method, defs) // call a method
       case (p: Local, q: Local) => copyRule(assignStmt.stmt, q, method, defs)
       case (p: Local, _) => copyRuleInvolvingExpressions(assignStmt.stmt, method, defs)
       case (p: InstanceFieldRef, _: Local) => storeRule(assignStmt.stmt, p, method, defs) // update 'edge' FROM stmt where right value was instanced TO current stmt
+      case (_: StaticFieldRef, _: Local) => storeRule(assignStmt.stmt, method, defs)
       case (p: JArrayRef, _) => storeArrayRule(assignStmt)
       case _ =>
     }
@@ -420,6 +422,25 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     }
   }
 
+  /*
+ * This rule deals with the following situation 
+ * when "f" is an static variable (StaticFieldRef)
+ *
+ *  p = f
+ */
+  private def loadRule(stmt: soot.Unit, ref: StaticFieldRef, method: SootMethod) : Unit = {
+
+      val findFieldStoresNodes = findFieldStores(ref) // find fields stores for StaticFieldRef
+
+      findFieldStoresNodes.foreach(source => {
+        val target = createNode(method, stmt)
+        updateGraph(source, target) // update 'edge' FROM allocationNode? stmt TO load rule stmt (current stmt)
+        svg.getAdjacentNodes(source).get.foreach(s => {
+          updateGraph(s, target) // update 'edge' FROM adjacent node of allocationNode? stmt TO load rule stmt (current stmt)
+        })
+      })
+  }
+
   protected def loadArrayRule(targetStmt: soot.Unit, ref: ArrayRef, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
     val base = ref.getBase
 
@@ -485,6 +506,19 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
         //        }
       }
     }
+  }
+
+  /*
+   * This rule deals with statements in the form:
+   * when "p" is an static variable (StaticFieldRef)
+   *
+   * (*) p = expression
+   *
+   * This behavior is like a simple CopyRule, so that method is called here.
+   */
+  private def storeRule(stmt: jimple.AssignStmt, method: SootMethod, defs: SimpleLocalDefs) = {
+    val local = stmt.getRightOp.asInstanceOf[Local]
+    copyRule(stmt, local, method, defs)
   }
 
   def storeArrayRule(assignStmt: AssignStmt) {
@@ -764,6 +798,23 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
               res += createNode(node.method(), node.unit())
             }
           }
+        }
+      }
+    }
+    return res
+  }
+
+  // findFieldStores for static variables
+  private def findFieldStores(field: StaticFieldRef) : ListBuffer[GraphNode] = {
+    val res: ListBuffer[GraphNode] = new ListBuffer[GraphNode]()
+    for(node <- svg.nodes()) {
+      if(node.unit().isInstanceOf[soot.jimple.AssignStmt]) {
+        val assignment = node.unit().asInstanceOf[soot.jimple.AssignStmt]
+        if(assignment.getLeftOp.isInstanceOf[StaticFieldRef]) {
+          val base = assignment.getLeftOp.asInstanceOf[StaticFieldRef]
+            if(field.getFieldRef.equals(base.getFieldRef)) {
+              res += createNode(node.method(), node.unit())
+            }
         }
       }
     }
