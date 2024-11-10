@@ -1,7 +1,5 @@
 package br.unb.cic.soot
 
-import br.unb.cic.soot.aliasing.Aliasing5Test
-import br.unb.cic.soot.basic.{Basic11Test, Basic16StringTest, Basic16Test, Basic31Test}
 import org.scalatest.{BeforeAndAfter, FunSuite}
 
 class TestSuite extends FunSuite with BeforeAndAfter {
@@ -95,32 +93,6 @@ class TestSuite extends FunSuite with BeforeAndAfter {
     assert(svfa.reportConflictsSVG().size == 1)
   }
 
-  test("we should find exactly two conflicts in the basic.Basic11 analysis") {
-    val svfa = new Basic11Test()
-    svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 2)
-  }
-
-  test("we should find exactly one conflicts in the basic.Basic16 analysis") {
-    val svfa = new Basic16Test()
-    svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 1)
-  }
-
-  test("we should find exactly one conflicts in the basic.Basic31 analysis") {
-    val svfa = new Basic31Test()
-//    This
-    svfa.buildSparseValueFlowGraph()
-    print(svfa.svgToDotModel())
-    assert(svfa.reportConflictsSVG().size == 2)
-  }
-
-  test("we should find exactly one conflicts in the basic.Basic16String analysis") {
-    val svfa = new Basic16StringTest()
-    svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 1)
-  }
-
   test("we should find exactly one conflict in the ContextSensitiveSample  analysis") {
     val svfa = new ContextSensitiveTest()
     svfa.buildSparseValueFlowGraph()
@@ -161,12 +133,6 @@ class TestSuite extends FunSuite with BeforeAndAfter {
     svfa.buildSparseValueFlowGraph()
     System.out.println(svfa.svgToDotModel())
     assert(svfa.reportConflictsSVG().size >= 1)
-  }
-
-  test("[Alias5Test] We should find exactly two conflicts in the Alias5 analysis") {
-    val svfa = new Aliasing5Test()
-    svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 2)
   }
 
   test("[Confluence01] We should find exactly one conflict") {

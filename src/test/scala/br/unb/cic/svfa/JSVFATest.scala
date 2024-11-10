@@ -1,9 +1,10 @@
 package br.unb.cic.soot
 
+import br.unb.cic.soot.svfa.JavaSootConfiguration
 import br.unb.cic.soot.svfa.jimple.{FieldSensitive, Interprocedural, JSVFA, PropagateTaint}
 import soot.{Scene, SootMethod}
 
-abstract class JSVFATest extends JSVFA with Interprocedural with FieldSensitive with PropagateTaint {
+abstract class JSVFATest extends JSVFA with JavaSootConfiguration with Interprocedural with FieldSensitive with PropagateTaint {
   def getClassName(): String
   def getMainMethod(): String
 
