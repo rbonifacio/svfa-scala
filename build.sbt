@@ -1,9 +1,9 @@
-scalaVersion := "2.12.8"
+scalaVersion := "2.12.20"
 
 name := "svfa-scala"
 organization := "br.unb.cic"
 
-version := "0.2.8"
+version := "0.3.0-SNAPSHOT"
 
 githubOwner := "rbonifacio"
 githubRepository := "svfa-scala"

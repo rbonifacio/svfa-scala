@@ -1,6 +1,6 @@
 package br.unb.cic.soot
 
-import br.unb.cic.soot.svfa.JavaSootConfiguration
+import br.unb.cic.soot.svfa.configuration.JavaSootConfiguration
 import br.unb.cic.soot.svfa.jimple.{FieldSensitive, Interprocedural, JSVFA, PropagateTaint}
 import soot.{Scene, SootMethod}
 
