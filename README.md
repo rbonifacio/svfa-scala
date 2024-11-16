@@ -61,11 +61,9 @@ This project use some of the [FlowDroid](https://github.com/secure-software-engi
 
 ### Flowdroid Benchmark
 
-###### failed: 33, passed: 71, ignored: 0 of 104 test (Original Benchmark)
+> failed: 0, passed: 64, ignored: 39 of 103 test (62.14%)
 
-> failed: 0, passed: 64, ignored: 40 of 104 test (61.53%)
-
-- **AliasingTest** - failed: 0, passed: 5, ignored: 1 of 6 test `(83.33%)`
+- **AliasingTest** - failed: 0, passed: 5, ignored: 1 of 6 test `(83.3%)`
   - [5]
 
 - **ArraysTest** - failed: 0, passed: 1, ignored: 9 of 10 test `(10%)`
@@ -85,7 +83,7 @@ This project use some of the [FlowDroid](https://github.com/secure-software-engi
   - [38]
   - [42]
 
-- **CollectionTest** - failed: 0, passed: 1, ignored: 14 of 15 test `(6.67%)`
+- **CollectionTest** - failed: 0, passed: 1, ignored: 13 of 14 test `(7.14%)`
   - [2]
   - [3]
   - [4]
@@ -95,19 +93,19 @@ This project use some of the [FlowDroid](https://github.com/secure-software-engi
   - [8]
   - [9]
   - [10]
-  - [11]
+  - [11] * There are any assertions here, it calls test [11b]
   - [11b]
   - [12]
   - [13]
   - [14]
 
-- **DataStructureTest** - failed: 0, passed: 5, ignored: 1 of 6 test `(83.33%)`
+- **DataStructureTest** - failed: 0, passed: 5, ignored: 1 of 6 test `(83.3%)`
   - [2]
 
-- **FactoryTest** - failed: 0, passed: 2, ignored: 1 of 3 test `(6.25%)`
+- **FactoryTest** - failed: 0, passed: 2, ignored: 1 of 3 test `(66.67%)`
   - [3]
 
-- **InterTest** - failed: 0, passed:7, ignored: 7 of 14 test `(50%)`
+- **InterTest** - failed: 0, passed: 8, ignored: 6 of 14 test `(57.14%)`
   - [4]
   - [5]
   - [6]
@@ -115,7 +113,7 @@ This project use some of the [FlowDroid](https://github.com/secure-software-engi
   - [11] - flaky
   - [12]
 
-- **SessionTest** - failed: 0, passed: 0, ignored: 3 of 3 test `(66.660%)`
+- **SessionTest** - failed: 0, passed: 0, ignored: 3 of 3 test `(0%)`
   - [1]
   - [2]
   - [3]
