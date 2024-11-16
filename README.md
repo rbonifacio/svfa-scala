@@ -61,7 +61,7 @@ This project use some of the [FlowDroid](https://github.com/secure-software-engi
 
 ### Flowdroid Benchmark
 
-> failed: 0, passed: 64, ignored: 39 of 103 test (62.14%)
+> failed: 0, passed: 73, ignored: 30 of 103 test (70.87%)
 
 - **AliasingTest** - failed: 0, passed: 5, ignored: 1 of 6 test `(83.3%)`
   - [5]
@@ -78,8 +78,7 @@ This project use some of the [FlowDroid](https://github.com/secure-software-engi
   - [38]
   - [42]
 
-- **CollectionTest** - failed: 0, passed: 2, ignored: 13 of 15 test `(13.33%)`
-  - [2]
+- **CollectionTest** - failed: 0, passed: 3, ignored: 11 of 14 test `(78.57%)`
   - [3]
   - [4]
   - [5]
