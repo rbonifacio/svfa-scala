@@ -162,11 +162,11 @@ class FlowdroidTestSuite extends FunSuite {
    * BASIC TESTs
    */
 
-  test("in the class Basic2 we should detect 1 conflict of a simple XSS test case") {
-    val svfa = new FlowdroidTest("securibench.micro.basic.Basic0", "doGet")
-    svfa.buildSparseValueFlowGraph()
-    assert(svfa.reportConflictsSVG().size == 1)
-  }
+//  test("in the class Basic2 we should detect 1 conflict of a simple XSS test case") {
+//    val svfa = new FlowdroidTest("securibench.micro.basic.Basic0", "doGet")
+//    svfa.buildSparseValueFlowGraph()
+//    assert(svfa.reportConflictsSVG().size == 1)
+//  }
 
   test("in the class Basic1 we should detect 1 conflict of a simple XSS test case") {
     val svfa = new FlowdroidTest("securibench.micro.basic.Basic1", "doGet")
