@@ -78,7 +78,7 @@ This project use some of the [FlowDroid](https://github.com/secure-software-engi
   - [38]
   - [42]
 
-- **CollectionTest** - failed: 0, passed: 3, ignored: 11 of 14 test `(78.57%)`
+- **CollectionTest** - failed: 0, passed: 3, ignored: 11 of 14 test `(21.42%)`
   - [3]
   - [4]
   - [5]
