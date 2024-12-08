@@ -19,7 +19,13 @@ import java.nio.file.Paths
 
 import br.unb.cic.soot.svfa.configuration.AndroidSootConfiguration
 
-class AndroidTaintBenchTest(apk: String) extends JSVFA with FlowdroidSpec with AndroidSootConfiguration with Interprocedural with FieldSensitive with PropagateTaint {
+class AndroidTaintBenchTest(apk: String) extends JSVFA
+    with FlowdroidSpecRoidSec
+    with AndroidSootConfiguration
+    with Interprocedural
+    with FieldSensitive
+    with PropagateTaint
+{
   def getApkPath(): String = readProperty("taint-bench") + (s"/$apk.apk")
 
   def apk(): String = getApkPath()
