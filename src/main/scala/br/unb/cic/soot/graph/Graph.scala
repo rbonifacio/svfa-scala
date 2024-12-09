@@ -60,7 +60,7 @@ case class StatementNode(value: Statement, nodeType: NodeType)
   type T = Statement
 
   //  override def show(): String = "(" ++ value.method + ": " + value.stmt + " - " + value.line + " <" + nodeType.toString + ">)"
-  override def show(): String = value.stmt
+  override def show(): String = value.stmt.replace('"', ''')
 
   override def toString: String =
     "Node(" + value.method + "," + value.stmt + "," + "," + nodeType.toString + ")"
