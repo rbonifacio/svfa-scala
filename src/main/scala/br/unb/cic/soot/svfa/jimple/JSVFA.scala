@@ -2,7 +2,16 @@ package br.unb.cic.soot.svfa.jimple
 
 import java.util
 import br.unb.cic.soot.svfa.jimple.rules.RuleAction
-import br.unb.cic.soot.graph.{CallSiteCloseLabel, CallSiteLabel, CallSiteOpenLabel, ContextSensitiveRegion, GraphNode, SinkNode, SourceNode, StatementNode}
+import br.unb.cic.soot.graph.{
+  CallSiteCloseLabel,
+  CallSiteLabel,
+  CallSiteOpenLabel,
+  ContextSensitiveRegion,
+  GraphNode,
+  SinkNode,
+  SourceNode,
+  StatementNode
+}
 import br.unb.cic.soot.svfa.jimple.dsl.{DSL, LanguageParser}
 import br.unb.cic.soot.svfa.{SVFA, SourceSinkDef}
 import com.typesafe.scalalogging.LazyLogging
@@ -11,23 +20,44 @@ import soot.jimple.internal.{AbstractInvokeExpr, JArrayRef, JAssignStmt}
 import soot.jimple.spark.ondemand.DemandCSPointsTo
 import soot.jimple.spark.pag
 import soot.jimple.spark.pag.{AllocNode, PAG}
-import soot.jimple.spark.sets.{DoublePointsToSet, HybridPointsToSet, P2SetVisitor}
+import soot.jimple.spark.sets.{
+  DoublePointsToSet,
+  HybridPointsToSet,
+  P2SetVisitor
+}
 import soot.toolkits.graph.ExceptionalUnitGraph
 import soot.toolkits.scalar.SimpleLocalDefs
-import soot.{ArrayType, Local, Scene, SceneTransformer, SootField, SootMethod, Transform, Value, jimple}
+import soot.{
+  ArrayType,
+  Local,
+  Scene,
+  SceneTransformer,
+  SootField,
+  SootMethod,
+  Transform,
+  Value,
+  jimple
+}
 
 import scala.collection.mutable.ListBuffer
 
-/**
- * A Jimple based implementation of
- * SVFA.
- */
-abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with ObjectPropagation with SourceSinkDef with LazyLogging  with DSL {
+/** A Jimple based implementation of SVFA.
+  */
+abstract class JSVFA
+    extends SVFA
+    with Analysis
+    with FieldSensitiveness
+    with ObjectPropagation
+    with SourceSinkDef
+    with LazyLogging
+    with DSL {
 
   var methods = 0
   val traversedMethods = scala.collection.mutable.Set.empty[SootMethod]
-  val allocationSites = scala.collection.mutable.HashMap.empty[soot.Value, StatementNode]
-  val arrayStores = scala.collection.mutable.HashMap.empty[Local, List[soot.Unit]]
+  val allocationSites =
+    scala.collection.mutable.HashMap.empty[soot.Value, StatementNode]
+  val arrayStores =
+    scala.collection.mutable.HashMap.empty[Local, List[soot.Unit]]
   val languageParser = new LanguageParser(this)
 
   val methodRules = languageParser.evaluate(code())
@@ -46,25 +76,34 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
   trait CopyFromMethodArgumentToBaseObject extends RuleAction {
     def from: Int
 
-    def apply(sootMethod: SootMethod, invokeStmt: jimple.Stmt, localDefs: SimpleLocalDefs) = {
+    def apply(
+        sootMethod: SootMethod,
+        invokeStmt: jimple.Stmt,
+        localDefs: SimpleLocalDefs
+    ): Unit = {
       var srcArg: Value = null
       var expr: InvokeExpr = null
 
-      try{
+      try {
         srcArg = invokeStmt.getInvokeExpr.getArg(from)
         expr = invokeStmt.getInvokeExpr
-      }catch {
-        case e: Exception=>
-          srcArg = invokeStmt.getInvokeExpr.getArg(from)
-          expr = invokeStmt.getInvokeExpr
-          println("Entrou com errro!")
+      } catch {
+        case e: Throwable =>
+          val invokedMethod =
+            if (invokeStmt.getInvokeExpr != null)
+              invokeStmt.getInvokeExpr.getMethod.getName
+            else ""
+          logger.warn("It was not possible to execute \n")
+          logger.warn("the copy from argument to base object rule. \n")
+          logger.warn("Methods: " + sootMethod.getName + " " + invokedMethod);
+          return
       }
-      if(hasBaseObject(expr) && srcArg.isInstanceOf[Local]) {
+      if (hasBaseObject(expr) && srcArg.isInstanceOf[Local]) {
         val local = srcArg.asInstanceOf[Local]
 
         val base = getBaseObject(expr)
 
-        if(base.isInstanceOf[Local]) {
+        if (base.isInstanceOf[Local]) {
           val localBase = base.asInstanceOf[Local]
           localDefs.getDefsOfAt(local, invokeStmt).forEach(sourceStmt => {
             val sourceNode = createNode(sootMethod, sourceStmt)
@@ -81,33 +120,37 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
   private def getBaseObject(expr: InvokeExpr) =
     if (expr.isInstanceOf[VirtualInvokeExpr])
       expr.asInstanceOf[VirtualInvokeExpr].getBase
-    else if(expr.isInstanceOf[SpecialInvokeExpr])
+    else if (expr.isInstanceOf[SpecialInvokeExpr])
       expr.asInstanceOf[SpecialInvokeExpr].getBase
     else
       expr.asInstanceOf[InstanceInvokeExpr].getBase
 
-
   private def hasBaseObject(expr: InvokeExpr) =
-    (expr.isInstanceOf[VirtualInvokeExpr] || expr.isInstanceOf[SpecialInvokeExpr] || expr.isInstanceOf[InterfaceInvokeExpr])
-
+    (expr.isInstanceOf[VirtualInvokeExpr] || expr
+      .isInstanceOf[SpecialInvokeExpr] || expr
+      .isInstanceOf[InterfaceInvokeExpr])
 
   /*
-     * Create an edge from a method call to a local.
-     * In more details, we should use this rule to address
-     * a situation like:
-     *
-     * - $r6 = virtualinvoke r3.<java.lang.StringBuffer: java.lang.String toString()>();
-     *
-     * Where we want to create an edge from the definitions of r3 to
-     * this statement.
-     */
+   * Create an edge from a method call to a local.
+   * In more details, we should use this rule to address
+   * a situation like:
+   *
+   * - $r6 = virtualinvoke r3.<java.lang.StringBuffer: java.lang.String toString()>();
+   *
+   * Where we want to create an edge from the definitions of r3 to
+   * this statement.
+   */
   trait CopyFromMethodCallToLocal extends RuleAction {
-    def apply(sootMethod: SootMethod, invokeStmt: jimple.Stmt, localDefs: SimpleLocalDefs) = {
+    def apply(
+        sootMethod: SootMethod,
+        invokeStmt: jimple.Stmt,
+        localDefs: SimpleLocalDefs
+    ) = {
       val expr = invokeStmt.getInvokeExpr
-      if(hasBaseObject(expr) && invokeStmt.isInstanceOf[jimple.AssignStmt]) {
+      if (hasBaseObject(expr) && invokeStmt.isInstanceOf[jimple.AssignStmt]) {
         val base = getBaseObject(expr)
         val local = invokeStmt.asInstanceOf[jimple.AssignStmt].getLeftOp
-        if(base.isInstanceOf[Local] && local.isInstanceOf[Local]) {
+        if (base.isInstanceOf[Local] && local.isInstanceOf[Local]) {
           val localBase = base.asInstanceOf[Local]
           localDefs.getDefsOfAt(localBase, invokeStmt).forEach(source => {
             val sourceNode = createNode(sootMethod, source)
@@ -119,7 +162,6 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     }
   }
 
-
   /* Create an edge from the definitions of a local argument
    * to the assignment statement. In more details, we should use this rule to address
    * a situation like:
@@ -128,9 +170,13 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
   trait CopyFromMethodArgumentToLocal extends RuleAction {
     def from: Int
 
-    def apply(sootMethod: SootMethod, invokeStmt: jimple.Stmt, localDefs: SimpleLocalDefs) = {
+    def apply(
+        sootMethod: SootMethod,
+        invokeStmt: jimple.Stmt,
+        localDefs: SimpleLocalDefs
+    ) = {
       val srcArg = invokeStmt.getInvokeExpr.getArg(from)
-      if(invokeStmt.isInstanceOf[JAssignStmt] && srcArg.isInstanceOf[Local]) {
+      if (invokeStmt.isInstanceOf[JAssignStmt] && srcArg.isInstanceOf[Local]) {
         val local = srcArg.asInstanceOf[Local]
         val targetStmt = invokeStmt.asInstanceOf[jimple.AssignStmt]
         localDefs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
@@ -143,20 +189,24 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
   }
 
   /*
- * Create an edge between the definitions of the actual
- * arguments of a method call. We should use this rule
- * to address situations like:
- *
- * - System.arraycopy(l1, _, l2, _)
- *
- * Where we wanto to create an edge from the definitions of
- * l1 to the definitions of l2.
- */
+   * Create an edge between the definitions of the actual
+   * arguments of a method call. We should use this rule
+   * to address situations like:
+   *
+   * - System.arraycopy(l1, _, l2, _)
+   *
+   * Where we wanto to create an edge from the definitions of
+   * l1 to the definitions of l2.
+   */
   trait CopyBetweenArgs extends RuleAction {
     def from: Int
-    def target : Int
+    def target: Int
 
-    def apply(sootMethod: SootMethod, invokeStmt: jimple.Stmt, localDefs: SimpleLocalDefs) = {
+    def apply(
+        sootMethod: SootMethod,
+        invokeStmt: jimple.Stmt,
+        localDefs: SimpleLocalDefs
+    ) = {
       val srcArg = invokeStmt.getInvokeExpr.getArg(from)
       val destArg = invokeStmt.getInvokeExpr.getArg(target)
       if (srcArg.isInstanceOf[Local] && destArg.isInstanceOf[Local]) {
@@ -171,26 +221,29 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     }
   }
 
-
-  def createSceneTransform(): (String, Transform) = ("wjtp", new Transform("wjtp.svfa", new Transformer()))
+  def createSceneTransform(): (String, Transform) =
+    ("wjtp", new Transform("wjtp.svfa", new Transformer()))
 
   def initAllocationSites(): Unit = {
     val listener = Scene.v().getReachableMethods.listener()
 
-    while(listener.hasNext) {
+    while (listener.hasNext) {
       val m = listener.next().method()
       if (m.hasActiveBody) {
         val body = m.getActiveBody
         body.getUnits.forEach(unit => {
           if (unit.isInstanceOf[soot.jimple.AssignStmt]) {
             val right = unit.asInstanceOf[soot.jimple.AssignStmt].getRightOp
-            if (right.isInstanceOf[NewExpr] || right.isInstanceOf[NewArrayExpr] || right.isInstanceOf[StringConstant]) {
+            if (
+              right.isInstanceOf[NewExpr] || right
+                .isInstanceOf[NewArrayExpr] || right
+                .isInstanceOf[StringConstant]
+            ) {
               allocationSites += (right -> createNode(m, unit))
             }
-          }
-          else if(unit.isInstanceOf[soot.jimple.ReturnStmt]) {
+          } else if (unit.isInstanceOf[soot.jimple.ReturnStmt]) {
             val exp = unit.asInstanceOf[soot.jimple.ReturnStmt].getOp
-            if(exp.isInstanceOf[StringConstant]) {
+            if (exp.isInstanceOf[StringConstant]) {
               allocationSites += (exp -> createNode(m, unit))
             }
           }
@@ -200,7 +253,10 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
   }
 
   class Transformer extends SceneTransformer {
-    override def internalTransform(phaseName: String, options: util.Map[String, String]): Unit = {
+    override def internalTransform(
+        phaseName: String,
+        options: util.Map[String, String]
+    ): Unit = {
       pointsToAnalysis = Scene.v().getPointsToAnalysis
       initAllocationSites()
 //      println(allocationSites.foreach(println(_)))
@@ -211,19 +267,23 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     }
   }
 
-  def traverse(method: SootMethod, forceNewTraversal: Boolean = false) : Unit = {
-    if((!forceNewTraversal) && (method.isPhantom || traversedMethods.contains(method))) {
+  def traverse(method: SootMethod, forceNewTraversal: Boolean = false): Unit = {
+    if (
+      (!forceNewTraversal) && (method.isPhantom || traversedMethods.contains(
+        method
+      ))
+    ) {
       return
     }
 
     traversedMethods.add(method)
 
-    val body  = method.retrieveActiveBody()
+    val body = method.retrieveActiveBody()
 
     println(body)
 
     val graph = new ExceptionalUnitGraph(body)
-    val defs  = new SimpleLocalDefs(graph)
+    val defs = new SimpleLocalDefs(graph)
 
     body.getUnits.forEach(unit => {
       val v = Statement.convert(unit)
@@ -231,14 +291,18 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       v match {
         case AssignStmt(base) => traverse(AssignStmt(base), method, defs)
         case InvokeStmt(base) => traverse(InvokeStmt(base), method, defs)
-        case _ if analyze(unit) == SinkNode => traverseSinkStatement(v, method, defs)
+        case _ if analyze(unit) == SinkNode =>
+          traverseSinkStatement(v, method, defs)
         case _ =>
       }
     })
   }
 
-
-  def traverse(assignStmt: AssignStmt, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
+  def traverse(
+      assignStmt: AssignStmt,
+      method: SootMethod,
+      defs: SimpleLocalDefs
+  ): Unit = {
     val left = assignStmt.stmt.getLeftOp
     val right = assignStmt.stmt.getRightOp
 
@@ -256,16 +320,25 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     }
   }
 
-  def traverse(stmt: InvokeStmt, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
+  def traverse(
+      stmt: InvokeStmt,
+      method: SootMethod,
+      defs: SimpleLocalDefs
+  ): Unit = {
     val exp = stmt.stmt.getInvokeExpr
     invokeRule(stmt, exp, method, defs)
   }
 
-  def traverseSinkStatement(statement: Statement, method: SootMethod, defs: SimpleLocalDefs): Unit = {
+  def traverseSinkStatement(
+      statement: Statement,
+      method: SootMethod,
+      defs: SimpleLocalDefs
+  ): Unit = {
     statement.base.getUseBoxes.forEach(box => {
       box match {
-        case local : Local => copyRule(statement.base, local, method, defs)
-        case fieldRef : InstanceFieldRef => loadRule(statement.base, fieldRef, method, defs)
+        case local: Local => copyRule(statement.base, local, method, defs)
+        case fieldRef: InstanceFieldRef =>
+          loadRule(statement.base, fieldRef, method, defs)
         case _ =>
         // TODO:
         //   we have to think about other cases here.
@@ -274,9 +347,21 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     })
   }
 
+  private def invokeRule(
+      callStmt: Statement,
+      exp: InvokeExpr,
+      caller: SootMethod,
+      defs: SimpleLocalDefs
+  ): Unit = {
+    val callee: soot.SootMethod =
+      try { exp.getMethod }
+      catch {
+        case _: Throwable => null
+      }
 
-  private def invokeRule(callStmt: Statement, exp: InvokeExpr, caller: SootMethod, defs: SimpleLocalDefs): Unit = {
-    val callee = exp.getMethod
+    if (callee == null) {
+      return
+    }
 
     if(analyze(callStmt.base) == SinkNode) {
       defsToCallOfSinkMethod(callStmt, exp, caller, defs) // update 'edge(s)' FROM "declaration stmt(s) for args" TO "call-site stmt" (current stmt)
@@ -290,14 +375,14 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       svg.addNode(source)
     }
 
-    for(r <- methodRules) {
-      if(r.check(callee)) {
+    for (r <- methodRules) {
+      if (r.check(callee)) {
         r.apply(caller, callStmt.base.asInstanceOf[jimple.Stmt], defs)
         return
       }
     }
 
-    if(intraprocedural()) return
+    if (intraprocedural()) return
 
     var pmtCount = 0
     val body = callee.retrieveActiveBody()
@@ -323,7 +408,12 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     traverse(callee)
   }
 
-  private def applyPhantomMethodCallRule(callStmt: Statement, exp: InvokeExpr, caller: SootMethod, defs: SimpleLocalDefs) = {
+  private def applyPhantomMethodCallRule(
+      callStmt: Statement,
+      exp: InvokeExpr,
+      caller: SootMethod,
+      defs: SimpleLocalDefs
+  ) = {
     val srcArg = exp.getArg(0)
     val destArg = exp.getArg(2)
     if (srcArg.isInstanceOf[Local] && destArg.isInstanceOf[Local]) {
@@ -361,9 +451,13 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
    * In this case, we create and edge from defs(q) and
    * from defs(r) to the statement p = q + r
    */
-  def copyRuleInvolvingExpressions(stmt: jimple.AssignStmt, method: SootMethod, defs: SimpleLocalDefs) = {
+  def copyRuleInvolvingExpressions(
+      stmt: jimple.AssignStmt,
+      method: SootMethod,
+      defs: SimpleLocalDefs
+  ) = {
     stmt.getRightOp.getUseBoxes.forEach(box => {
-      if(box.getValue.isInstanceOf[Local]) {
+      if (box.getValue.isInstanceOf[Local]) {
         val local = box.getValue.asInstanceOf[Local]
         copyRule(stmt, local, method, defs)
       }
@@ -375,7 +469,12 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
    *
    *  (*) p = q.f
    */
-  protected def loadRule(stmt: soot.Unit, ref: InstanceFieldRef, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
+  protected def loadRule(
+      stmt: soot.Unit,
+      ref: InstanceFieldRef,
+      method: SootMethod,
+      defs: SimpleLocalDefs
+  ): Unit = {
     val base = ref.getBase
     // value field of a string.
     val className = ref.getFieldRef.declaringClass().getName
@@ -402,7 +501,8 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       }
 
       if (allocationNodes.isEmpty) {
-        allocationNodes = findAllocationSites(base.asInstanceOf[Local], true, ref.getField)
+        allocationNodes =
+          findAllocationSites(base.asInstanceOf[Local], true, ref.getField)
       }
 
       allocationNodes.foreach(source => {
@@ -449,7 +549,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
   protected def loadArrayRule(targetStmt: soot.Unit, ref: ArrayRef, method: SootMethod, defs: SimpleLocalDefs) : Unit = {
     val base = ref.getBase
 
-    if(base.isInstanceOf[Local]) {
+    if (base.isInstanceOf[Local]) {
       val local = base.asInstanceOf[Local]
 
       defs.getDefsOfAt(local, targetStmt).forEach(sourceStmt => {
@@ -649,16 +749,16 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
 
     // Check if the current expression belong to invokeExpr
     val invokeExpr = expr match {
-      case e: VirtualInvokeExpr => e
-      case e: SpecialInvokeExpr => e
+      case e: VirtualInvokeExpr   => e
+      case e: SpecialInvokeExpr   => e
       case e: InterfaceInvokeExpr => e
-      case _ => null //TODO: not sure if the other cases
+      case _                      => null // TODO: not sure if the other cases
       // are also relevant here. Otherwise,
       // we can just match with InstanceInvokeExpr
     }
 
-    if(invokeExpr != null) {
-      if(invokeExpr.getBase.isInstanceOf[Local]) {
+    if (invokeExpr != null) {
+      if (invokeExpr.getBase.isInstanceOf[Local]) {
 
         val target = createNode(callee, targetStmt)
 
@@ -789,32 +889,56 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     CallSiteLabel(ContextSensitiveRegion(statement, callee.toString, context), CallSiteCloseLabel)
   }
 
-  def isThisInitStmt(expr: InvokeExpr, unit: soot.Unit) : Boolean =
-    unit.isInstanceOf[IdentityStmt] && unit.asInstanceOf[IdentityStmt].getRightOp.isInstanceOf[ThisRef]
+  def isThisInitStmt(expr: InvokeExpr, unit: soot.Unit): Boolean =
+    unit.isInstanceOf[IdentityStmt] && unit
+      .asInstanceOf[IdentityStmt]
+      .getRightOp
+      .isInstanceOf[ThisRef]
 
-  def isParameterInitStmt(expr: InvokeExpr, pmtCount: Int, unit: soot.Unit) : Boolean =
-    unit.isInstanceOf[IdentityStmt] && unit.asInstanceOf[IdentityStmt].getRightOp.isInstanceOf[ParameterRef] && expr.getArg(pmtCount).isInstanceOf[Local]
+  def isParameterInitStmt(
+      expr: InvokeExpr,
+      pmtCount: Int,
+      unit: soot.Unit
+  ): Boolean =
+    unit.isInstanceOf[IdentityStmt] && unit
+      .asInstanceOf[IdentityStmt]
+      .getRightOp
+      .isInstanceOf[ParameterRef] && expr.getArg(pmtCount).isInstanceOf[Local]
 
-  def isAssignReturnLocalStmt(callSite: soot.Unit, unit: soot.Unit) : Boolean =
-    unit.isInstanceOf[ReturnStmt] && unit.asInstanceOf[ReturnStmt].getOp.isInstanceOf[Local] &&
+  def isAssignReturnLocalStmt(callSite: soot.Unit, unit: soot.Unit): Boolean =
+    unit.isInstanceOf[ReturnStmt] && unit
+      .asInstanceOf[ReturnStmt]
+      .getOp
+      .isInstanceOf[Local] &&
       callSite.isInstanceOf[soot.jimple.AssignStmt]
 
   def isReturnStringStmt(callSite: soot.Unit, unit: soot.Unit): Boolean =
-    unit.isInstanceOf[ReturnStmt] && unit.asInstanceOf[ReturnStmt].getOp.isInstanceOf[StringConstant] &&
+    unit.isInstanceOf[ReturnStmt] && unit
+      .asInstanceOf[ReturnStmt]
+      .getOp
+      .isInstanceOf[StringConstant] &&
       callSite.isInstanceOf[soot.jimple.AssignStmt]
 
-  def findAllocationSites(local: Local, oldSet: Boolean = true, field: SootField = null) : ListBuffer[GraphNode] = {
-    val pta = if(pointsToAnalysis.isInstanceOf[PAG]) pointsToAnalysis.asInstanceOf[PAG]
-    else if (pointsToAnalysis.isInstanceOf[DemandCSPointsTo]) pointsToAnalysis.asInstanceOf[DemandCSPointsTo].getPAG
-    else null
+  def findAllocationSites(
+      local: Local,
+      oldSet: Boolean = true,
+      field: SootField = null
+  ): ListBuffer[GraphNode] = {
+    val pta =
+      if (pointsToAnalysis.isInstanceOf[PAG]) pointsToAnalysis.asInstanceOf[PAG]
+      else if (pointsToAnalysis.isInstanceOf[DemandCSPointsTo])
+        pointsToAnalysis.asInstanceOf[DemandCSPointsTo].getPAG
+      else null
 
-    if(pta != null) {
-      val reachingObjects = if(field == null) pta.reachingObjects(local.asInstanceOf[Local])
-      else pta.reachingObjects(local, field)
+    if (pta != null) {
+      val reachingObjects =
+        if (field == null) pta.reachingObjects(local.asInstanceOf[Local])
+        else pta.reachingObjects(local, field)
 
-      if(!reachingObjects.isEmpty) {
-        val allocations = if(oldSet) reachingObjects.asInstanceOf[DoublePointsToSet].getOldSet
-        else reachingObjects.asInstanceOf[DoublePointsToSet].getNewSet
+      if (!reachingObjects.isEmpty) {
+        val allocations =
+          if (oldSet) reachingObjects.asInstanceOf[DoublePointsToSet].getOldSet
+          else reachingObjects.asInstanceOf[DoublePointsToSet].getNewSet
 
         val v = new AllocationVisitor()
         allocations.asInstanceOf[HybridPointsToSet].forall(v)
@@ -839,47 +963,57 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
       if (n.isInstanceOf[AllocNode]) {
         val allocationNode = n.asInstanceOf[AllocNode]
 
-        var stmt : StatementNode = null
+        var stmt: StatementNode = null
 
         if (allocationNode.getNewExpr.isInstanceOf[NewExpr]) {
-          if (allocationSites.contains(allocationNode.getNewExpr.asInstanceOf[NewExpr])) {
-            stmt = allocationSites(allocationNode.getNewExpr.asInstanceOf[NewExpr])
+          if (
+            allocationSites.contains(
+              allocationNode.getNewExpr.asInstanceOf[NewExpr]
+            )
+          ) {
+            stmt = allocationSites(
+              allocationNode.getNewExpr.asInstanceOf[NewExpr]
+            )
           }
-        }
-        else if(allocationNode.getNewExpr.isInstanceOf[NewArrayExpr]) {
-          if (allocationSites.contains(allocationNode.getNewExpr.asInstanceOf[NewArrayExpr])) {
-            stmt = allocationSites(allocationNode.getNewExpr.asInstanceOf[NewArrayExpr])
+        } else if (allocationNode.getNewExpr.isInstanceOf[NewArrayExpr]) {
+          if (
+            allocationSites.contains(
+              allocationNode.getNewExpr.asInstanceOf[NewArrayExpr]
+            )
+          ) {
+            stmt = allocationSites(
+              allocationNode.getNewExpr.asInstanceOf[NewArrayExpr]
+            )
           }
-        }
-        else if(allocationNode.getNewExpr.isInstanceOf[String]) {
-          val str: StringConstant = StringConstant.v(allocationNode.getNewExpr.asInstanceOf[String])
+        } else if (allocationNode.getNewExpr.isInstanceOf[String]) {
+          val str: StringConstant =
+            StringConstant.v(allocationNode.getNewExpr.asInstanceOf[String])
           stmt = allocationSites.getOrElseUpdate(str, null)
         }
 
-        if(stmt != null) {
+        if (stmt != null) {
           allocationNodes += stmt
         }
       }
     }
   }
 
-  /**
-   * Override this method in the case that
-   * a complete graph should be generated.
-   *
-   * Otherwise, only nodes that can be reached from
-   * source nodes will be in the graph
-   *
-   * @return true for a full sparse version of the graph.
-   *         false otherwise.
-   * @deprecated
-   */
+  /** Override this method in the case that a complete graph should be
+    * generated.
+    *
+    * Otherwise, only nodes that can be reached from source nodes will be in the
+    * graph
+    *
+    * @return
+    *   true for a full sparse version of the graph. false otherwise.
+    * @deprecated
+    */
   def runInFullSparsenessMode() = true
 
-  def findFieldStores(local: Local, field: SootField) : ListBuffer[GraphNode] = {
+  def findFieldStores(local: Local, field: SootField): ListBuffer[GraphNode] = {
     val res: ListBuffer[GraphNode] = new ListBuffer[GraphNode]()
-    for(node <- svg.nodes()) {
-      if(node.unit().isInstanceOf[soot.jimple.AssignStmt]) {
+    for (node <- svg.nodes()) {
+      if (node.unit().isInstanceOf[soot.jimple.AssignStmt]) {
         val assignment = node.unit().asInstanceOf[soot.jimple.AssignStmt]
         if(assignment.getLeftOp.isInstanceOf[InstanceFieldRef]) {
           val base = assignment.getLeftOp.asInstanceOf[InstanceFieldRef].getBase.asInstanceOf[Local]
@@ -921,7 +1055,7 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
   //   */
 
   def containsNodeDF(node: StatementNode): StatementNode = {
-    for (n <- svg.edges()){
+    for (n <- svg.edges()) {
       var auxNodeFrom = n.from.asInstanceOf[StatementNode]
       var auxNodeTo = n.to.asInstanceOf[StatementNode]
       if (auxNodeFrom.equals(node)) return n.from.asInstanceOf[StatementNode]
@@ -929,10 +1063,17 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
     }
     return null
   }
-  def updateGraph(source: GraphNode, target: GraphNode, forceNewEdge: Boolean = false): Boolean = {
+  def updateGraph(
+      source: GraphNode,
+      target: GraphNode,
+      forceNewEdge: Boolean = false
+  ): Boolean = {
     var res = false
-    if(!runInFullSparsenessMode() || true) {
-      addNodeAndEdgeDF(source.asInstanceOf[StatementNode], target.asInstanceOf[StatementNode])
+    if (!runInFullSparsenessMode() || true) {
+      addNodeAndEdgeDF(
+        source.asInstanceOf[StatementNode],
+        target.asInstanceOf[StatementNode]
+      )
 
       res = true
     }
@@ -942,13 +1083,13 @@ abstract class JSVFA extends SVFA with Analysis with FieldSensitiveness with Obj
   def addNodeAndEdgeDF(from: StatementNode, to: StatementNode): Unit = {
     var auxNodeFrom = containsNodeDF(from)
     var auxNodeTo = containsNodeDF(to)
-    if (auxNodeFrom != null){
-      if (auxNodeTo != null){
+    if (auxNodeFrom != null) {
+      if (auxNodeTo != null) {
         svg.addEdge(auxNodeFrom, auxNodeTo)
-      }else{
+      } else {
         svg.addEdge(auxNodeFrom, to)
       }
-    }else {
+    } else {
       if (auxNodeTo != null) {
         svg.addEdge(from, auxNodeTo)
       } else {
