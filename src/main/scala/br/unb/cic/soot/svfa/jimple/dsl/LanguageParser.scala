@@ -61,18 +61,25 @@ class LanguageParser(val jsvfa: JSVFA) extends RegexParsers {
 
   def EQ: Parser[tEq] = """=""".r ^^ { case _ => tEq() }
 
-  def OPEN_ROUND_BRACKETS: Parser[tOpenRoundBrackets] = """\(""".r ^^ { case _ => tOpenRoundBrackets() }
+  def OPEN_ROUND_BRACKETS: Parser[tOpenRoundBrackets] = """\(""".r ^^ {
+    case _ => tOpenRoundBrackets()
+  }
 
-  def CLOSE_ROUND_BRACKETS: Parser[tCloseRoundBrackets] = """\)""".r ^^ { case _ => tCloseRoundBrackets() }
+  def CLOSE_ROUND_BRACKETS: Parser[tCloseRoundBrackets] = """\)""".r ^^ {
+    case _ => tCloseRoundBrackets()
+  }
 
-  def OPEN_SQUARE_BRACKETS: Parser[tOpenSquareBrackets] = """\[""".r ^^ { case _ => tOpenSquareBrackets() }
+  def OPEN_SQUARE_BRACKETS: Parser[tOpenSquareBrackets] = """\[""".r ^^ {
+    case _ => tOpenSquareBrackets()
+  }
 
-  def CLOSE_SQUARE_BRACKETS: Parser[tCloseSquareBrackets] = """\]""".r ^^ { case _ => tCloseSquareBrackets() }
+  def CLOSE_SQUARE_BRACKETS: Parser[tCloseSquareBrackets] = """\]""".r ^^ {
+    case _ => tCloseSquareBrackets()
+  }
 
   def COLON: Parser[tColon] = """:""".r ^^ { case _ => tColon() }
 
   def COMMA: Parser[tComma] = """,""".r ^^ { case _ => tComma() }
-
 
   def MAPPED_STRING: Parser[tMappedString] =
     ID ~ COLON ~ LITERAL ^^ { case id ~ _ ~ value => tMappedString(id, value) }
@@ -81,7 +88,7 @@ class LanguageParser(val jsvfa: JSVFA) extends RegexParsers {
     MAPPED_STRING ~ ((COMMA ~ MAPPED_STRING).+).? ^^ { case head ~ tail =>
       tail match {
         case Some(value) => List(head) ++ value.map(reg => reg._2)
-        case None => List(head)
+        case None        => List(head)
       }
     }
 
@@ -92,7 +99,7 @@ class LanguageParser(val jsvfa: JSVFA) extends RegexParsers {
     MAPPED_NUMBER ~ ((COMMA ~ MAPPED_NUMBER).+).? ^^ { case head ~ tail =>
       tail match {
         case Some(value) => List(head) ++ value.map(reg => reg._2)
-        case None => List(head)
+        case None        => List(head)
       }
     }
 
@@ -118,7 +125,10 @@ class LanguageParser(val jsvfa: JSVFA) extends RegexParsers {
     }
 
   def METHOD: Parser[tMethod] =
-    METHODS ~ OPEN_ROUND_BRACKETS ~ MAPPED_STRINGS.? ~ CLOSE_ROUND_BRACKETS ^^ { case method ~ _ ~ params ~ _ => tMethod(tId(method), params.getOrElse(List())) }
+    METHODS ~ OPEN_ROUND_BRACKETS ~ MAPPED_STRINGS.? ~ CLOSE_ROUND_BRACKETS ^^ {
+      case method ~ _ ~ params ~ _ =>
+        tMethod(tId(method), params.getOrElse(List()))
+    }
 
   // Actions
   def DO_NOTHING: Parser[String] =
@@ -150,35 +160,38 @@ class LanguageParser(val jsvfa: JSVFA) extends RegexParsers {
     DO_NOTHING | COPY_BETWEEN_ARGS |
       COPY_FROM_METHOD_ARGUMENT_TO_BASE_OBJECT | COPY_FROM_METHOD_CALL_TO_LOCAL |
       COPY_FROM_METHOD_ARGUMENT_TO_LOCAL ^^ {
-      _.toString
-    }
+        _.toString
+      }
 
   def ACTION: Parser[tAction] =
-    ACTIONS ~ OPEN_ROUND_BRACKETS ~ MAPPED_NUMBERS.? ~ CLOSE_ROUND_BRACKETS ^^ { case action ~ _ ~ definitions ~ _ => tAction(tId(action), definitions.getOrElse(List())) }
+    ACTIONS ~ OPEN_ROUND_BRACKETS ~ MAPPED_NUMBERS.? ~ CLOSE_ROUND_BRACKETS ^^ {
+      case action ~ _ ~ definitions ~ _ =>
+        tAction(tId(action), definitions.getOrElse(List()))
+    }
 
   def ACTION_LIST: Parser[List[tAction]] =
-    OPEN_SQUARE_BRACKETS.? ~ ACTION ~ ((COMMA ~ ACTION).+).? ~ CLOSE_SQUARE_BRACKETS.? ^^
-  {
-    case openBrackets ~ head ~ tail ~ closeBrackets =>
-    tail match {
-      case Some(value) =>
+    OPEN_SQUARE_BRACKETS.? ~ ACTION ~ ((COMMA ~ ACTION).+).? ~ CLOSE_SQUARE_BRACKETS.? ^^ {
+      case openBrackets ~ head ~ tail ~ closeBrackets =>
+        tail match {
+          case Some(value) =>
 //        if (openBrackets.isDefined && closeBrackets.isDefined) {
-          List(head) ++ value.map(reg => reg._2)
+            List(head) ++ value.map(reg => reg._2)
 //        } else {
 //          List()
 //        }
-      case None => List(head)
+          case None => List(head)
+        }
     }
-  }
 
   def IF_THEN: Parser[tIfThen] =
-    IF ~ METHOD ~ THEN ~ ACTION_LIST ^^
-      { case _ ~ method ~ _ ~ actions  =>
-        tIfThen(method, actions) }
+    IF ~ METHOD ~ THEN ~ ACTION_LIST ^^ { case _ ~ method ~ _ ~ actions =>
+      tIfThen(method, actions)
+    }
 
   def RULE_COMPLETE: Parser[tRuleComplete] =
-    RULE ~ ID ~ EQ ~ IF_THEN ^^
-      { case _ ~ id ~ _ ~ ifThen => tRuleComplete(id, ifThen) }
+    RULE ~ ID ~ EQ ~ IF_THEN ^^ { case _ ~ id ~ _ ~ ifThen =>
+      tRuleComplete(id, ifThen)
+    }
 
   def rule: Parser[MethodRule] =
     RULE_COMPLETE ^^ {
@@ -188,22 +201,31 @@ class LanguageParser(val jsvfa: JSVFA) extends RegexParsers {
         val args = HashMap.empty[String, String]
         var defs = HashMap.empty[String, HashMap[String, Int]]
         rule.conditional.condition.params.foreach((mappedValue) =>
-          args(mappedValue.id.value) = mappedValue.value.value)
+          args(mappedValue.id.value) = mappedValue.value.value
+        )
 
         actions.foreach(action => {
           val actionDefs = HashMap.empty[String, Int]
           action.definitions.foreach((mappedValue) =>
-            actionDefs(mappedValue.id.value) = mappedValue.value.value)
+            actionDefs(mappedValue.id.value) = mappedValue.value.value
+          )
 
           defs(action.id.value) = actionDefs
         })
 
-        factory.create(method, actions.map(action => action.id.value), args, defs)
+        factory.create(
+          method,
+          actions.map(action => action.id.value),
+          args,
+          defs
+        )
       }
     }
 
   def getTokens: Parser[List[String]] = {
-    phrase(rep1(RULE_COMPLETE | IF_THEN | METHOD | ACTION | ID)) ^^ { tokens => tokens.map(token => token.toString) }
+    phrase(rep1(RULE_COMPLETE | IF_THEN | METHOD | ACTION | ID)) ^^ { tokens =>
+      tokens.map(token => token.toString)
+    }
   }
 
   def getAST: Parser[List[MethodRule]] = {
@@ -213,8 +235,8 @@ class LanguageParser(val jsvfa: JSVFA) extends RegexParsers {
   def apply(code: String): List[String] = {
     parse(getTokens, code) match {
       case Success(result, _) => result
-      case Failure(msg, _) => println(s"FAILURE: $msg"); List.empty[String]
-      case Error(msg, _) => println(s"ERROR: $msg"); List.empty[String]
+      case Failure(msg, _)    => println(s"FAILURE: $msg"); List.empty[String]
+      case Error(msg, _)      => println(s"ERROR: $msg"); List.empty[String]
     }
   }
 
@@ -222,7 +244,7 @@ class LanguageParser(val jsvfa: JSVFA) extends RegexParsers {
     parse(getAST, code) match {
       case Success(result, _) => result
       case Failure(msg, _) => println(s"FAILURE: $msg"); List.empty[MethodRule]
-      case Error(msg, _) => println(s"ERROR: $msg"); List.empty[MethodRule]
+      case Error(msg, _)   => println(s"ERROR: $msg"); List.empty[MethodRule]
     }
   }
 }

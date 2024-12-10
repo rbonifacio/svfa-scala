@@ -3,7 +3,7 @@ package br.unb.cic.soot.svfa.jimple.dsl
 import br.unb.cic.soot.svfa.SVFA
 
 trait DSL {
-  this : SVFA =>
+  this: SVFA =>
   def code(): String = {
     """
     rule arrayCopy =

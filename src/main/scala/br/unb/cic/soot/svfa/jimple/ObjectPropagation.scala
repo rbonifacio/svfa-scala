@@ -11,4 +11,3 @@ trait PropagateTaint extends ObjectPropagation {
 trait DontPropagateTaint extends ObjectPropagation {
   override def propagateObjectTaint(): Boolean = false
 }
-

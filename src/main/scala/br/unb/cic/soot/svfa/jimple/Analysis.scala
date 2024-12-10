@@ -1,9 +1,9 @@
 package br.unb.cic.soot.svfa.jimple
 
 trait Analysis {
-  def interprocedural() : Boolean
+  def interprocedural(): Boolean
 
-  def intraprocedural() : Boolean = ! interprocedural()
+  def intraprocedural(): Boolean = !interprocedural()
 }
 
 trait Interprocedural extends Analysis {

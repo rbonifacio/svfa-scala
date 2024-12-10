@@ -35,3 +35,81 @@ This is a scala implementation of a framework that builds a sparse-value flow gr
 ## Dependencies
 
 This project use some of the [FlowDroid](https://github.com/secure-software-engineering/FlowDroid) test cases. The FlowDroid test cases in `src/test/java/securibench` are under [LGPL-2.1](https://github.com/secure-software-engineering/FlowDroid/blob/develop/LICENSE) license.
+
+
+## Installation
+
+- Install Scala Plugin in IntelliJ IDEA
+- Install Java 8 (Java JDK Path `/usr/lib/jvm/java-8-openjdk-amd64`)
+```{bash}
+  sudo apt install openjdk-8-jre-headless
+  sudo apt install openjdk-8-jdk
+```
+- Clone the project:
+```{bash}
+    git clone https://github.com/rbonifacio/svfa-scala
+```
+- Add dependency: 
+     - Download [servlet-api-2.5.jar](https://repo1.maven.org/maven2/javax/servlet/servlet-api/2.5/servlet-api-2.5.jar) and move to `.m2/repository/javax/servlet/servlet-api/2.5/`
+- Add GitHub token in `~/.gitconfig`
+- IDE
+  - Reload `sbt` 
+  - Set Project's settings to work with Java 8
+  - Build Project
+  - Run test
+
+
+### Flowdroid Benchmark
+
+> failed: 0, passed: 73, ignored: 30 of 103 test (70.87%)
+
+- **AliasingTest** - failed: 0, passed: 5, ignored: 1 of 6 test `(83.3%)`
+  - [5]
+
+- **ArraysTest** - failed: 0, passed: 5, ignored: 5 of 10 test `(50%)`
+  - [2]
+  - [5]
+  - [8]
+  - [9]
+  - [10]
+
+- **BasicTest** - failed: 0, passed: 39, ignored: 3 of 42 test `(92.85%)`
+  - [36]
+  - [38]
+  - [42]
+
+- **CollectionTest** - failed: 0, passed: 3, ignored: 11 of 14 test `(21.42%)`
+  - [3]
+  - [4]
+  - [5]
+  - [6]
+  - [7]
+  - [8]
+  - [9]
+  - [10]
+  - [11] * There are any assertions here, it calls test [11b]
+  - [11b]
+  - [12]
+  - [13]
+
+- **DataStructureTest** - failed: 0, passed: 5, ignored: 1 of 6 test `(83.33%)`
+  - [5]
+
+- **FactoryTest** - failed: 0, passed: 2, ignored: 1 of 3 test `(66.67%)`
+  - [3]
+
+- **InterTest** - failed: 0, passed:11, ignored: 4 of 14 test `(78.57%)`
+  - [6]
+  - [11] - flaky
+  - [12]
+
+- **SessionTest** - failed: 0, passed: 0, ignored: 3 of 3 test `(0%)`
+  - [1]
+  - [2]
+  - [3]
+
+- **StrongUpdateTest** - failed: 0, passed: 3, ignored: 2 of 5 test `(60%)`
+  - [3]
+  - [5]
+
+
