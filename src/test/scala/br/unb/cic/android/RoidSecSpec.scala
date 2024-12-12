@@ -1,6 +1,6 @@
 package br.unb.cic.android
 
-trait FlowdroidSpecRoidSec {
+trait RoidSecSpec {
 //  URL https://github.com/TaintBench/roidsec/blob/master/README.md
   val sourceList = List(
     "<android.telephony.SmsManager: android.telephony.SmsManager getDefault()>",

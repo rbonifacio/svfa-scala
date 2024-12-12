@@ -20,7 +20,7 @@ import java.nio.file.Paths
 import br.unb.cic.soot.svfa.configuration.AndroidSootConfiguration
 
 class AndroidTaintBenchTest(apk: String) extends JSVFA
-    with FlowdroidSpecRoidSec
+    with RoidSecSpec
     with AndroidSootConfiguration
     with Interprocedural
     with FieldSensitive
