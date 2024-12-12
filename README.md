@@ -61,10 +61,11 @@ This project use some of the [FlowDroid](https://github.com/secure-software-engi
 
 ### Flowdroid Benchmark
 
-> failed: 0, passed: 73, ignored: 30 of 103 test (70.87%)
+> failed: 0, passed: 72, ignored: 31 of 103 test (69.90%)
 
-- **AliasingTest** - failed: 0, passed: 5, ignored: 1 of 6 test `(83.3%)`
+- **AliasingTest** - failed: 0, passed: 4, ignored: 2 of 6 test `(66.7%)`
   - [5]
+  - [6]
 
 - **ArraysTest** - failed: 0, passed: 5, ignored: 5 of 10 test `(50%)`
   - [2]
@@ -111,5 +112,15 @@ This project use some of the [FlowDroid](https://github.com/secure-software-engi
 - **StrongUpdateTest** - failed: 0, passed: 3, ignored: 2 of 5 test `(60%)`
   - [3]
   - [5]
+
+### Taint Bench: (WIP) 
+
+[//]: # (>br.unb.cic.android)
+
+> failed: ?, passed: 1, ignored: ? of 39 test (?%)
+
+- [Roidsec]
+- [ ]
+
 
 
