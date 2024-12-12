@@ -14,19 +14,17 @@ trait LambdaLabel {
   val edgeType: EdgeType
 }
 
-
 object EdgeType {
   def convert(edge: String): EdgeType = {
-    if(edge.equals(TrueEdge.toString)) {
+    if (edge.equals(TrueEdge.toString)) {
       TrueEdge
     } else if (edge.equals(FalseEdge.toString)) {
       FalseEdge
-    }else if (edge.equals(LoopEdge.toString)){
+    } else if (edge.equals(LoopEdge.toString)) {
       LoopEdge
-    }else if (edge.equals(DefEdge.toString)){
+    } else if (edge.equals(DefEdge.toString)) {
       DefEdge
-    }
-    else SimpleEdge
+    } else SimpleEdge
   }
 }
 
@@ -36,7 +34,6 @@ case object LoopLabel extends PDGType { def instance: LoopLabel.type = this }
 case object TrueLabel extends PDGType { def instance: TrueLabel.type = this }
 case object FalseLabel extends PDGType { def instance: FalseLabel.type = this }
 case object DefLabel extends PDGType { def instance: DefLabel.type = this }
-
 
 case class TrueLabelType(labelT: PDGType) extends EdgeLabel {
   override type T = PDGType
@@ -55,4 +52,3 @@ case class DefLabelType(labelT: PDGType) extends EdgeLabel {
   override var value = labelT
   override val labelType: LabelType = DefLabel
 }
-
