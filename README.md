@@ -22,7 +22,7 @@ This is a scala implementation of a framework that builds a sparse-value flow gr
 <dependency>	
   <groupId>br.unb.cic</groupId>
   <artifactId>svfa-scala_2.12</artifactId>
-  <version>0.0.2-SNAPSHOT</version>
+  <version>3.0.1-SNAPSHOT</version>
  </dependency>
 ```
 
@@ -49,8 +49,6 @@ This project use some of the [FlowDroid](https://github.com/secure-software-engi
 ```{bash}
     git clone https://github.com/rbonifacio/svfa-scala
 ```
-- Add dependency: 
-     - Download [servlet-api-2.5.jar](https://repo1.maven.org/maven2/javax/servlet/servlet-api/2.5/servlet-api-2.5.jar) and move to `.m2/repository/javax/servlet/servlet-api/2.5/`
 - Add GitHub token in `~/.gitconfig`
 - IDE
   - Reload `sbt` 
